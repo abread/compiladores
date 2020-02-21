@@ -18,6 +18,7 @@ cvs_update() {
 git pull --ff-only && \
 	cvs_update && \
 	make clean >/dev/null && \
+	cp -a src/.cvsignore src_cvs/ && \
 	cp -a src/* src_cvs/ && \
 	cvs_update && \
 	(
