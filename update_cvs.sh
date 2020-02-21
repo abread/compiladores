@@ -12,7 +12,7 @@ removed_files() {
 
 cvs_update() {
 	# run in subshell to keep cwd intact
-	(cd src_cvs && cvs update)
+	(cd src_cvs && cvs -q update)
 }
 
 git pull --ff-only && \
