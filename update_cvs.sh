@@ -22,7 +22,6 @@ git pull --ff-only && \
 	cp -a src/* src_cvs/ && \
 	cvs_update && \
 	(
-		echo checking for extra files
 		if removed_files &>/dev/null; then
 			echo "You have removed files in your cvs tree"
 			echo "remove them with:"
@@ -43,5 +42,5 @@ git pull --ff-only && \
 	echo "you sure you want to do this?" && \
 	echo && \
 	echo Run && \
-	echo "(cd src_cvs && cvs commit -m "'"'"$(git rev-parse HEAD)"'")' &&\
+	echo '(cd src_cvs && cvs commit -m "'"$(whoami)@$(hostname) - $(git rev-parse HEAD) $(date --iso-8601=minutes)"'")' &&\
 	echo When you are
