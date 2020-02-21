@@ -39,6 +39,12 @@ git pull --ff-only && \
 			false
 		fi
 	) && \
+	(
+		if [ "$(cvs_update |& wc -l)" = "0" ]; then
+			echo "CVS is already up to date it seems"
+			false
+		fi
+	) && \
 	echo "you sure you want to do this?" && \
 	echo && \
 	echo Run && \
