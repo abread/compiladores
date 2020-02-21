@@ -3,5 +3,16 @@ librts
 libcdk
 *.o
 *.asm
+og
+
+# cvs folder
+src_cvs
+
+# generated stuff
 src/ast/all.h
 src/ast/visitor_decls.h
+src/og
+*.output
+*.tab.c
+*.tab.h
+src/og_scanner.cpp

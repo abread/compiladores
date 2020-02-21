@@ -1,7 +1,7 @@
 ROOT = $(abspath $(CURDIR))/build
 MAKEOPTS += ROOT=$(ROOT)
 
-LANGUAGE = simple
+LANGUAGE = og
 
 .PHONY: all clean build-src examples test build-rts build-cdk
 all: $(LANGUAGE)
@@ -13,7 +13,7 @@ build-src: build-cdk build-rts
 	$(MAKE) -C src $(MAKEOPTS) all
 
 examples: build-src
-	$(MAKE) -C src/examples $(MAKEOPTS) all
+	$(MAKE) -C examples $(MAKEOPTS) all
 
 test: examples
 
@@ -23,7 +23,7 @@ clean:
 	$(MAKE) -C librts $(MAKEOPTS) clean
 	$(MAKE) -C libcdk $(MAKEOPTS) clean
 	$(MAKE) -C src $(MAKEOPTS) clean
-	$(MAKE) -C src/examples $(MAKEOPTS) clean
+	$(MAKE) -C examples $(MAKEOPTS) clean
 	rm -f $(LANGUAGE)
 
 build-rts: librts
