@@ -3,22 +3,22 @@ MAKEOPTS += ROOT=$(ROOT)
 
 LANGUAGE = og
 
-.PHONY: all clean build-src examples test build-rts build-cdk
+.PHONY:
 all: $(LANGUAGE)
 
-$(LANGUAGE): build-src
+$(LANGUAGE): build-src .PHONY
 	cp src/$(LANGUAGE) .
-build-src: build-cdk build-rts
+build-src: build-cdk build-rts .PHONY
 	$(MAKE) -C src $(MAKEOPTS) ast/all.h ast/visitor_decls.h # to work with multiple jobs
 	$(MAKE) -C src $(MAKEOPTS) all
 
-examples: $(LANGUAGE)
+examples: $(LANGUAGE) .PHONY
 	$(MAKE) -C examples $(MAKEOPTS) all
 
-test:
+test: examples .PHONY
 	$(MAKE) -C tests $(MAKEOPTS) test
 
-clean:
+clean: .PHONY
 	rm -rf build
 	# rm -rf librts libcdk # commented out in case you want to do things offline
 	$(MAKE) -C librts $(MAKEOPTS) clean
@@ -27,7 +27,7 @@ clean:
 	$(MAKE) -C examples $(MAKEOPTS) clean
 	rm -f $(LANGUAGE)
 
-build-rts: librts
+build-rts: librts .PHONY
 	$(MAKE) -C librts $(MAKEOPTS) all
 	$(MAKE) -C librts $(MAKEOPTS) install
 librts:
@@ -36,7 +36,7 @@ librts:
 	rm librts.tar.bz2
 	mv librts5-202002022020 librts
 
-build-cdk: libcdk
+build-cdk: libcdk .PHONY
 	$(MAKE) -C libcdk $(MAKEOPTS) all
 	$(MAKE) -C libcdk $(MAKEOPTS) install
 libcdk:
