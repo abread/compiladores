@@ -21,7 +21,7 @@ LDFLAGS  = -m elf_i386 -L$(RTS_LIB_DIR) -lrts
 SOURCES     = $(wildcard *.og)
 OBJECTS     = $(SOURCES:%.og=%.o)
 
-SOURCE_FOLDERS = $(shell find . -type d)
+SOURCE_FOLDERS = $(shell find . -type d -not -name '.')
 EXEC_FOLDERS = $(SOURCE_FOLDERS:%-src=%)
 EXEC_CLEAN = $(SOURCE_FOLDERS:%-src=%-clean)
 
