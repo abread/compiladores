@@ -17,7 +17,7 @@ LANGUAGE=og
 L_NAME=$(LANGUAGE)_scanner
 Y_NAME=$(LANGUAGE)_parser
 
-LFLAGS   = 
+LFLAGS   =
 YFLAGS   = -dtvP
 CXXFLAGS = -std=c++17 -DYYDEBUG=1 -pedantic -Wall -Wextra -ggdb -I. -I$(CDK_INC_DIR) -Wno-unused-parameter
 LDFLAGS  = -L$(CDK_LIB_DIR) -lcdk #-lLLVM
@@ -27,6 +27,7 @@ LEX  = flex
 YACC = byacc
 
 SRC_CPP = $(shell find ast -name \*.cpp) $(wildcard targets/*.cpp) $(wildcard ./*.cpp)
+AST_HEADERS = $(shell find ast -name \*.h -not -name all.h -not -name visitor_decls.h)
 OFILES  = $(SRC_CPP:%.cpp=%.o)
 
 #---------------------------------------------------------------
@@ -59,10 +60,10 @@ $(Y_NAME).tab.h: $(Y_NAME).y
 # this is needed to force byacc to run
 $(L_NAME).o: $(L_NAME).cpp $(Y_NAME).tab.h
 
-ast/all.h: 
+ast/all.h: $(AST_HEADERS)
 	$(CDK_BIN_DIR)/mk-node-decls.pl $(LANGUAGE) > $@
 
-ast/visitor_decls.h: 
+ast/visitor_decls.h: $(AST_HEADERS)
 	$(CDK_BIN_DIR)/mk-visitor-decls.pl $(LANGUAGE) > $@
 
 $(COMPILER): $(L_NAME).o $(Y_NAME).tab.o $(OFILES)
