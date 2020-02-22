@@ -1,0 +1,3 @@
+real f(int x, real y) { return y + x; }
+public int og() { write f(3, 10); write f(2,3); return 0; }
+

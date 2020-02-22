@@ -1,0 +1,8 @@
+public int x = 10;
+procedure f() { int x = 3; write x; }
+public int og() {
+  f();
+  write x;
+  return 0;
+}
+

@@ -1,0 +1,1 @@
+int x = 4; public int og() { write x; return 0; }

@@ -1,0 +1,8 @@
+int x;
+public int og() {
+  for x = 1; x <= 50; x = x + 1 do
+     if x == 10 then break
+  write x;
+  return 0;
+}
+

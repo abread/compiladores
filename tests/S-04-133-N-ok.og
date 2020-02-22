@@ -1,0 +1,14 @@
+public int og() {
+  auto a = 3, 61.0, "string1";
+  write a@1;
+  a@1 = 5;
+  write a@1;
+  write a@2;
+  a@2 = 62.0;
+  write a@2;
+  write a@3;
+  a@3 = "string2";
+  write a@3;
+  return 0;
+}
+

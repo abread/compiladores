@@ -1,0 +1,9 @@
+real f;
+public int og() {
+  ptr<real> p = [3];
+  p[1] = 6;
+  f = p[1];
+  write f;
+  return 0;
+}
+

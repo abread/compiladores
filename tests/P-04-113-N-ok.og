@@ -1,0 +1,11 @@
+ptr<real> f;
+real d = 4;
+public int og() {
+  int i;
+  f = [7];
+  for i = 0; i < 6; i = i + 1 do f[i] = d;
+  f[i] = d*d;
+  for int j = 0; j < 7; j = j + 1 do write f[j];
+  return 0;
+}
+

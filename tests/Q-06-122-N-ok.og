@@ -1,0 +1,7 @@
+real main(ptr<real> p) { return p[0]; }
+public int og() {
+  real r = 61;
+  write main(r?);
+  return 0;
+}
+

@@ -1,0 +1,8 @@
+public int og() {
+  auto d = 61.0;
+  write d;
+  d = 62.0;
+  write d;
+  return 0;
+}
+

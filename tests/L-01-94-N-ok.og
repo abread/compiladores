@@ -1,0 +1,6 @@
+int f(int i) {
+  if i!=0 then return f(i-1) + i;
+  return 9;
+}
+public int og() { write f(3); return 0; }
+

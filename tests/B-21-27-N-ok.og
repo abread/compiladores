@@ -1,0 +1,3 @@
+public int og() {
+	 if 2 then write "KO"; write "OK"; return 0; 
+}

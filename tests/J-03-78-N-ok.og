@@ -1,0 +1,6 @@
+string f() { return "ola"; }
+public int og() {
+  write f();
+  return 0;
+}
+

@@ -1,0 +1,10 @@
+public int og() {
+  if 0 then write "KO"; 
+  elif 0 then write "elif1"; 
+  elif 0 then write "elif2"; 
+  elif 0 then write "elif3"; 
+  elif 0 then write "elif4"; 
+  write "OK"; 
+  return 0;
+}
+

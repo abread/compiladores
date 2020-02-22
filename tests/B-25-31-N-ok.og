@@ -1,0 +1,3 @@
+public int og() {
+	 write 0x2F; write 0x2f; return 0; 
+}

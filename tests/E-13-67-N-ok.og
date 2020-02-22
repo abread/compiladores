@@ -1,0 +1,6 @@
+public int og() {
+  int x;
+  for x = 0; x < 30; x = x + 1 do write x;
+  return 0;
+}
+

@@ -1,0 +1,5 @@
+public int g(int n)
+int f(string s) { write s; return 10; }
+public int g(int n) { write n; return 10; }
+public int og() { f("ola"); return 0; }
+

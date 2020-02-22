@@ -1,0 +1,6 @@
+procedure f() { write "ola"; }
+public int og() {
+  f();
+  return 0;
+}
+

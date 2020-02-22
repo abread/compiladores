@@ -1,0 +1,3 @@
+int f(int x) { x = 5; return 1 + x; }
+public int og() { write f(3); return 0; }
+

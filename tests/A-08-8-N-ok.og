@@ -1,0 +1,4 @@
+public int og() {
+	 write "x\nY\t\7a\n"; 
+	 return 0; 
+}

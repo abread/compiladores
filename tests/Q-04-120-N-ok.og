@@ -1,0 +1,8 @@
+public int og() {
+  real r = 61;
+  ptr<real> p = nullptr;
+  p = r?;
+  writeln p[0];
+  return 0;
+}
+

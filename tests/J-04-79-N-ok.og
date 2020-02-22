@@ -1,0 +1,7 @@
+public procedure f()
+public procedure f() { int x = 3; write x; }
+public int og() {
+  f();
+  return 0;
+}
+

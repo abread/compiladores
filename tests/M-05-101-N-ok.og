@@ -1,0 +1,2 @@
+public int og() { real x; write sizeof(x); return 0; }
+

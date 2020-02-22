@@ -1,0 +1,6 @@
+int f() { return 2; }
+public int og() {
+  write f();
+  return 0;
+}
+

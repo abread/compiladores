@@ -1,0 +1,8 @@
+public int og() {
+  auto i = 3;
+  write i;
+  i = 5;
+  write i;
+  return 0;
+}
+

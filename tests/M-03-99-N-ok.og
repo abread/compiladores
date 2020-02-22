@@ -1,0 +1,2 @@
+public int og() { int x; write sizeof(x + 3); return 0; }
+

@@ -1,0 +1,5 @@
+public int og() {
+  write "\41" "\42" "C" "D";
+  return 0;
+}
+

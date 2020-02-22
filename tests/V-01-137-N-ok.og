@@ -1,0 +1,12 @@
+auto f(int a) {
+  if a then return 5, 61.0, "string1";
+  else      return 6, 62.0, "string2";
+}
+public int og() {
+  auto a, b, c = f(1);
+  write a;
+  write b;
+  write c;
+  return 0;
+}
+

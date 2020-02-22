@@ -1,0 +1,9 @@
+auto f() { return 5, 61.0, "string"; }
+public int og() {
+  auto a = f();
+  write a@1;
+  write a@2;
+  write a@3;
+  return 0;
+}
+

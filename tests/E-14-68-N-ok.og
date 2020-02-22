@@ -1,0 +1,7 @@
+public int og() {
+  int x;
+  for x = 0; x < 30; x = x + 1 do
+    if x % 2 == 0 then write x;
+  return 0;
+}
+

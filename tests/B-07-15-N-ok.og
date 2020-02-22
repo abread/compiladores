@@ -1,0 +1,4 @@
+public int og() {
+	 write 150%100; 
+	 return 0; 
+}

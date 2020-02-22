@@ -15,7 +15,8 @@ build-src: build-cdk build-rts
 examples: $(LANGUAGE)
 	$(MAKE) -C examples $(MAKEOPTS) all
 
-test: examples
+test:
+	$(MAKE) -C tests $(MAKEOPTS) test
 
 clean:
 	rm -rf build

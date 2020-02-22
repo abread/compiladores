@@ -1,0 +1,2 @@
+public int og() { ptr<auto> x; auto y = 1, 3.0, x; write sizeof(y); return 0; }
+

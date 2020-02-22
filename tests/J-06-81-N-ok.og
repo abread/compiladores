@@ -1,0 +1,7 @@
+/* duzia */
+public int argc()
+public int og() {
+  write argc();
+  return 0;
+}
+

@@ -1,0 +1,1 @@
+string x = "ola"; public int og() { write x; return 0; }

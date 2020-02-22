@@ -1,0 +1,11 @@
+int y;
+int x;
+public int og() {
+  for y = 1; y <= 3; y = y + 1 do {
+    for x = y; x <= 50; x = x + 1 do
+      if x==10 then break
+    write x;
+  }
+  return 0;
+}
+

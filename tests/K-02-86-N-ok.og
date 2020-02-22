@@ -1,0 +1,3 @@
+procedure f(int x) { write x; }
+public int og() { f(3); return 0; }
+

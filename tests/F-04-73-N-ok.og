@@ -1,0 +1,9 @@
+int x;
+int y;
+public int og() {
+  for y = 1; y <= 3; y = y + 1 do
+    for x = 1; x <= 6; x = x + 1 do
+      if x % 2 == 1 then continue else write x;
+  return 0;
+}
+

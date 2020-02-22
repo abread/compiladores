@@ -1,0 +1,5 @@
+public int g(int i)
+public int f(int i) { if i==0 then return 0; return g(i-1) + i; }
+public int g(int i) { if i==0 then return 0; return f(i-1) + i; }
+public int og() { write f(3); return 0; }
+

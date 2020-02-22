@@ -1,0 +1,11 @@
+real f;
+public int og() {
+  ptr<real> p = [3];
+  ptr<real> q = [3];
+  p[1] = 3;
+  q[2] = 6;
+  f = (q+1)[1] - p[1];
+  write f;
+  return 0;
+}
+

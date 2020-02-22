@@ -1,0 +1,7 @@
+/* scope */
+procedure f() { int f = 3; f; write f; }
+public int og() {
+  f(); 
+  return 0;
+}
+

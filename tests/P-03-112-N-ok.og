@@ -1,0 +1,12 @@
+ptr<real> f;
+public int og() {
+  int n = 4;
+  ptr<real> f = [n];
+  for int i = 0; i < n; i = i + 1 do f[i] = 2;
+  for int j = 0; j < n; j = j + 1 do write f[j];
+  write "\n";
+  for int k = 0; k < n; k = k + 1 do f[k] = 6/f[k];
+  for int l = 0; l < n; l = l + 1 do write f[l];
+  return 0;
+}
+

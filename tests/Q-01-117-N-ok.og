@@ -1,0 +1,12 @@
+public ptr<real> main(ptr<real> p) { return 1 + p; }
+public int og() {
+  ptr<real> p = [3];
+  ptr<real> q;
+  p[0] = 3.1;
+  p[1] = 2.1;
+  p[2] = 61;
+  q = main(p);
+  write q[1];
+  return 0;
+}
+
