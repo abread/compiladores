@@ -14,7 +14,7 @@
 %x X_STRING
 %%
 
-"--".*                 ; /* ignore comments */
+"//".*                 ; /* ignore comments */
 
 ">="                   return tGE; 
 "<="                   return tLE; 
