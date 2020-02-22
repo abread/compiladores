@@ -4,13 +4,15 @@ MAKEOPTS += ROOT=$(ROOT)
 LANGUAGE = og
 
 .PHONY:
-all: $(LANGUAGE)
 
-$(LANGUAGE): build-src .PHONY
-	cp src/$(LANGUAGE) .
-build-src: build-cdk build-rts .PHONY
-	$(MAKE) -C src $(MAKEOPTS) ast/all.h ast/visitor_decls.h # to work with multiple jobs
-	$(MAKE) -C src $(MAKEOPTS) all
+all: $(LANGUAGE) .PHONY
+
+$(LANGUAGE): src/$(LANGUAGE) .PHONY
+	ln -sf src/$(LANGUAGE) .
+
+src/$(LANGUAGE): build-cdk build-rts .PHONY
+	#$(MAKE) -C src $(MAKEOPTS) ast/all.h ast/visitor_decls.h # to work with multiple jobs
+	$(MAKE) -C src $(MAKEOPTS) ast/all.h ast/visitor_decls.h all
 
 examples: $(LANGUAGE) .PHONY
 	$(MAKE) -C examples $(MAKEOPTS) all
