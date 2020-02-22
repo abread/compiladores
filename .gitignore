@@ -16,3 +16,12 @@ src/og
 *.tab.c
 *.tab.h
 src/og_scanner.cpp
+tests/*
+!tests/*.og
+!tests/testall.sh
+!tests/Makefile
+!tests/expected
+examples/*
+examples/*-src/*
+!examples/*.og
+!examples/*-src/*.og
