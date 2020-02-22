@@ -31,10 +31,10 @@ TESTS       = $(EXECUTABLES:%=%-test)
 
 all: $(EXECUTABLES) .PHONY
 
-%.c: %.og
+%.c: %.og $(COMPILER)
 	$(COMPILER) $< -o $@
 
-%.asm: %.og
+%.asm: %.og $(COMPILER)
 	$(COMPILER) $< -o $@
 
 %.o: %.asm
