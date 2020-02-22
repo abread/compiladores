@@ -43,8 +43,12 @@ all: $(EXECUTABLES) .PHONY
 %:%.o
 	$(LD) $< -o $@ $(LDFLAGS)
 
-test: $(TESTS) .PHONY
 
+test: .PHONY
+	./testall.sh
+
+# cool, but a bit ugly - let's not use them
+test-mk: $(TESTS) .PHONY
 %-test: %.out .PHONY
 	diff --color $< expected/$<
 
