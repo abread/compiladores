@@ -6,6 +6,8 @@
 ROOT = ${HOME}/compiladores/root
 RTS_LIB_DIR = $(ROOT)/usr/lib
 
+MAKEOPTS += ROOT=$(ROOT)
+
 COMPILER=../og
 ASM=yasm
 
@@ -18,13 +20,20 @@ LDFLAGS  = -m elf_i386 -L$(RTS_LIB_DIR) -lrts
 
 SOURCES     = $(wildcard *.og)
 OBJECTS     = $(SOURCES:%.og=%.o)
+
+SOURCE_FOLDERS = $(shell find . -type d)
+EXEC_FOLDERS = $(SOURCE_FOLDERS:%-src=%)
+EXEC_CLEAN = $(SOURCE_FOLDERS:%-src=%-clean)
+
 EXECUTABLES = $(SOURCES:%.og=%)
 
 #---------------------------------------------------------------
 #                DO NOT CHANGE AFTER THIS LINE
 #---------------------------------------------------------------
 
-all: $(EXECUTABLES)
+.PHONY: all
+all: $(EXECUTABLES) $(EXEC_FOLDERS)
+	echo $(SOURCE_FOLDERS)
 
 %.c: %.og
 	$(COMPILER) $< -o $@
@@ -38,8 +47,16 @@ all: $(EXECUTABLES)
 %:%.o
 	$(LD) $< -o $@ $(LDFLAGS)
 
-clean:
-	$(RM) $(OBJECTS) $(EXECUTABLES) *.c *.asm
+%:%-src
+	$(MAKE) -C $< $(MAKEOPTS)
+	cp $</$@ $@
+
+.PHONY: clean factorial-clean
+clean: $(EXEC_CLEAN)
+	$(RM) $(OBJECTS) $(EXECUTABLES) $(EXEC_FOLDERS) *.c *.asm
+
+%-clean:
+	$(MAKE) -C $< $(MAKEOPTS) clean
 
 #---------------------------------------------------------------
 #                           THE END

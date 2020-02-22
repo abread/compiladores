@@ -12,7 +12,7 @@ build-src: build-cdk build-rts
 	$(MAKE) -C src $(MAKEOPTS) ast/all.h ast/visitor_decls.h # to work with multiple jobs
 	$(MAKE) -C src $(MAKEOPTS) all
 
-examples: build-src
+examples: $(LANGUAGE)
 	$(MAKE) -C examples $(MAKEOPTS) all
 
 test: examples
