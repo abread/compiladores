@@ -27,8 +27,9 @@ TESTS       = $(EXECUTABLES:%=%-test)
 #                DO NOT CHANGE AFTER THIS LINE
 #---------------------------------------------------------------
 
-.PHONY: all
-all: $(EXECUTABLES)
+.PHONY:
+
+all: $(EXECUTABLES) .PHONY
 
 %.c: %.og
 	$(COMPILER) $< -o $@
@@ -45,14 +46,12 @@ all: $(EXECUTABLES)
 test: $(TESTS) .PHONY
 
 %-test: %.out .PHONY
-	diff $< expected/$<
+	diff --color $< expected/$<
 
 %.out: %
-	$< > $@
+	./$< > $@
 
-
-.PHONY: clean
-clean: $(EXEC_CLEAN)
+clean: $(EXEC_CLEAN) .PHONY
 	$(RM) $(OBJECTS) $(EXECUTABLES) *.c *.asm *.out
 
 #---------------------------------------------------------------
