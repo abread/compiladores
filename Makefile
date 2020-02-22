@@ -27,6 +27,7 @@ clean: .PHONY
 	$(MAKE) -C libcdk $(MAKEOPTS) clean
 	$(MAKE) -C src $(MAKEOPTS) clean
 	$(MAKE) -C examples $(MAKEOPTS) clean
+	$(MAKE) -C tests $(MAKEOPTS) clean
 	rm -f $(LANGUAGE)
 
 build-rts: librts .PHONY
