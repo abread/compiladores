@@ -1,0 +1,16 @@
+// external builtin functions
+require int argc()
+require string argv(int n)
+require int atoi(string s)
+
+// external user functions
+require int factorial(int n)
+
+// the main function
+public int og() {
+  int f = 1;
+  writeln "Teste para a função factorial";
+  if argc() == 2 then f = atoi(argv(1));
+  writeln f, "! = ", factorial(f);
+  return 0;
+}
