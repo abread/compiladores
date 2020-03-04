@@ -30,7 +30,7 @@ testone() {
 		exit 1
 	fi
 
-	if make $out > /dev/null && diff -b $expected $out &> /dev/null; then
+	if make -j1 $out > /dev/null && diff -b $expected $out &> /dev/null; then
 		printf '%b' "Test $name -- ${green}OK$reset\n"
 	else
 		printf '%b' "Test $name -- ${red}FAILED${reset}\n"
