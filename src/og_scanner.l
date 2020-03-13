@@ -1,6 +1,6 @@
 %option c++ prefix="og_scanner_" outfile="og_scanner.cpp"
 %option stack noyywrap yylineno 8bit
-%{ 
+%{
 // make relevant includes before including the parser's tab file
 #include <string>
 #include <cdk/ast/sequence_node.h>
@@ -16,18 +16,19 @@
 
 "//".*                 ; /* ignore comments */
 
-">="                   return tGE; 
-"<="                   return tLE; 
-"=="                   return tEQ; 
-"!="                   return tNE; 
+">="                   return tGE;
+"<="                   return tLE;
+"=="                   return tEQ;
+"!="                   return tNE;
 
-"while"                return tWHILE; 
-"if"                   return tIF; 
-"else"                 return tELSE; 
-"print"                return tPRINT; 
-"read"                 return tREAD; 
-"begin"                return tBEGIN; 
-"end"                  return tEND; 
+"for"                  return tFOR;
+"do"                   return tDO;
+"if"                   return tIF;
+"else"                 return tELSE;
+"print"                return tPRINT;
+"read"                 return tREAD;
+"begin"                return tBEGIN;
+"end"                  return tEND;
 
 [A-Za-z][A-Za-z0-9_]*  yylval.s = new std::string(yytext); return tIDENTIFIER;
 
