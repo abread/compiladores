@@ -57,7 +57,9 @@ if cvs_update |& grep -w '?' &>/dev/null; then
 	echo "You have new files to add to CVS first:"
 	echo "if you don't, put them in .cvsignore"
 	echo
-	cvs_update |& grep -w '?' | cut -d' ' -f2 | xargs -n1 echo cvs add
+	echo 'cd src_cvs'
+	cvs_update |& grep -w '?' | cut -d' ' -f2 | sed -E 's/src_cvs\///' | xargs -n1 echo cvs add
+	echo 'cd ..'
 	exit 1
 fi
 
