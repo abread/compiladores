@@ -48,6 +48,9 @@ if removed_files &>/dev/null; then
 	echo "remove them with:"
 	echo
 	removed_files | xargs -n1 echo rm
+	echo 'cd src_cvs'
+	removed_files | sed -E 's/src_cvs\///' | xargs -n1 echo cvs rm
+	echo 'cd ..'
 
 	exit 1
 fi
