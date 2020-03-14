@@ -13,6 +13,50 @@ void og::type_checker::do_sequence_node(cdk::sequence_node *const node, int lvl)
 
 //---------------------------------------------------------------------------
 
+void og::type_checker::do_return_node(og::return_node *const node, int lvl) {
+  // TODO
+#if 0
+  if (node->retval()) {
+    if (_function->type()->name() == basic_type::TYPE_VOID) throw std::string("initializer specified for void function.");
+
+    node->retval()->accept(this, lvl + 2);
+
+    std::cout << "FUNCT TYPE" << _function->type()->name()  << std::endl;
+    std::cout << "RETVAL TYPE" << node->retval()->type()->name() << std::endl;
+
+    if (_function->type()->name() == basic_type::TYPE_INT) {
+      if (node->retval()->type()->name() != basic_type::TYPE_INT) throw std::string(
+          "wrong type for initializer (integer expected).");
+    } else if (_function->type()->name() == basic_type::TYPE_DOUBLE) {
+      if (node->retval()->type()->name() != basic_type::TYPE_INT
+          && node->retval()->type()->name() != basic_type::TYPE_DOUBLE) throw std::string(
+          "wrong type for initializer (integer or double expected).");
+    } else if (_function->type()->name() == basic_type::TYPE_STRING) {
+      if (node->retval()->type()->name() != basic_type::TYPE_STRING) throw std::string(
+          "wrong type for initializer (string expected).");
+    } else if (_function->type()->name() == basic_type::TYPE_POINTER) {
+      //DAVID: FIXME: trouble!!!
+      int ft = 0, rt = 0;
+      basic_type *ftype = _function->type();
+      for (; ftype->name() == basic_type::TYPE_POINTER; ft++, ftype = ftype->_subtype);
+      basic_type *rtype = node->retval()->type();
+      for (; rtype && rtype->name() == basic_type::TYPE_POINTER; rt++, rtype = rtype->_subtype);
+      
+    std::cout << "FUNCT TYPE"  << _function->type()->name()      << " --- " << ft << " -- " << ftype->name() << std::endl;
+    std::cout << "RETVAL TYPE" << node->retval()->type()->name() << " --- " << rt << " -- " << rtype << std::endl;
+
+      bool compatible = (ft == rt) && (rtype == 0 || (rtype != 0 && ftype->name() == rtype->name()));
+      if (!compatible) throw std::string("wrong type for return expression (pointer expected).");
+
+    } else {
+      throw std::string("unknown type for initializer.");
+    }
+  }
+#endif
+}
+
+//---------------------------------------------------------------------------
+
 void og::type_checker::do_nil_node(cdk::nil_node *const node, int lvl) {
   // EMPTY
 }
