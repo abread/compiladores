@@ -196,6 +196,18 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
 
 //---------------------------------------------------------------------------
 
+void og::postfix_writer::do_function_call_node(og::function_call_node *const node, int lvl) {
+  // TODO
+}
+
+//---------------------------------------------------------------------------
+
+void og::postfix_writer::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
+  // TODO
+}
+
+//---------------------------------------------------------------------------
+
 void og::postfix_writer::do_evaluation_node(og::evaluation_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->argument()->accept(this, lvl); // determine the value

@@ -201,6 +201,15 @@ void og::type_checker::do_function_definition_node(og::function_definition_node 
   // TODO
 }
 
+
+void og::type_checker::do_function_call_node(og::function_call_node *const node, int lvl) {
+  // TODO
+}
+
+void og::type_checker::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
+  // TODO
+}
+
 void og::type_checker::do_evaluation_node(og::evaluation_node *const node, int lvl) {
   node->argument()->accept(this, lvl + 2);
 }

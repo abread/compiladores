@@ -135,6 +135,18 @@ void og::xml_writer::do_function_definition_node(og::function_definition_node * 
 
 //---------------------------------------------------------------------------
 
+void og::xml_writer::do_function_call_node(og::function_call_node *const node, int lvl) {
+  // TODO
+}
+
+//---------------------------------------------------------------------------
+
+void og::xml_writer::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
+  // TODO
+}
+
+//---------------------------------------------------------------------------
+
 void og::xml_writer::do_evaluation_node(og::evaluation_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
