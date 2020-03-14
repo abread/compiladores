@@ -23,7 +23,7 @@
 
 %token <i> tINTEGER
 %token <s> tIDENTIFIER tSTRING
-%token tFOR tIF tPRINT tREAD tBEGIN tEND tDO
+%token tFOR tIF tWRITE tWRITELN tREAD tBEGIN tEND tDO
 
 %nonassoc tIFX
 %nonassoc tELSE
@@ -57,7 +57,8 @@ exprs : expr	     { $$ = new cdk::sequence_node(LINE, $1); }
 	    ;
 
 stmt : expr ';'                         { $$ = new og::evaluation_node(LINE, $1); }
- 	   | tPRINT expr ';'                  { $$ = new og::print_node(LINE, $2); }
+ 	   | tWRITE expr ';'                  { $$ = new og::write_node(LINE, $2); }
+ 	   | tWRITELN expr ';'                  { $$ = new og::write_node(LINE, $2, true); }
      | tREAD lval ';'                   { $$ = new og::read_node(LINE, $2); }
      | tFOR exprs ';' exprs ';' exprs tDO stmt         { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
      | tIF '(' expr ')' stmt %prec tIFX { $$ = new og::if_node(LINE, $3, $5); }
