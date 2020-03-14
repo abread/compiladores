@@ -18,7 +18,7 @@
   cdk::expression_node *expression; /* expression nodes */
   cdk::lvalue_node     *lvalue;
 
-  og::block            *block;
+  og::block_node       *blk;
 };
 
 %token <i> tINTEGER
