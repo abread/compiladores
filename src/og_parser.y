@@ -24,6 +24,7 @@
 %token <i> tINTEGER
 %token <s> tIDENTIFIER tSTRING
 %token tFOR tIF tWRITE tWRITELN tREAD tBEGIN tEND tDO
+%token tBREAK tCONTINUE
 
 %nonassoc tIFX
 %nonassoc tELSE
