@@ -159,7 +159,7 @@ void og::xml_writer::do_write_node(og::write_node * const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
-void og::xml_writer::do_read_node(og::read_node * const node, int lvl) {
+void og::xml_writer::do_input_node(og::input_node * const node, int lvl) {
   // TODO: refactor into expression
   ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);

@@ -231,7 +231,7 @@ void og::postfix_writer::do_write_node(og::write_node * const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
-void og::postfix_writer::do_read_node(og::read_node * const node, int lvl) {
+void og::postfix_writer::do_input_node(og::input_node * const node, int lvl) {
   // TODO: refactor to be an expression
   ASSERT_SAFE_EXPRESSIONS;
   _pf.CALL("readi");
