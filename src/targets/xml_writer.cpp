@@ -182,6 +182,23 @@ void og::xml_writer::do_for_node(og::for_node * const node, int lvl) {
 #endif
 }
 
+
+void og::xml_writer::do_break_node(og::break_node * const node, int lvl) {
+  // TODO
+#if 0
+  openTag(node, lvl);
+  closeTag(node, lvl);
+#endif
+}
+
+void og::xml_writer::do_continue_node(og::continue_node * const node, int lvl) {
+  // TODO
+#if 0
+  openTag(node, lvl);
+  closeTag(node, lvl);
+#endif
+}
+
 //---------------------------------------------------------------------------
 
 void og::xml_writer::do_if_node(og::if_node * const node, int lvl) {

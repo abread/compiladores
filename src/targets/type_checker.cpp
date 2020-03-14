@@ -162,7 +162,8 @@ void og::type_checker::do_evaluation_node(og::evaluation_node *const node, int l
 }
 
 void og::type_checker::do_block_node(og::block_node * const node, int lvl) {
-  //TODO
+  // TODO
+  // EMPTY (?)
 }
 
 void og::type_checker::do_print_node(og::print_node *const node, int lvl) {
@@ -186,6 +187,14 @@ void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
 #if 0
   node->condition()->accept(this, lvl + 4);
 #endif
+}
+
+void og::type_checker::do_continue_node(og::continue_node * const node, int lvl) {
+  // EMPTY
+}
+
+void og::type_checker::do_break_node(og::break_node * const node, int lvl) {
+  // EMPTY
 }
 
 //---------------------------------------------------------------------------
