@@ -172,12 +172,8 @@ void og::type_checker::do_write_node(og::write_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
-void og::type_checker::do_read_node(og::read_node *const node, int lvl) {
-  try {
-    node->argument()->accept(this, lvl);
-  } catch (const std::string &id) {
-    throw "undeclared variable '" + id + "'";
-  }
+void og::type_checker::do_input_node(og::input_node *const node, int lvl) {
+  // TODO: refactor into expression
 }
 
 //---------------------------------------------------------------------------
