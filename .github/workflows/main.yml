@@ -1,4 +1,4 @@
-name: main
+name: build
 
 on:
   push:
@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Install dependencies
+      run: sudo apt-get install -y doxygen yacc flex yasm
     - name: Cache CDK
       id: cache-cdk
       uses: actions/cache@v1
@@ -23,5 +25,5 @@ jobs:
       with:
         path: librts
         key: ${{ runner.os }}-rts
-    - name: make 
+    - name: make
       run: make
