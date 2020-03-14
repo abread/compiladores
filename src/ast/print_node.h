@@ -14,7 +14,7 @@ namespace og {
 
   public:
     inline print_node(int lineno, cdk::expression_node *argument, bool newline = false) :
-        cdk::basic_node(lineno), _argument(argument, _newline(newline)) {
+        cdk::basic_node(lineno), _argument(argument), _newline(newline) {
     }
 
   public:
