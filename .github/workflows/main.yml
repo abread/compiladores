@@ -12,7 +12,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install dependencies
-      run: sudo apt-get install -y doxygen yacc flex yasm
+      run: sudo apt-get install -y doxygen byacc flex yasm
     - name: Cache CDK
       id: cache-cdk
       uses: actions/cache@v1
