@@ -185,6 +185,7 @@ void og::xml_writer::do_for_node(og::for_node * const node, int lvl) {
 
 
 void og::xml_writer::do_break_node(og::break_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
   // TODO
 #if 0
   openTag(node, lvl);
@@ -193,9 +194,21 @@ void og::xml_writer::do_break_node(og::break_node * const node, int lvl) {
 }
 
 void og::xml_writer::do_continue_node(og::continue_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
   // TODO
 #if 0
   openTag(node, lvl);
+  closeTag(node, lvl);
+#endif
+}
+
+void og::xml_writer::do_return_node(og::return_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+  // TODO
+#if 0
+  openTag(node, lvl);
+  if (node->retval())
+    node->retval()->accept(this, lvl+4);
   closeTag(node, lvl);
 #endif
 }

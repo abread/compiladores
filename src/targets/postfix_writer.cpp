@@ -212,6 +212,30 @@ void og::postfix_writer::do_block_node(og::block_node * const node, int lvl) {
   //TODO block node
 }
 
+void og::postfix_writer::do_return_node(og::return_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+  //TODO return node
+#if 0
+  // should not reach here without returning a value (if not void)
+  if (_function->type()->name() != basic_type::TYPE_VOID) {
+    node->retval()->accept(this, lvl + 2);
+
+    if (_function->type()->name() == basic_type::TYPE_INT || _function->type()->name() == basic_type::TYPE_STRING
+        || _function->type()->name() == basic_type::TYPE_POINTER) {
+      _pf.STFVAL32();
+    } else if (_function->type()->name() == basic_type::TYPE_DOUBLE) {
+      if (node->retval()->type()->name() == basic_type::TYPE_INT)
+        _pf.I2D();
+      _pf.STFVAL64();
+    } else {
+      std::cerr << node->lineno() << ": should not happen: unknown return type" << std::endl;
+    }
+  }
+  _pf.LEAVE();
+  _pf.RET();
+#endif
+}
+
 void og::postfix_writer::do_write_node(og::write_node * const node, int lvl) {
   // TODO: handle newline flag
   ASSERT_SAFE_EXPRESSIONS;
