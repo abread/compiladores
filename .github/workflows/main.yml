@@ -1,0 +1,27 @@
+name: main
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Cache CDK
+      id: cache-cdk
+      uses: actions/cache@v1
+      with:
+        path: libcdk
+        key: ${{ runner.os }}-cdk
+    - name: Cache RTS
+      id: cache-rts
+      uses: actions/cache@v1
+      with:
+        path: librts
+        key: ${{ runner.os }}-rts
+    - name: make 
+      run: make
