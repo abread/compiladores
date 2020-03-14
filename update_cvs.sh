@@ -21,6 +21,14 @@ cvs_update() {
 set -e
 
 # ensure working dir is clean and repos up-to-date
+echo Stashing all changes. Will be unstashed on exit
+git stash --include-untracked
+
+unstash() {
+	git stash pop
+}
+trap unstash EXIT
+
 echo Syncing git
 git pull --ff-only
 echo
