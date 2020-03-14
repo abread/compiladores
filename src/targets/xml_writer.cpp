@@ -127,9 +127,9 @@ void og::xml_writer::do_assignment_node(cdk::assignment_node * const node, int l
 
 //---------------------------------------------------------------------------
 
-void og::xml_writer::do_program_node(og::program_node * const node, int lvl) {
+void og::xml_writer::do_function_definition_node(og::function_definition_node * const node, int lvl) {
   openTag(node, lvl);
-  node->statements()->accept(this, lvl + 4);
+  node->block()->accept(this, lvl + 4);
   closeTag(node, lvl);
 }
 

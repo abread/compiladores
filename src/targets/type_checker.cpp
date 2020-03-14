@@ -41,7 +41,7 @@ void og::type_checker::do_return_node(og::return_node *const node, int lvl) {
       for (; ftype->name() == basic_type::TYPE_POINTER; ft++, ftype = ftype->_subtype);
       basic_type *rtype = node->retval()->type();
       for (; rtype && rtype->name() == basic_type::TYPE_POINTER; rt++, rtype = rtype->_subtype);
-      
+
     std::cout << "FUNCT TYPE"  << _function->type()->name()      << " --- " << ft << " -- " << ftype->name() << std::endl;
     std::cout << "RETVAL TYPE" << node->retval()->type()->name() << " --- " << rt << " -- " << rtype << std::endl;
 
@@ -197,8 +197,8 @@ void og::type_checker::do_assignment_node(cdk::assignment_node *const node, int 
 
 //---------------------------------------------------------------------------
 
-void og::type_checker::do_program_node(og::program_node *const node, int lvl) {
-  // EMPTY
+void og::type_checker::do_function_definition_node(og::function_definition_node *const node, int lvl) {
+  // TODO
 }
 
 void og::type_checker::do_evaluation_node(og::evaluation_node *const node, int lvl) {
