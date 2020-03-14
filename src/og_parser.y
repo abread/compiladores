@@ -17,6 +17,8 @@
   cdk::sequence_node   *sequence;
   cdk::expression_node *expression; /* expression nodes */
   cdk::lvalue_node     *lvalue;
+
+  og::block_node       *blk;
 };
 
 %token <i> tINTEGER
@@ -36,6 +38,7 @@
 %type <sequence> list exprs
 %type <expression> expr
 %type <lvalue> lval
+%type <block> block
 
 %{
 //-- The rules below will be included in yyparse, the main parsing function.

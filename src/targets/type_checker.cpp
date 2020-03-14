@@ -161,6 +161,10 @@ void og::type_checker::do_evaluation_node(og::evaluation_node *const node, int l
   node->argument()->accept(this, lvl + 2);
 }
 
+void og::type_checker::do_block_node(og::block_node * const node, int lvl) {
+  //TODO
+}
+
 void og::type_checker::do_print_node(og::print_node *const node, int lvl) {
   node->argument()->accept(this, lvl + 2);
 }

@@ -4,6 +4,7 @@ libcdk
 *.o
 *.asm
 og
+gr8
 
 # cvs folder
 src_cvs

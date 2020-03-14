@@ -207,6 +207,11 @@ void og::postfix_writer::do_evaluation_node(og::evaluation_node * const node, in
   }
 }
 
+void og::postfix_writer::do_block_node(og::block_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+  //TODO block node
+}
+
 void og::postfix_writer::do_print_node(og::print_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->argument()->accept(this, lvl); // determine the value to print
