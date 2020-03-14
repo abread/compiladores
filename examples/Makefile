@@ -1,9 +1,8 @@
-# $Id: Makefile,v 1.1 2014/05/02 22:33:16 david Exp $
 #---------------------------------------------------------------
 #             CONFIGURE THESE VARIABLES IF NEEDED
 #---------------------------------------------------------------
 
-ROOT = ${HOME}/compiladores/root
+ROOT = ../build
 RTS_LIB_DIR = $(ROOT)/usr/lib
 
 MAKEOPTS += ROOT=$(ROOT)

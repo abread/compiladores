@@ -3,7 +3,8 @@
 #             CONFIGURE THESE VARIABLES IF NEEDED
 #---------------------------------------------------------------
 
-ROOT = ${HOME}/compiladores/root
+ROOT = ../build
+#ROOT = ${HOME}/compiladores/root
 CDK_INC_DIR = $(ROOT)/usr/include
 CDK_LIB_DIR = $(ROOT)/usr/lib
 CDK_BIN_DIR = $(ROOT)/usr/bin
