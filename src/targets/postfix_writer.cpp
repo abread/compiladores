@@ -212,7 +212,8 @@ void og::postfix_writer::do_block_node(og::block_node * const node, int lvl) {
   //TODO block node
 }
 
-void og::postfix_writer::do_print_node(og::print_node * const node, int lvl) {
+void og::postfix_writer::do_write_node(og::write_node * const node, int lvl) {
+  // TODO: handle newline flag
   ASSERT_SAFE_EXPRESSIONS;
   node->argument()->accept(this, lvl); // determine the value to print
   if (node->argument()->is_typed(cdk::TYPE_INT)) {
