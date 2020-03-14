@@ -21,13 +21,13 @@ cvs_update() {
 set -e
 
 # ensure working dir is clean and repos up-to-date
-echo Stashing all changes. Will be unstashed on exit
-git stash --include-untracked
-
 unstash() {
-	git stash pop
+	git stash pop >/dev/null
 }
-trap unstash EXIT
+if git stash --include-untracked | grep -v "No local changes to save"; then
+	echo "Stashed changes. Will be unstashed on exit"
+	trap unstash EXIT
+fi
 
 echo Syncing git
 git pull --ff-only
