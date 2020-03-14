@@ -160,9 +160,10 @@ void og::xml_writer::do_write_node(og::write_node * const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::xml_writer::do_read_node(og::read_node * const node, int lvl) {
+  // TODO: refactor into expression
   ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
-  node->argument()->accept(this, lvl + 2);
+  //node->argument()->accept(this, lvl + 2);
   closeTag(node, lvl);
 }
 
