@@ -20,6 +20,9 @@ examples: $(LANGUAGE) .PHONY
 test: examples .PHONY
 	$(MAKE) -C tests $(MAKEOPTS) test
 
+clean-proj: .PHONY
+	$(MAKE) -C src $(MAKEOPTS) clean
+
 clean: .PHONY
 	rm -rf build
 	# rm -rf librts libcdk # commented out in case you want to do things offline

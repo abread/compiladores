@@ -35,7 +35,7 @@ echo
 echo Syncing CVS
 cvs_update
 echo
-make clean >/dev/null
+make clean-proj >/dev/null
 
 echo
 echo Copying files
