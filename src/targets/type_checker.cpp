@@ -222,6 +222,22 @@ void og::type_checker::do_input_node(og::input_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
+
+void og::type_checker::do_address_of_node(og::address_of_node * const node, int lvl) {
+  // TODO
+#if 0
+  ASSERT_UNSPEC;
+  node->lvalue()->accept(this, lvl + 2);
+  if (node->lvalue()->type()->name() == basic_type::TYPE_DOUBLE) {
+    node->type(new basic_type(4, basic_type::TYPE_POINTER));
+  } else {
+    throw std::string("wrong type in unary logical expression");
+  }
+#endif
+}
+
+//---------------------------------------------------------------------------
+
 void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
   // TODO: while -> for
 #if 0
