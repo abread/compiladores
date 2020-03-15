@@ -7,6 +7,7 @@
 #include <cdk/types/basic_type.h>
 #include <cdk/types/primitive_type.h>
 #include "ast/block_node.h"
+#include "targets/basic_ast_visitor.h"
 
 namespace og {
 
