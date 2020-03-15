@@ -141,6 +141,18 @@ void og::postfix_writer::do_address_of_node(og::address_of_node * const node, in
 #endif
 }
 
+void og::postfix_writer::do_stack_alloc_node(og::stack_alloc_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+  //TODO
+#if 0
+  node->argument()->accept(this, lvl);
+  _pf.INT(3);
+  _pf.SHTL();
+  _pf.ALLOC(); // allocate
+  _pf.SP();// put base pointer in stack
+#endif
+}
+
 void og::postfix_writer::do_nullptr_node(og::nullptr_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS; // a pointer is a 32-bit integer
   // TODO
