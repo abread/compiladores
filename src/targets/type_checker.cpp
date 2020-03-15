@@ -41,7 +41,7 @@ void og::type_checker::do_return_node(og::return_node *const node, int lvl) {
       for (; ftype->name() == basic_type::TYPE_POINTER; ft++, ftype = ftype->_subtype);
       basic_type *rtype = node->retval()->type();
       for (; rtype && rtype->name() == basic_type::TYPE_POINTER; rt++, rtype = rtype->_subtype);
-      
+
     std::cout << "FUNCT TYPE"  << _function->type()->name()      << " --- " << ft << " -- " << ftype->name() << std::endl;
     std::cout << "RETVAL TYPE" << node->retval()->type()->name() << " --- " << rt << " -- " << rtype << std::endl;
 
@@ -245,4 +245,8 @@ void og::type_checker::do_if_node(og::if_node *const node, int lvl) {
 
 void og::type_checker::do_if_else_node(og::if_else_node *const node, int lvl) {
   node->condition()->accept(this, lvl + 4);
+}
+
+void og::type_checker::do_tuple_node(og::tuple_node *const node, int lvl) {
+  // TODO
 }
