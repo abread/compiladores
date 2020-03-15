@@ -2,6 +2,7 @@
 #define __OG_AST_BREAK_H__
 
 #include <cdk/ast/basic_node.h>
+#include "targets/basic_ast_visitor.h"
 
 namespace og {
 

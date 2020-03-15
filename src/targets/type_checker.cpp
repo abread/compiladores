@@ -88,6 +88,14 @@ void og::type_checker::do_string_node(cdk::string_node *const node, int lvl) {
   node->type(cdk::make_primitive_type(4, cdk::TYPE_STRING));
 }
 
+void og::type_checker::do_nullptr_node(og::nullptr_node * const node, int lvl) {
+  ASSERT_UNSPEC;
+  // TODO
+#if 0
+  node->type(new basic_type(4, basic_type::TYPE_POINTER));
+#endif
+}
+
 //---------------------------------------------------------------------------
 
 void og::type_checker::processUnaryExpression(cdk::unary_operation_node *const node, int lvl) {

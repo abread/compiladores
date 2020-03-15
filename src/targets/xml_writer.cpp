@@ -155,6 +155,14 @@ void og::xml_writer::do_address_of_node(og::address_of_node * const node, int lv
   ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
   node->lvalue()->accept(this, lvl + 2);
+#endif
+}
+
+void og::xml_writer::do_nullptr_node(og::nullptr_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+  //TODO
+#if 0
+  openTag(node, lvl);
   closeTag(node, lvl);
 #endif
 }
