@@ -3,8 +3,8 @@
 
 #include <string>
 #include <cdk/ast/basic_node.h>
-#include <cdk/ast/sequence_node.h>
 #include <cdk/ast/expression_node.h>
+#include "tuple_node.h"
 #include "targets/basic_ast_visitor.h"
 
 namespace og {
@@ -18,7 +18,7 @@ namespace og {
    */
   class function_call_node: public cdk::expression_node {
     std::string _identifier;
-    cdk::sequence_node *_arguments;
+    tuple_node *_arguments;
 
   public:
     /**
@@ -29,12 +29,12 @@ namespace og {
     function_call_node(int lineno, const std::string &identifier) :
         cdk::expression_node(lineno),
         _identifier(identifier),
-        _arguments(new cdk::sequence_node(lineno)) {}
+        _arguments(new tuple_node(lineno)) {}
 
     /**
      * Constructor for a function call with arguments.
      */
-    function_call_node(int lineno, const std::string &identifier, cdk::sequence_node *arguments) :
+    function_call_node(int lineno, const std::string &identifier, tuple_node *arguments) :
         cdk::expression_node(lineno),
         _identifier(identifier),
         _arguments(arguments) {}
@@ -43,7 +43,7 @@ namespace og {
     const std::string &identifier() {
       return _identifier;
     }
-    cdk::sequence_node *arguments() {
+    tuple_node *arguments() {
       return _arguments;
     }
 
