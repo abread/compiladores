@@ -260,3 +260,7 @@ void og::xml_writer::do_if_else_node(og::if_else_node * const node, int lvl) {
   closeTag("else", lvl + 2);
   closeTag(node, lvl);
 }
+
+void og::xml_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
+  // TODO
+}
