@@ -219,12 +219,13 @@ void og::postfix_writer::do_assignment_node(cdk::assignment_node * const node, i
 
 //---------------------------------------------------------------------------
 
-void og::postfix_writer::do_program_node(og::program_node * const node, int lvl) {
+void og::postfix_writer::do_function_definition_node(og::function_definition_node * const node, int lvl) {
+  // TODO: adapt into definition
   // Note that Simple doesn't have functions. Thus, it doesn't need
   // a function node. However, it must start in the main function.
   // The ProgramNode (representing the whole program) doubles as a
   // main function node.
-
+#if 0
   // generate the main function (RTS mandates that its name be "_main")
   _pf.TEXT();
   _pf.ALIGN();
@@ -232,7 +233,7 @@ void og::postfix_writer::do_program_node(og::program_node * const node, int lvl)
   _pf.LABEL("_main");
   _pf.ENTER(0);  // Simple doesn't implement local variables
 
-  node->statements()->accept(this, lvl);
+  node->block()->accept(this, lvl);
 
   // end the main function
   _pf.INT(0);
@@ -245,6 +246,19 @@ void og::postfix_writer::do_program_node(og::program_node * const node, int lvl)
   _pf.EXTERN("printi");
   _pf.EXTERN("prints");
   _pf.EXTERN("println");
+#endif
+}
+
+//---------------------------------------------------------------------------
+
+void og::postfix_writer::do_function_call_node(og::function_call_node *const node, int lvl) {
+  // TODO
+}
+
+//---------------------------------------------------------------------------
+
+void og::postfix_writer::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
+  // TODO
 }
 
 //---------------------------------------------------------------------------
