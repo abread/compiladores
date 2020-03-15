@@ -88,6 +88,14 @@ void og::type_checker::do_string_node(cdk::string_node *const node, int lvl) {
   node->type(cdk::make_primitive_type(4, cdk::TYPE_STRING));
 }
 
+void og::type_checker::do_nullptr_node(og::nullptr_node * const node, int lvl) {
+  ASSERT_UNSPEC;
+  // TODO
+#if 0
+  node->type(new basic_type(4, basic_type::TYPE_POINTER));
+#endif
+}
+
 //---------------------------------------------------------------------------
 
 void og::type_checker::processUnaryExpression(cdk::unary_operation_node *const node, int lvl) {
@@ -227,6 +235,22 @@ void og::type_checker::do_write_node(og::write_node *const node, int lvl) {
 
 void og::type_checker::do_input_node(og::input_node *const node, int lvl) {
   // TODO: refactor into expression
+}
+
+//---------------------------------------------------------------------------
+
+
+void og::type_checker::do_address_of_node(og::address_of_node * const node, int lvl) {
+  // TODO
+#if 0
+  ASSERT_UNSPEC;
+  node->lvalue()->accept(this, lvl + 2);
+  if (node->lvalue()->type()->name() == basic_type::TYPE_DOUBLE) {
+    node->type(new basic_type(4, basic_type::TYPE_POINTER));
+  } else {
+    throw std::string("wrong type in unary logical expression");
+  }
+#endif
 }
 
 //---------------------------------------------------------------------------

@@ -1,7 +1,9 @@
 #ifndef __OG_AST_EVALUATION_NODE_H__
 #define __OG_AST_EVALUATION_NODE_H__
 
+#include <cdk/ast/basic_node.h>
 #include <cdk/ast/expression_node.h>
+#include "targets/basic_ast_visitor.h"
 
 namespace og {
 
