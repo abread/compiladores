@@ -172,6 +172,24 @@ void og::type_checker::do_variable_node(cdk::variable_node *const node, int lvl)
   }
 }
 
+void og::type_checker::do_pointer_index_node(og::pointer_index_node * const node, int lvl) {
+  ASSERT_UNSPEC;
+  // TODO
+#if 0
+  if (node->base()) {
+    node->base()->accept(this, lvl + 2);
+    if (node->base()->type()->name() != basic_type::TYPE_POINTER) throw std::string(
+        "pointer expression expected in index left-value");
+  } else {
+    if (_function->type()->name() != basic_type::TYPE_POINTER) throw std::string(
+        "return pointer expression expected in index left-value");
+  }
+  node->index()->accept(this, lvl + 2);
+  if (node->index()->type()->name() != basic_type::TYPE_INT) throw std::string("integer expression expected in left-value index");
+  node->type(new basic_type(8, basic_type::TYPE_DOUBLE));
+#endif
+}
+
 void og::type_checker::do_rvalue_node(cdk::rvalue_node *const node, int lvl) {
   ASSERT_UNSPEC;
   try {

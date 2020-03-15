@@ -161,6 +161,26 @@ void og::postfix_writer::do_variable_node(cdk::variable_node * const node, int l
   _pf.ADDR(node->name());
 }
 
+void og::postfix_writer::do_pointer_index_node(og::pointer_index_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+  // TODO
+#if 0
+  if (node->base()) {
+    node->base()->accept(this, lvl);
+  } else {
+    if (_function) {
+      _pf.LOCV(-_function->type()->size());
+    } else {
+      std::cerr << "FATAL: " << node->lineno() << ": trying to use return value outside function" << std::endl;
+    }
+  }
+  node->index()->accept(this, lvl);
+  _pf.INT(3);
+  _pf.SHTL();
+  _pf.ADD(); // add pointer and index
+#endif
+}
+
 void og::postfix_writer::do_rvalue_node(cdk::rvalue_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->lvalue()->accept(this, lvl);
