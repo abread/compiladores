@@ -149,6 +149,15 @@ void og::xml_writer::do_block_node(og::block_node * const node, int lvl) {
   closeTag(node, lvl);
 }
 
+void og::xml_writer::do_nullptr_node(og::nullptr_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+  //TODO
+#if 0
+  openTag(node, lvl);
+  closeTag(node, lvl);
+#endif
+}
+
 void og::xml_writer::do_write_node(og::write_node * const node, int lvl) {
   // TODO: handle newline flag
   ASSERT_SAFE_EXPRESSIONS;

@@ -132,6 +132,20 @@ void og::postfix_writer::do_eq_node(cdk::eq_node * const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
+void og::postfix_writer::do_nullptr_node(og::nullptr_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS; // a pointer is a 32-bit integer
+  // TODO
+#if 0
+  if (_inFunctionBody) {
+    _pf.INT(0);
+  } else {
+    _pf.SINT(0);
+  }
+#endif
+}
+
+//---------------------------------------------------------------------------
+
 void og::postfix_writer::do_variable_node(cdk::variable_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   // simplified generation: all variables are global
