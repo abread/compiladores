@@ -132,6 +132,15 @@ void og::postfix_writer::do_eq_node(cdk::eq_node * const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
+void og::postfix_writer::do_address_of_node(og::address_of_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+  // TODO
+#if 0
+  // since the argument is an lvalue, it is already an address
+  node->lvalue()->accept(this, lvl + 2);
+#endif
+}
+
 void og::postfix_writer::do_nullptr_node(og::nullptr_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS; // a pointer is a 32-bit integer
   // TODO
