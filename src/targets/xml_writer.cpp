@@ -302,6 +302,10 @@ void og::xml_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
   // TODO
 }
 
+void og::xml_writer::do_variable_declaration_node(og::variable_declaration_node *const node, int lvl) {
+  // TODO
+}
+
 void og::xml_writer::do_tuple_index_node(og::tuple_index_node *const node, int lvl) {
   // TODO
 }
