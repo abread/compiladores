@@ -223,8 +223,17 @@ void og::type_checker::do_assignment_node(cdk::assignment_node *const node, int 
 
 //---------------------------------------------------------------------------
 
-void og::type_checker::do_program_node(og::program_node *const node, int lvl) {
-  // EMPTY
+void og::type_checker::do_function_definition_node(og::function_definition_node *const node, int lvl) {
+  // TODO
+}
+
+
+void og::type_checker::do_function_call_node(og::function_call_node *const node, int lvl) {
+  // TODO
+}
+
+void og::type_checker::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
+  // TODO
 }
 
 void og::type_checker::do_evaluation_node(og::evaluation_node *const node, int lvl) {
@@ -308,5 +317,9 @@ void og::type_checker::do_tuple_node(og::tuple_node *const node, int lvl) {
 }
 
 void og::type_checker::do_variable_declaration_node(og::variable_declaration_node *const node, int lvl) {
+  // TODO
+}
+
+void og::type_checker::do_tuple_index_node(og::tuple_index_node *const node, int lvl) {
   // TODO
 }

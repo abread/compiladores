@@ -127,10 +127,22 @@ void og::xml_writer::do_assignment_node(cdk::assignment_node * const node, int l
 
 //---------------------------------------------------------------------------
 
-void og::xml_writer::do_program_node(og::program_node * const node, int lvl) {
+void og::xml_writer::do_function_definition_node(og::function_definition_node * const node, int lvl) {
   openTag(node, lvl);
-  node->statements()->accept(this, lvl + 4);
+  node->block()->accept(this, lvl + 4);
   closeTag(node, lvl);
+}
+
+//---------------------------------------------------------------------------
+
+void og::xml_writer::do_function_call_node(og::function_call_node *const node, int lvl) {
+  // TODO
+}
+
+//---------------------------------------------------------------------------
+
+void og::xml_writer::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
+  // TODO
 }
 
 //---------------------------------------------------------------------------
@@ -291,5 +303,9 @@ void og::xml_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
 }
 
 void og::xml_writer::do_variable_declaration_node(og::variable_declaration_node *const node, int lvl) {
+  // TODO
+}
+
+void og::xml_writer::do_tuple_index_node(og::tuple_index_node *const node, int lvl) {
   // TODO
 }
