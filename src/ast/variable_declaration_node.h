@@ -11,12 +11,17 @@ namespace og {
   // not really an expression, but is has type...
   class variable_declaration_node: public cdk::basic_node {
     int _qualifier;
-    cdk::basic_type *_varType;
+    cdk::primitive_type _varType;
     cdk::sequence_node *_identifiers;
     tuple_node *_initializer;
 
   public:
-    variable_declaration_node(int lineno, int qualifier, cdk::basic_type *varType, cdk::sequence_node *identifiers, tuple_node *initializer) :
+    variable_declaration_node(int lineno, int qualifier, cdk::sequence_node *identifiers, tuple_node *initializer) :
+        cdk::basic_node(lineno),
+        _qualifier(qualifier),
+        _identifiers(identifiers),
+        _initializer(initializer) {}
+    variable_declaration_node(int lineno, int qualifier, cdk::primitive_type varType, cdk::sequence_node *identifiers, tuple_node *initializer) :
         cdk::basic_node(lineno),
         _qualifier(qualifier),
         _varType(varType),
@@ -27,7 +32,7 @@ namespace og {
     int qualifier() {
       return _qualifier;
     }
-    cdk::basic_type *varType() {
+    cdk::primitive_type &varType() {
       return _varType;
     }
     cdk::sequence_node *identifiers() {
