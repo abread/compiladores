@@ -11,8 +11,8 @@ $(LANGUAGE): src/$(LANGUAGE) .PHONY
 	ln -sf src/$(LANGUAGE) .
 
 src/$(LANGUAGE): build-cdk build-rts .PHONY
-	#$(MAKE) -C src $(MAKEOPTS) ast/all.h ast/visitor_decls.h # to work with multiple jobs
-	$(MAKE) -C src $(MAKEOPTS) ast/all.h ast/visitor_decls.h all
+	$(MAKE) -C src $(MAKEOPTS) depend
+	$(MAKE) -C src $(MAKEOPTS) all
 
 examples: $(LANGUAGE) .PHONY
 	$(MAKE) -C examples $(MAKEOPTS) all

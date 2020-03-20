@@ -13,6 +13,7 @@ src_cvs
 src/ast/all.h
 src/ast/visitor_decls.h
 src/og
+src/.makedepend
 *.output
 *.tab.c
 *.tab.h
