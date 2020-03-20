@@ -35,37 +35,39 @@ OFILES  = $(SRC_CPP:%.cpp=%.o)
 #                DO NOT CHANGE AFTER THIS LINE
 #---------------------------------------------------------------
 
-all: ast/all.h ast/visitor_decls.h $(COMPILER)
+all: $(COMPILER)
 
-%.tab.o:: %.tab.c
+%.tab.o: %.tab.c
 	$(CXX) $(CXXFLAGS) -DYYDEBUG -c $< -o $@
 
-%.o:: %.c
+%.o: %.c
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-%.o:: %.cpp
+%.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-%.tab.c:: %.y
-	$(YACC) -dtv -b $* $<
-
-%.tab.h:: %.y
+%.tab.h %.tab.c: %.y
 	$(YACC) -dtv -b $* $<
 
 $(L_NAME).cpp: $(L_NAME).l
 	$(LEX) $(LFLAGS) $<
 
-$(Y_NAME).tab.c: $(Y_NAME).y
-$(Y_NAME).tab.h: $(Y_NAME).y
-
 # this is needed to force byacc to run
 $(L_NAME).o: $(L_NAME).cpp $(Y_NAME).tab.h
 
-ast/all.h: $(AST_HEADERS)
+ast/all.h:
 	$(CDK_BIN_DIR)/mk-node-decls.pl $(LANGUAGE) > $@
 
-ast/visitor_decls.h: $(AST_HEADERS)
+ast/visitor_decls.h:
 	$(CDK_BIN_DIR)/mk-visitor-decls.pl $(LANGUAGE) > $@
+
+# force ast/{all,visitor_decls}.h to be generated before the parser&lexer are built
+$(Y_NAME).tab.o: ast/all.h ast/visitor_decls.h
+$(L_NAME).o: ast/all.h ast/visitor_decls.h
+
+# for ast/{all,visitor_decls.h} to be regenerated when the ast is modified
+ast/all.h: $(AST_HEADERS)
+ast/visitor_decls.h: $(AST_HEADERS)
 
 $(COMPILER): $(L_NAME).o $(Y_NAME).tab.o $(OFILES)
 	$(CXX) -o $@ $^ $(LDFLAGS)
@@ -73,7 +75,7 @@ $(COMPILER): $(L_NAME).o $(Y_NAME).tab.o $(OFILES)
 clean:
 	$(RM) ast/all.h ast/visitor_decls.h *.tab.[ch] *.o $(OFILES) $(L_NAME).cpp $(Y_NAME).output $(COMPILER)
 
-depend: ast/all.h
+depend: ast/all.h ast/visitor_decls.h
 	$(CXX) $(CXXFLAGS) -MM $(SRC_CPP) > .makedeps
 
 -include .makedeps
