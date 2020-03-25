@@ -323,3 +323,7 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
 void og::type_checker::do_tuple_index_node(og::tuple_index_node *const node, int lvl) {
   // TODO
 }
+
+void og::type_checker::do_sizeof_node(og::sizeof_node *const node, int lvl) {
+  // TODO
+}
