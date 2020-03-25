@@ -1,43 +1,47 @@
 #ifndef __OG_AST_VARIABLE_DECLARATION_H__
 #define __OG_AST_VARIABLE_DECLARATION_H__
 
-#include <cdk/ast/basic_node.h>
-#include <cdk/types/basic_type.h>
-#include "ast/tuple_node.h"
+#include <vector>
+#include <string>
+#include <cdk/ast/typed_node.h>
+#include <cdk/ast/expression_node.h>
 
 namespace og {
 
-  // not really an expression, but is has type...
-  class variable_declaration_node: public cdk::basic_node {
+  class variable_declaration_node: public cdk::typed_node {
     int _qualifier;
-    cdk::primitive_type _varType;
-    cdk::sequence_node *_identifiers;
-    tuple_node *_initializer;
+    std::vector<std::string> _identifiers;
+    cdk::expression_node *_initializer;
 
   public:
-    variable_declaration_node(int lineno, int qualifier, cdk::sequence_node *identifiers, tuple_node *initializer) :
-        cdk::basic_node(lineno),
-        _qualifier(qualifier),
-        _identifiers(identifiers),
-        _initializer(initializer) {}
-    variable_declaration_node(int lineno, int qualifier, cdk::primitive_type varType, cdk::sequence_node *identifiers, tuple_node *initializer) :
-        cdk::basic_node(lineno),
-        _qualifier(qualifier),
-        _varType(varType),
-        _identifiers(identifiers),
-        _initializer(initializer) {}
+    variable_declaration_node(int lineno, int qualifier, std::string id) :
+      cdk::typed_node(lineno),
+      _qualifier(qualifier),
+      _identifiers(),
+      _initializer(nullptr) {
+        _identifiers.push_back(id);
+      }
+    variable_declaration_node(variable_declaration_node *old, std::string id) :
+      cdk::typed_node(old->lineno()),
+      _qualifier(old->qualifier()),
+      _identifiers(old->identifiers()),
+      _initializer(old->initializer()) {
+        _identifiers.push_back(id);
+      }
+    variable_declaration_node(variable_declaration_node *old, cdk::expression_node* initializer) :
+      cdk::typed_node(old->lineno()),
+      _qualifier(old->qualifier()),
+      _identifiers(old->identifiers()),
+      _initializer(initializer) {}
 
   public:
     int qualifier() {
       return _qualifier;
     }
-    cdk::primitive_type &varType() {
-      return _varType;
-    }
-    cdk::sequence_node *identifiers() {
+    std::vector<std::string> &identifiers() {
       return _identifiers;
     }
-    tuple_node *initializer() {
+    cdk::expression_node *initializer() {
       return _initializer;
     }
 
