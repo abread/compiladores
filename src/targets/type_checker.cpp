@@ -327,3 +327,7 @@ void og::type_checker::do_tuple_index_node(og::tuple_index_node *const node, int
 void og::type_checker::do_sizeof_node(og::sizeof_node *const node, int lvl) {
   // TODO
 }
+
+void og::type_checker::do_identity_node(og::identity_node *const node, int lvl) {
+  // TODO
+}

@@ -313,3 +313,7 @@ void og::xml_writer::do_tuple_index_node(og::tuple_index_node *const node, int l
 void og::xml_writer::do_sizeof_node(og::sizeof_node *const node, int lvl) {
   // TODO
 }
+
+void og::xml_writer::do_identity_node(og::identity_node *const node, int lvl) {
+  // TODO
+}
