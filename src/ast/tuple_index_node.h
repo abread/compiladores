@@ -8,16 +8,16 @@
 namespace og {
 
   class tuple_index_node: public cdk::lvalue_node {
-    cdk::lvalue_node *_base;
+    cdk::expression_node *_base;
     cdk::integer_node *_index;
 
   public:
-    tuple_index_node(int lineno, cdk::lvalue_node *base, cdk::integer_node *index) :
+    tuple_index_node(int lineno, cdk::expression_node *base, cdk::integer_node *index) :
         cdk::lvalue_node(lineno), _base(base), _index(index) {
     }
 
   public:
-    cdk::lvalue_node *base() {
+    cdk::expression_node *base() {
       return _base;
     }
     cdk::expression_node *index() {
