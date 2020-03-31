@@ -11,37 +11,61 @@
 // don't change this
 #define yyerror LexerError
 %}
-%x X_STRING
+%x X_STRING X_COMMENT
 %%
 
 "//".*                 ; /* ignore comments */
+
+"/*"                   yy_push_state(X_COMMENT);
+<X_COMMENT>"*/"        yy_pop_state();
+<X_COMMENT>"/*"        yy_push_state();
+<X_COMMENT>.|\n         ; /* ignore comments */
 
 ">="                   return tGE;
 "<="                   return tLE;
 "=="                   return tEQ;
 "!="                   return tNE;
 
+"&&"                   return tAND;
+"||"                   return tOR;
+
+"auto"                 return tAUTO;
+"int"                  return tINT;
+"real"                 return tREAL;
+"string"               return tSTRING;
+"ptr"                  return tPTR;
+"public"               return tPUBLIC;
+"require"              return tREQUIRE;
+"sizeof"               return tSIZEOF;
+"input"                return tINPUT;
+"nullptr"              return tNULLPTR;
+"procedure"            return tPROCEDURE;
+"break"                return tBREAK;
+"continue"             return tCONTINUE;
+"return"               return tRETURN;
+"if"                   return tIF;
+"then"                 return tTHEN;
+"elif"                 return tELIF;
+"else"                 return tELSE;
 "for"                  return tFOR;
 "do"                   return tDO;
-"if"                   return tIF;
-"else"                 return tELSE;
 "write"                return tWRITE;
 "writeln"              return tWRITELN;
-"input"                return tINPUT;
-"begin"                return tBEGIN;
-"end"                  return tEND;
 
 [A-Za-z][A-Za-z0-9_]*  yylval.s = new std::string(yytext); return tIDENTIFIER;
 
-\'                     yy_push_state(X_STRING); yylval.s = new std::string("");
-<X_STRING>\'           yy_pop_state(); return tSTRING;
-<X_STRING>\\\'         *yylval.s += yytext + 1;
+\"                     yy_push_state(X_STRING); yylval.s = new std::string("");
+<X_STRING>\"           yy_pop_state(); return tSTRING;
+<X_STRING>\\\"         *yylval.s += yytext + 1;
 <X_STRING>.            *yylval.s += yytext;
 <X_STRING>\n           yyerror("newline in string");
 
-[0-9]+                 yylval.i = strtol(yytext, nullptr, 10); return tINTEGER;
 
-[-()<>=+*/%;{}.]       return *yytext;
+[0-9]+                                             yylval.i = strtol(yytext, nullptr, 10); return tINTEGER;
+0x[0-9]+                                           yylval.i = strtol(yytext, nullptr, 16); return tINTEGER;
+([0-9]*\.[0-9]+|[0-9]+\.[0-9])([Ee]([-+])?[0-9]+)? yylval.i = strtod(yytext, nullptr, 10); return tREAL; //check meee
+
+[-()<>=+*/%;{}.~?\[\]] return *yytext;
 
 [ \t\n]+               ; /* ignore whitespace */
 
