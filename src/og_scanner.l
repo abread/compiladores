@@ -65,7 +65,7 @@
 0x[0-9]+                                           yylval.i = strtol(yytext, nullptr, 16); return tINTEGER;
 ([0-9]*\.[0-9]+|[0-9]+\.[0-9])([Ee]([-+])?[0-9]+)? yylval.i = strtod(yytext, nullptr, 10); return tREAL; //check meee
 
-[-()<>=+*/%;{}.~?\[\]] return *yytext;
+[-()<>=+*/%;{}.~?\[\],] return *yytext;
 
 [ \t\n]+               ; /* ignore whitespace */
 
