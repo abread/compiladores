@@ -57,6 +57,7 @@
 \"                     yy_push_state(X_STRING); yylval.s = new std::string("");
 <X_STRING>\"           yy_pop_state(); return tSTRING;
 <X_STRING>\\\"         *yylval.s += yytext + 1;
+<X_STRING>\\\\         *yylval.s += yytext + 1;
 <X_STRING>.            *yylval.s += yytext;
 <X_STRING>\n           yyerror("newline in string");
 
