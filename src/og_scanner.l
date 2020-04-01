@@ -62,9 +62,11 @@
 <X_STRING>\n           yyerror("newline in string");
 
 
-[0-9]+                                             yylval.i = strtol(yytext, nullptr, 10); return tINTEGER;
-0x[0-9]+                                           yylval.i = strtol(yytext, nullptr, 16); return tINTEGER;
-([0-9]*\.[0-9]+|[0-9]+\.[0-9])([Ee]([-+])?[0-9]+)? yylval.i = strtod(yytext, nullptr, 10); return tREAL; //check meee
+[0-9]+                               yylval.i = strtol(yytext, NULL, 10); return tINTEGER;
+0x[0-9]+                             yylval.i = strtol(yytext, NULL, 16); return tINTEGER;
+[0-9]*\.[0-9]+([Ee][-+]?[0-9]+)?     yylval.d = strtod(yytext, NULL); return tREAL;
+[0-9]+\.[0-9]*([Ee][-+]?[0-9]+)?     yylval.d = strtod(yytext, NULL); return tREAL;
+[0-9]+([Ee][-+]?[0-9]+)              yylval.d = strtod(yytext, NULL); return tREAL;
 
 [-()<>=+*/%;{}.~?\[\],] return *yytext;
 
