@@ -30,6 +30,7 @@
 %token tPROCEDURE tBREAK tCONTINUE tRETURN
 %token tINPUT tSIZEOF
 
+%nonassoc tIFX
 %nonassoc tIF
 %nonassoc tELIF
 %nonassoc tELSE
