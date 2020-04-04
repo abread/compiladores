@@ -67,48 +67,44 @@ var : tTYPE          tIDENTIFIER
     |          tAUTO identifiers '=' exprs
     | tPUBLIC  tAUTO identifiers '=' exprs
 
-fun :          tTYPE tIDENTIFIER '(' vars ')'
+fun :          tTYPE tIDENTIFIER '('      ')'
+    |          tTYPE tIDENTIFIER '('      ')' blk
     |          tTYPE tIDENTIFIER '(' vars ')'
-    | tPUBLIC  tTYPE tIDENTIFIER '(' vars ')'
-    | tPUBLIC  tAUTO tIDENTIFIER '(' vars ')'
-    | tREQUIRE tTYPE tIDENTIFIER '(' vars ')'
-    | tREQUIRE tAUTO tIDENTIFIER '(' vars ')'
-    |          tTYPE tIDENTIFIER '('      ')'
-    |          tTYPE tIDENTIFIER '('      ')'
+    |          tTYPE tIDENTIFIER '(' vars ')' blk
+    |          tAUTO tIDENTIFIER '('      ')'
+    |          tAUTO tIDENTIFIER '('      ')' blk
+    |          tAUTO tIDENTIFIER '(' vars ')'
+    |          tAUTO tIDENTIFIER '(' vars ')' blk
     | tPUBLIC  tTYPE tIDENTIFIER '('      ')'
-    | tPUBLIC  tAUTO tIDENTIFIER '('      ')'
-    | tREQUIRE tTYPE tIDENTIFIER '('      ')'
-    | tREQUIRE tAUTO tIDENTIFIER '('      ')'
-    |          tTYPE tIDENTIFIER '(' vars ')' blk
-    |          tTYPE tIDENTIFIER '(' vars ')' blk
-    | tPUBLIC  tTYPE tIDENTIFIER '(' vars ')' blk
-    | tPUBLIC  tAUTO tIDENTIFIER '(' vars ')' blk
-    | tREQUIRE tTYPE tIDENTIFIER '(' vars ')' blk
-    | tREQUIRE tAUTO tIDENTIFIER '(' vars ')' blk
-    |          tTYPE tIDENTIFIER '('      ')' blk
-    |          tTYPE tIDENTIFIER '('      ')' blk
     | tPUBLIC  tTYPE tIDENTIFIER '('      ')' blk
+    | tPUBLIC  tTYPE tIDENTIFIER '(' vars ')'
+    | tPUBLIC  tTYPE tIDENTIFIER '(' vars ')' blk
+    | tPUBLIC  tAUTO tIDENTIFIER '('      ')'
     | tPUBLIC  tAUTO tIDENTIFIER '('      ')' blk
+    | tPUBLIC  tAUTO tIDENTIFIER '(' vars ')'
+    | tPUBLIC  tAUTO tIDENTIFIER '(' vars ')' blk
+    | tREQUIRE tTYPE tIDENTIFIER '('      ')'
     | tREQUIRE tTYPE tIDENTIFIER '('      ')' blk
+    | tREQUIRE tTYPE tIDENTIFIER '(' vars ')'
+    | tREQUIRE tTYPE tIDENTIFIER '(' vars ')' blk
+    | tREQUIRE tAUTO tIDENTIFIER '('      ')'
     | tREQUIRE tAUTO tIDENTIFIER '('      ')' blk
+    | tREQUIRE tAUTO tIDENTIFIER '(' vars ')'
+    | tREQUIRE tAUTO tIDENTIFIER '(' vars ')' blk
 
 
-proc : tPROCEDURE tIDENTIFIER '(' vars ')'
-     | tPROCEDURE tIDENTIFIER '(' vars ')'
-     | tPUBLIC tPROCEDURE tIDENTIFIER '(' vars ')'
+proc :          tPROCEDURE tIDENTIFIER '('      ')'
+     |          tPROCEDURE tIDENTIFIER '('      ')' blk
+     |          tPROCEDURE tIDENTIFIER '(' vars ')'
+     |          tPROCEDURE tIDENTIFIER '(' vars ')' blk
+     | tPUBLIC  tPROCEDURE tIDENTIFIER '('      ')'
+     | tPUBLIC  tPROCEDURE tIDENTIFIER '('      ')' blk
+     | tPUBLIC  tPROCEDURE tIDENTIFIER '(' vars ')'
+     | tPUBLIC  tPROCEDURE tIDENTIFIER '(' vars ')' blk
+     | tREQUIRE tPROCEDURE tIDENTIFIER '('      ')'
+     | tREQUIRE tPROCEDURE tIDENTIFIER '('      ')' blk
      | tREQUIRE tPROCEDURE tIDENTIFIER '(' vars ')'
-     | tPROCEDURE tIDENTIFIER '(' ')'
-     | tPROCEDURE tIDENTIFIER '(' ')'
-     | tPUBLIC tPROCEDURE tIDENTIFIER '(' ')'
-     | tREQUIRE tPROCEDURE tIDENTIFIER '(' ')'
-     | tPROCEDURE tIDENTIFIER '(' vars ')' blk
-     | tPROCEDURE tIDENTIFIER '(' vars ')' blk
-     | tPUBLIC tPROCEDURE tIDENTIFIER '(' vars ')' blk
      | tREQUIRE tPROCEDURE tIDENTIFIER '(' vars ')' blk
-     | tPROCEDURE tIDENTIFIER '(' ')' blk
-     | tPROCEDURE tIDENTIFIER '(' ')' blk
-     | tPUBLIC tPROCEDURE tIDENTIFIER '(' ')' blk
-     | tREQUIRE tPROCEDURE tIDENTIFIER '(' ')' blk
 
 identifiers : tIDENTIFIER
             | identifiers ',' tIDENTIFIER
@@ -117,11 +113,11 @@ identifiers : tIDENTIFIER
 vars : var
      | vars ',' var
 
-type : int
-     | real
-     | string
-     | tPTR '<' type  '>'
-     | tPTR '<' tAUTO '>'
+type : tINTD
+     | tREALD
+     | tSTRINGD
+     | tPTR    '<' type  '>'
+     | tPTR    '<' tAUTO '>'
 
 block : '{' decls instrs '}'
       | '{'       instrs '}'
@@ -134,7 +130,7 @@ instr : expr ';'
       | tBREAK
       | tCONTINUE
       | tRETURN
-      | tRETURN  expres ';'
+      | tRETURN  exprs ';'
       | cond_instr
       | iter_instr
       | block
