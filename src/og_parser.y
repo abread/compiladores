@@ -41,8 +41,8 @@
 %left '*' '/' '%'
 %nonassoc tUNARY
 
-%type <node> stmt
-%type <sequence> list exprs
+%type <node> instr
+%type <sequence> instrs exprs
 %type <expression> expr
 %type <lvalue> lval
 %type <block> block
@@ -138,16 +138,16 @@ instrs : instr
        | instrs instr
        ;
 
-instr : expr ';'
-      | tWRITE   exprs ';'
-      | tWRITELN exprs ';'
-      | tBREAK
-      | tCONTINUE
-      | tRETURN
-      | tRETURN  exprs ';'
-      | cond_instr
-      | iter_instr
-      | block
+instr : expr ';'                   { $$ = new og::evaluation_node(LINE, $1); }
+      | tWRITE   exprs ';'         { $$ = new og::write_node(LINE, $2); }
+      | tWRITELN exprs ';'         { $$ = new og::write_node(LINE, $2, true); }
+      | tBREAK                     { $$ = new og::break_node(LINE); }
+      | tCONTINUE                  { $$ = new og::continue_node(LINE);}
+      | tRETURN                    { $$ = new og::return_node(LINE); }
+      | tRETURN  exprs ';'         { $$ = new og::return_node(LINE, $2); }
+      | cond_instr                 { $$ = $1; }
+      | iter_instr                 { $$ = $1; }
+      | block                      { $$ = $1; }
       ;
 
 cond_instr : tIF expr THEN instr
@@ -180,6 +180,7 @@ exprs : expr         { $$ = new cdk::sequence_node(LINE, $1); }
 expr : integer                 { $$ = new cdk::integer_node(LINE, $1); }
      | real                    { $$ = new cdk::double_node(LINE, $1);  }
      | string                  { $$ = new cdk::string_node(LINE, $1);  }
+     | tNULLPTR                { $$ = new cdk::nullptr_node(LINE);     }
      | '+' expr %prec tUNARY   { $$ = new og::identity_node(LINE, $2); }
      | '-' expr %prec tUNARY   { $$ = new cdk::neg_node(LINE, $2);     }
      | expr '+' expr           { $$ = new cdk::add_node(LINE, $1, $3); }
@@ -198,7 +199,8 @@ expr : integer                 { $$ = new cdk::integer_node(LINE, $1); }
      | '(' expr ')'            { $$ = $2; }
      | lval                    { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME
      | lval '=' expr           { $$ = new cdk::assignment_node(LINE, $1, $3); }
-     | tINPUT '(' lval ')'
+     | tINPUT  '(' lval  ')'   { $$ = new og::input_node(LINE); }
+     | tSIZEOF '(' exprs ')'   { $$ = new og::sizeof_node(LINE, $3); }
      ;
 
 lval :      tIDENTIFIER        { $$ = new cdk::variable_node(LINE, $1); }
