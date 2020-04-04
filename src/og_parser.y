@@ -22,7 +22,7 @@
   og::block_node       *blk;
 };
 
-%token <i> tINTEGER
+%token <i> tINT
 %token <d> tDOUBLE
 %token <s> tIDENTIFIER tSTRING
 %token tFOR tDO tIF tTHEN tELIF tELSE tWRITE tWRITELN tPUBLIC tREQUIRE
@@ -69,7 +69,7 @@ stmt : expr ';'                         { $$ = new og::evaluation_node(LINE, $1)
      | '{' list '}'                     { $$ = $2; }
      ;
 
-expr : tINTEGER                { $$ = new cdk::integer_node(LINE, $1); }
+expr : tINT                      { $$ = new cdk::integer_node(LINE, $1); }
 	   | tSTRING                 { $$ = new cdk::string_node(LINE, $1); }
      | '-' expr %prec tUNARY   { $$ = new cdk::neg_node(LINE, $2); }
      | tINPUT                    { $$ = new og::input_node(LINE); }
