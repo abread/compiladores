@@ -3,7 +3,7 @@
 
 #include <string>
 #include <memory>
-#include <cdk/ast/basic_node.h>
+#include <cdk/ast/typed_node.h>
 #include <cdk/ast/sequence_node.h>
 #include "ast/block_node.h"
 
