@@ -47,15 +47,12 @@
 %type <lvalue> lval
 %type <block> block
 
-%{
-//-- The rules below will be included in yyparse, the main parsing function.
-%}
 %%
 
 file : decls        { $$ = decl.value}
      ;
 
-decls : decl
+decls :       decl
       | decls decl
 
 
@@ -180,8 +177,9 @@ exprs : expr         { $$ = new cdk::sequence_node(LINE, $1); }
       | exprs ',' expr { $$ = new cdk::sequence_node(LINE, $3, $1); }
       ;
 
-expr : tINTEGER                { $$ = new cdk::integer_node(LINE, $1); }
-     | tSTRING                 { $$ = new cdk::string_node(LINE, $1);  }
+expr : integer                 { $$ = new cdk::integer_node(LINE, $1); }
+     | real                    { $$ = new cdk::double_node(LINE, $1);  }
+     | string                  { $$ = new cdk::string_node(LINE, $1);  }
      | '+' expr %prec tUNARY   { $$ = new og::identity_node(LINE, $2); }
      | '-' expr %prec tUNARY   { $$ = new cdk::neg_node(LINE, $2);     }
      | expr '+' expr           { $$ = new cdk::add_node(LINE, $1, $3); }
@@ -203,10 +201,15 @@ expr : tINTEGER                { $$ = new cdk::integer_node(LINE, $1); }
      | tINPUT '(' lval ')'
      ;
 
-lval :      tIDENTIFIER             { $$ = new cdk::variable_node(LINE, $1); }
-     | type tIDENTIFIER             { $$ = new cdk::variable_node(LINE, $1); }
+lval :      tIDENTIFIER        { $$ = new cdk::variable_node(LINE, $1); }
+     | type tIDENTIFIER        { $$ = new cdk::variable_node(LINE, $1); }
      ;
 
+real    : tREAL                { $$ = new cdk::double_node(LINE, $1);  } ;
+integer : tINTEGER             { $$ = new cdk::integer_node(LINE, $1); } ;
+string  : tSTRING              { $$ = $1} /* string node? */
+        | string tSTRING       { $$ = new std::string(*$1 + *$2) delete $1; $delete $2; }
+        ;
 
 
 // list : stmt         { $$ = new cdk::sequence_node(LINE, $1); }
