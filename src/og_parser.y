@@ -23,7 +23,7 @@
 };
 
 %token <i> tINT
-%token <d> tDOUBLE
+%token <d> tREAL
 %token <s> tIDENTIFIER tSTRING
 %token tFOR tDO tIF tTHEN tELIF tELSE tWRITE tWRITELN tPUBLIC tREQUIRE
 %token tAUTO tINTD tREALD tSTRINGD tPTR tNULLPTR
