@@ -52,20 +52,27 @@
 %}
 %%
 
-file : decl         { $$ = decl.value}
+file : decls        { $$ = decl.value}
+     ;
+
+decls : decl
+      | decls decl
+
 
 decl : var ';'
      | function
      | procedure
+     ;
 
-var : tTYPE          tIDENTIFIER
-    | tTYPE          tIDENTIFIER '=' expr
+var :          tTYPE tIDENTIFIER
+    |          tTYPE tIDENTIFIER '=' expr
     | tPUBLIC  tTYPE tIDENTIFIER 
     | tPUBLIC  tTYPE tIDENTIFIER '=' expr
     | tREQUIRE tTYPE tIDENTIFIER
     | tREQUIRE tTYPE tIDENTIFIER '=' expr
     |          tAUTO identifiers '=' exprs
     | tPUBLIC  tAUTO identifiers '=' exprs
+    ;
 
 fun :          tTYPE tIDENTIFIER '('      ')'
     |          tTYPE tIDENTIFIER '('      ')' blk
@@ -91,6 +98,7 @@ fun :          tTYPE tIDENTIFIER '('      ')'
     | tREQUIRE tAUTO tIDENTIFIER '('      ')' blk
     | tREQUIRE tAUTO tIDENTIFIER '(' vars ')'
     | tREQUIRE tAUTO tIDENTIFIER '(' vars ')' blk
+    ;
 
 
 proc :          tPROCEDURE tIDENTIFIER '('      ')'
@@ -105,24 +113,33 @@ proc :          tPROCEDURE tIDENTIFIER '('      ')'
      | tREQUIRE tPROCEDURE tIDENTIFIER '('      ')' blk
      | tREQUIRE tPROCEDURE tIDENTIFIER '(' vars ')'
      | tREQUIRE tPROCEDURE tIDENTIFIER '(' vars ')' blk
+     ;
 
 identifiers : tIDENTIFIER
             | identifiers ',' tIDENTIFIER
+            ;
 
 
 vars : var
      | vars ',' var
+     ;
 
 type : tINTD
      | tREALD
      | tSTRINGD
      | tPTR    '<' type  '>'
      | tPTR    '<' tAUTO '>'
+     ;
 
 block : '{' decls instrs '}'
       | '{'       instrs '}'
       | '{' decls        '}'
       | '{'              '}'
+      ;
+
+instrs : instr
+       | instrs instr
+       ;
 
 instr : expr ';'
       | tWRITE   exprs ';'
@@ -134,16 +151,20 @@ instr : expr ';'
       | cond_instr
       | iter_instr
       | block
+      ;
 
 cond_instr : tIF expr THEN instr
            | tIF expr THEN instr tELSE instr
            | tIF expr THEN elif_instrs
            | tIF expr THEN elif_instrs tELSE instr
+           ;
         
 elif_instr : tELIF expr THEN instr
+           ;
 
 elif_instrs : elif_instr
             | elif_instrs elif_instr
+            ;
 
 iter_instr : tFOR vars ';' exprs ';' exprs tDO instr
            | tFOR vars ';' exprs ';'       tDO instr
@@ -153,28 +174,37 @@ iter_instr : tFOR vars ';' exprs ';' exprs tDO instr
            | tFOR      ';' exprs ';'       tDO instr
            | tFOR      ';'       ';' exprs tDO instr
            | tFOR      ';'       ';'       tDO instr
+           ;
+
+exprs : expr         { $$ = new cdk::sequence_node(LINE, $1); }
+      | exprs ',' expr { $$ = new cdk::sequence_node(LINE, $3, $1); }
+      ;
 
 expr : tINTEGER                { $$ = new cdk::integer_node(LINE, $1); }
-     | tSTRING                 { $$ = new cdk::string_node(LINE, $1); }
-     | '-' expr %prec tUNARY   { $$ = new cdk::neg_node(LINE, $2); }
+     | tSTRING                 { $$ = new cdk::string_node(LINE, $1);  }
+     | '+' expr %prec tUNARY   { $$ = new og::identity_node(LINE, $2); }
+     | '-' expr %prec tUNARY   { $$ = new cdk::neg_node(LINE, $2);     }
      | expr '+' expr           { $$ = new cdk::add_node(LINE, $1, $3); }
      | expr '-' expr           { $$ = new cdk::sub_node(LINE, $1, $3); }
      | expr '*' expr           { $$ = new cdk::mul_node(LINE, $1, $3); }
      | expr '/' expr           { $$ = new cdk::div_node(LINE, $1, $3); }
      | expr '%' expr           { $$ = new cdk::mod_node(LINE, $1, $3); }
-     | expr '<' expr           { $$ = new cdk::lt_node(LINE, $1, $3); }
-     | expr '>' expr           { $$ = new cdk::gt_node(LINE, $1, $3); }
-     | expr tGE expr           { $$ = new cdk::ge_node(LINE, $1, $3); }
-     | expr tLE expr           { $$ = new cdk::le_node(LINE, $1, $3); }
-     | expr tNE expr           { $$ = new cdk::ne_node(LINE, $1, $3); }
-     | expr tEQ expr           { $$ = new cdk::eq_node(LINE, $1, $3); }
+     | expr '<' expr           { $$ = new cdk::lt_node(LINE, $1, $3);  }
+     | expr '>' expr           { $$ = new cdk::gt_node(LINE, $1, $3);  }
+     | expr tGE expr           { $$ = new cdk::ge_node(LINE, $1, $3);  }
+     | expr tLE expr           { $$ = new cdk::le_node(LINE, $1, $3);  }
+     | expr tNE expr           { $$ = new cdk::ne_node(LINE, $1, $3);  }
+     | expr tEQ expr           { $$ = new cdk::eq_node(LINE, $1, $3);  }
+     | expr tOR expr           { $$ = new cdk::or_node(LINE, $1, $3);  }
+     | expr tAND expr          { $$ = new cdk::and_node(LINE, $1, $3); }
      | '(' expr ')'            { $$ = $2; }
      | lval                    { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME
      | lval '=' expr           { $$ = new cdk::assignment_node(LINE, $1, $3); }
      | tINPUT '(' lval ')'
      ;
 
-lval : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, $1); }
+lval :      tIDENTIFIER             { $$ = new cdk::variable_node(LINE, $1); }
+     | type tIDENTIFIER             { $$ = new cdk::variable_node(LINE, $1); }
      ;
 
 
@@ -183,9 +213,6 @@ lval : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, $1); }
 //        | list stmt { $$ = new cdk::sequence_node(LINE, $2, $1); }
 //        ;
 
-exprs : expr         { $$ = new cdk::sequence_node(LINE, $1); }
-      | exprs ',' expr { $$ = new cdk::sequence_node(LINE, $3, $1); }
-      ;
 
 // stmt : expr ';'                         { $$ = new og::evaluation_node(LINE, $1); }
 //         | tWRITE expr ';'                  { $$ = new og::write_node(LINE, $2); }
@@ -196,28 +223,5 @@ exprs : expr         { $$ = new cdk::sequence_node(LINE, $1); }
 //      | tIF '(' expr ')' stmt tELSE stmt { $$ = new og::if_else_node(LINE, $3, $5, $7); }
 //      | '{' list '}'                     { $$ = $2; }
 //      ;
-
-expr : tINTEGER                { $$ = new cdk::integer_node(LINE, $1); }
-     | tSTRING                 { $$ = new cdk::string_node(LINE, $1); }
-     | '+' expr %prec tUNARY   { $$ = new og::identity_node(LINE, $2); }
-     | '-' expr %prec tUNARY   { $$ = new cdk::neg_node(LINE, $2); }
-     | expr '+' expr             { $$ = new cdk::add_node(LINE, $1, $3); }
-     | expr '-' expr             { $$ = new cdk::sub_node(LINE, $1, $3); }
-     | expr '*' expr             { $$ = new cdk::mul_node(LINE, $1, $3); }
-     | expr '/' expr             { $$ = new cdk::div_node(LINE, $1, $3); }
-     | expr '%' expr             { $$ = new cdk::mod_node(LINE, $1, $3); }
-     | expr '<' expr             { $$ = new cdk::lt_node(LINE, $1, $3); }
-     | expr '>' expr             { $$ = new cdk::gt_node(LINE, $1, $3); }
-     | expr tGE expr             { $$ = new cdk::ge_node(LINE, $1, $3); }
-     | expr tLE expr           { $$ = new cdk::le_node(LINE, $1, $3); }
-     | expr tNE expr             { $$ = new cdk::ne_node(LINE, $1, $3); }
-     | expr tEQ expr             { $$ = new cdk::eq_node(LINE, $1, $3); }
-     | '(' expr ')'            { $$ = $2; }
-     | lval                    { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME
-     | lval '=' expr           { $$ = new cdk::assignment_node(LINE, $1, $3); }
-     ;
-
-lval : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, $1); }
-     ;
 
 %%
