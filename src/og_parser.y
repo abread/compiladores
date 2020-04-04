@@ -11,9 +11,10 @@
 %}
 
 %union {
-  int                   i;	/* integer value */
-  std::string          *s;	/* symbol name or string literal */
-  cdk::basic_node      *node;	/* node pointer */
+  int                  i; /* integer value */
+  double               double; /* double value */
+  std::string          *s; /* symbol name or string literal */
+  cdk::basic_node      *node; /* node pointer */
   cdk::sequence_node   *sequence;
   cdk::expression_node *expression; /* expression nodes */
   cdk::lvalue_node     *lvalue;
@@ -22,14 +23,19 @@
 };
 
 %token <i> tINTEGER
+%token <d> tDOUBLE
 %token <s> tIDENTIFIER tSTRING
-%token tFOR tIF tWRITE tWRITELN tINPUT tBEGIN tEND tDO
-%token tBREAK tCONTINUE
+%token tFOR tDO tIF tTHEN tELIF tELSE tWRITE tWRITELN
+%token tAUTO tINTD tREALD tSTRINGD tPTR tNULLPTR
+%token tPROCEDURE tBREAK tCONTINUE tRETURN
+%token tINPUT tSIZEOF
 
-%nonassoc tIFX
+%nonassoc tIF
+%nonassoc tELIF
 %nonassoc tELSE
 
 %right '='
+%left tAND tOR
 %left tGE tLE tEQ tNE '>' '<'
 %left '+' '-'
 %left '*' '/' '%'
