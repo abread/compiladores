@@ -3,6 +3,7 @@
 %{
 // make relevant includes before including the parser's tab file
 #include <string>
+#include <cstdlib>
 #include <cdk/ast/sequence_node.h>
 #include <cdk/ast/expression_node.h>
 #include <cdk/ast/lvalue_node.h>
@@ -63,7 +64,7 @@
 
 [0-9]+                                             yylval.i = strtol(yytext, nullptr, 10); return tINT;
 0x[0-9]+                                           yylval.i = strtol(yytext, nullptr, 16); return tINT;
-([0-9]*\.[0-9]+|[0-9]+\.[0-9])([Ee]([-+])?[0-9]+)? yylval.i = strtod(yytext, nullptr, 10); return tREAL; //check meee
+([0-9]*\.[0-9]+|[0-9]+\.[0-9])([Ee]([-+])?[0-9]+)? yylval.d = strtod(yytext, nullptr); return tREAL; //check meee
 
 [-()<>=+*/%;{}.~?\[\]] return *yytext;
 
