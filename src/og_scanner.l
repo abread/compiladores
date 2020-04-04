@@ -30,9 +30,9 @@
 "||"                   return tOR;
 
 "auto"                 return tAUTO;
-"int"                  return tINT;
-"real"                 return tREAL;
-"string"               return tSTRING;
+"int"                  return tINTD;
+"real"                 return tREALD;
+"string"               return tSTRINGD;
 "ptr"                  return tPTR;
 "public"               return tPUBLIC;
 "require"              return tREQUIRE;
