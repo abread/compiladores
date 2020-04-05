@@ -188,7 +188,7 @@ exprs : expr                        { $$ = new cdk::sequence_node(LINE, $1); }
 
 expr : tINT                      { $$ = new cdk::integer_node(LINE, $1); }
      | tREAL                     { $$ = new cdk::double_node(LINE, $1);  }
-     | string                    { $$ = new cdk::string_node(LINE, $1);  }
+     | string                    { $$ = new cdk::string_node(LINE, *$1); delete $1; }
      | tNULLPTR                  { $$ = new og::nullptr_node(LINE);      }
      | '+' expr %prec tUNARY     { $$ = new og::identity_node(LINE, $2); }
      | '-' expr %prec tUNARY     { $$ = new cdk::neg_node(LINE, $2);     }
@@ -216,12 +216,12 @@ expr : tINT                      { $$ = new cdk::integer_node(LINE, $1); }
      | tIDENTIFIER '('       ')' { $$ = new og::function_call_node(LINE, *$1); delete $1; }
      ;
 
-lval : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, $1); }
+lval : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, *$1); delete $1; }
      | lval '[' expr ']'       { $$ = new og::pointer_index_node(LINE, new cdk::rvalue_node(LINE, $1), $3); }
      | lval '@' tINT           { $$ = new og::tuple_index_node(LINE, new cdk::rvalue_node(LINE, $1), $3); }
      ;
 
-string  : tSTRING              { $$ = $1; }
-        | string tSTRING       { $$ = new std::string(*$1 + *$2); delete $1; delete $2; }
-        ;
+string : tSTRING              { $$ = $1; }
+       | string tSTRING       { $$ = new std::string(*$1 + *$2); delete $1; delete $2; }
+       ;
 %%
