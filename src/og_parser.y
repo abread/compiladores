@@ -42,7 +42,7 @@
 %left '*' '/' '%'
 %nonassoc tUNARY
 
-%type <node> instr
+%type <node> instr cond_instr elif
 %type <sequence> instrs exprs
 %type <expression> expr
 %type <lvalue> lval
@@ -151,18 +151,14 @@ instr : expr ';'                   { $$ = new og::evaluation_node(LINE, $1); }
       | block                      { $$ = $1; }
       ;
 
-cond_instr : tIF expr THEN instr
-           | tIF expr THEN instr tELSE instr
-           | tIF expr THEN elif_instrs
-           | tIF expr THEN elif_instrs tELSE instr
+cond_instr : tIF expr tTHEN instr                  { $$ = new og::if_node(LINE, $2, $4); }
+           | tIF expr tTHEN instr elif             { $$ = new og::if_else_node(LINE, $2, $4, $5); }
            ;
 
-elif_instr : tELIF expr THEN instr
-           ;
-
-elif_instrs : elif_instr
-            | elif_instrs elif_instr
-            ;
+elif : tELSE instr                  { $$ = $2; }
+     | tELIF expr tTHEN instr       { $$ = new og::if_node(LINE, $2, $4); }
+     | tELIF expr tTHEN instr elif  { $$ = new og::if_else_node(LINE, $2, $4, $5); }
+     ;
 
 iter_instr : tFOR vars ';' exprs ';' exprs tDO instr
            | tFOR vars ';' exprs ';'       tDO instr
