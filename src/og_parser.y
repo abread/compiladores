@@ -22,6 +22,7 @@
   cdk::basic_type      *t;
 
   og::block_node       *blk;
+  std::vector<std::string> *vstr;
 };
 
 %token <i> tINT
@@ -56,6 +57,7 @@
 %type <lvalue> lval
 %type <blk> block
 %type <t> type auto_t void_t
+%type <vstr> var_idents
 
 %%
 
@@ -71,20 +73,24 @@ decl : var ';' { $$ = $1; }
      | proc    { $$ = $1; }
      ;
 
-var :           type tIDENTIFIER
-    |           type tIDENTIFIER '=' expr
-    | tPUBLIC   type tIDENTIFIER
-    | tPUBLIC   type tIDENTIFIER '=' expr
-    | tREQUIRE  type tIDENTIFIER
-    | tREQUIRE  type tIDENTIFIER '=' expr
-    |          tAUTO identifiers '=' exprs
-    | tPUBLIC  tAUTO identifiers '=' exprs
-    ;
+var_idents  : tIDENTIFIER                { $$ = new std::vector(1, std::string(*$1)); delete $1; }
+            | var_idents ',' tIDENTIFIER { $$ = new std::vector<std::string>(*$1); $$->push_back(*$3); delete $1; delete $3; }
+            ;
 
 /* just shorthands for them to be used as any other type */
 void_t : tPROCEDURE { $$ = new cdk::primitive_type(0, cdk::typename_type::TYPE_VOID); }
 auto_t : tAUTO      { $$ = new cdk::primitive_type(); }
 
+var : tPUBLIC  type tIDENTIFIER            { $$ = new og::variable_declaration_node(LINE, tPUBLIC, $2, *$3); delete $3; }
+    | tREQUIRE type tIDENTIFIER            { $$ = new og::variable_declaration_node(LINE, tREQUIRE, $2, *$3); delete $3; }
+    |          type tIDENTIFIER            { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
+    | tPUBLIC  type tIDENTIFIER  '=' expr  { $$ = new og::variable_declaration_node(LINE, tPUBLIC, $2, *$3, $5); delete $3; }
+    |          type tIDENTIFIER  '=' expr  { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
+    |          auto_t var_idents           { $$ = new og::variable_declaration_node(LINE, tPRIVATE, *$2); delete $2; }
+    | tPUBLIC  auto_t var_idents           { $$ = new og::variable_declaration_node(LINE, tPUBLIC, *$3); delete $3; }
+    |          auto_t var_idents '=' exprs { $$ = new og::variable_declaration_node(LINE, tPRIVATE, *$2, new og::tuple_node(LINE, $4)); delete $2; }
+    | tPUBLIC  auto_t var_idents '=' exprs { $$ = new og::variable_declaration_node(LINE, tPUBLIC, *$3, new og::tuple_node(LINE, $5)); delete $3; }
+    ;
 
 
 func : tPUBLIC  type   tIDENTIFIER '('      ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPUBLIC, $2, *$3); delete $3; }
@@ -113,9 +119,6 @@ func : tPUBLIC  type   tIDENTIFIER '('      ')' %prec tNOBLOCK { $$ = new og::fu
      |          auto_t tIDENTIFIER '(' vars ')' block          { $$ = new og::function_definition_node(LINE, tPRIVATE, $1, *$2, $4, $6); delete $2; }
      ;
 
-identifiers : tIDENTIFIER
-            | identifiers ',' tIDENTIFIER
-            ;
 
 proc : tPUBLIC  void_t tIDENTIFIER '('      ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPUBLIC, $2, *$3); delete $3; }
      | tPUBLIC  void_t tIDENTIFIER '(' vars ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPUBLIC, $2, *$3, $5); delete $3; }
