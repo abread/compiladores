@@ -14,8 +14,8 @@ namespace og {
 
   public:
 
-    void accept(basic_ast_visitor *sp) {
-      sp->do_continue_node(this);
+    void accept(basic_ast_visitor *sp, int level) {
+      sp->do_continue_node(this, level);
     }
 
   };
