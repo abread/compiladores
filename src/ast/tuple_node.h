@@ -10,19 +10,16 @@ namespace og {
    * Class representing a tuple.
    */
   class tuple_node: public cdk::expression_node {
-    cdk::sequence_node _elements;
+    cdk::sequence_node *_elements;
 
   public:
     tuple_node(int lineno) :
-      cdk::expression_node(lineno), _elements(lineno) {}
+      cdk::expression_node(lineno), _elements(new cdk::sequence_node(lineno)) {}
 
-    tuple_node(int lineno, cdk::expression_node* expr) :
-      cdk::expression_node(lineno), _elements(lineno, expr) {}
+    tuple_node(int lineno, cdk::sequence_node* seq) :
+      cdk::expression_node(lineno), _elements(seq) {}
 
-    tuple_node(int lineno, cdk::expression_node* expr, tuple_node* prev) :
-      cdk::expression_node(lineno), _elements(lineno, expr, &prev->elements()) {}
-
-    cdk::sequence_node& elements() {
+    cdk::sequence_node* elements() {
       return _elements;
     }
 

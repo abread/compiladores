@@ -22,7 +22,6 @@
   cdk::basic_type      *t;
 
   og::block_node       *blk;
-  og::tuple_node       *tuple;
 };
 
 %token <i> tINT
@@ -51,8 +50,7 @@
 
 %type <s> string
 %type <node> instr decl cond_instr elif iter_instr var func proc
-%type <sequence> instrs file decls vars
-%type <tuple> exprs
+%type <sequence> instrs file decls vars exprs
 %type <expression> expr
 %type <lvalue> lval
 %type <blk> block
@@ -150,12 +148,12 @@ instrs : instr                  { $$ = new cdk::sequence_node(LINE, $1); }
        ;
 
 instr : expr ';'                   { $$ = new og::evaluation_node(LINE, $1); }
-      | tWRITE   exprs ';'         { $$ = new og::write_node(LINE, $2); }
-      | tWRITELN exprs ';'         { $$ = new og::write_node(LINE, $2, true); }
+      | tWRITE   exprs ';'         { $$ = new og::write_node(LINE, new og::tuple_node(LINE, $2)); }
+      | tWRITELN exprs ';'         { $$ = new og::write_node(LINE, new og::tuple_node(LINE, $2), true); }
       | tBREAK                     { $$ = new og::break_node(LINE); }
       | tCONTINUE                  { $$ = new og::continue_node(LINE);}
       | tRETURN ';'                { $$ = new og::return_node(LINE); }
-      | tRETURN exprs ';'          { $$ = new og::return_node(LINE, $2); }
+      | tRETURN exprs ';'          { $$ = new og::return_node(LINE, new og::tuple_node(LINE, $2)); }
       | cond_instr                 { $$ = $1; }
       | iter_instr                 { $$ = $1; }
       | block                      { $$ = $1; }
@@ -180,8 +178,8 @@ iter_instr : tFOR vars ';' exprs ';' exprs tDO instr
            | tFOR      ';'       ';'       tDO instr
            ;
 
-exprs : expr                        { $$ = new og::tuple_node(LINE, $1); }
-      | exprs ',' expr              { $$ = new og::tuple_node(LINE, $3, $1); }
+exprs : expr                        { $$ = new cdk::sequence_node(LINE, $1); }
+      | exprs ',' expr              { $$ = new cdk::sequence_node(LINE, $3, $1); }
       ;
 
 expr : tINT                    { $$ = new cdk::integer_node(LINE, $1); }
@@ -208,7 +206,7 @@ expr : tINT                    { $$ = new cdk::integer_node(LINE, $1); }
      | lval '=' expr           { $$ = new cdk::assignment_node(LINE, $1, $3); }
      | lval '?'                { $$ = new og::address_of_node(LINE, $1); }
      | tINPUT  '(' lval  ')'   { $$ = new og::input_node(LINE); }
-     | tSIZEOF '(' exprs ')'   { $$ = new og::sizeof_node(LINE, $3); }
+     | tSIZEOF '(' exprs ')'     { $$ = new og::sizeof_node(LINE, new og::tuple_node(LINE, $3)); }
      | '[' expr ']'            { $$ = new og::stack_alloc_node(LINE, $2); }
      ;
 
