@@ -128,8 +128,8 @@ identifiers : tIDENTIFIER
             ;
 
 
-vars : var
-     | vars ',' var
+vars : var                 { $$ = new cdk::sequence_node(LINE, $1); }
+     | vars ',' var        { $$ = new cdk::sequence_node(LINE, $3, $1); }
      ;
 
 type : tINTD                    { $$ = new cdk::primitive_type(4, cdk::typename_type::TYPE_INT); }
@@ -145,8 +145,8 @@ block : '{' decls instrs '}'    { $$ = new og::block_node(LINE, $2, $3); }
       | '{'              '}'    { $$ = new og::block_node(LINE, nullptr, nullptr); }
       ;
 
-instrs : instr
-       | instrs instr
+instrs : instr                  { $$ = new cdk::sequence_node(LINE, $1); }
+       | instrs instr           { $$ = new cdk::sequence_node(LINE, $2, $1); }
        ;
 
 instr : expr ';'                   { $$ = new og::evaluation_node(LINE, $1); }
