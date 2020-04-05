@@ -14,7 +14,7 @@ namespace og {
     cdk::sequence_node *_declarations, *_instructions;
 
   public:
-    inline block_node(int lineno, cdk::sequence_node *declarations, cdk::sequence_node *instructions) :
+    inline block_node(int lineno, cdk::sequence_node *declarations = nullptr, cdk::sequence_node *instructions = nullptr) :
         cdk::basic_node(lineno), _declarations(declarations), _instructions(instructions) {
     }
 

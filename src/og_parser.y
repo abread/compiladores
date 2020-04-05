@@ -46,7 +46,7 @@
 %type <sequence> instrs exprs
 %type <expression> expr
 %type <lvalue> lval
-%type <block> block
+%type <blk> block
 
 %%
 
@@ -73,44 +73,44 @@ var :          tTYPE tIDENTIFIER
     ;
 
 fun :          tTYPE tIDENTIFIER '('      ')'
-    |          tTYPE tIDENTIFIER '('      ')' blk
+    |          tTYPE tIDENTIFIER '('      ')' block
     |          tTYPE tIDENTIFIER '(' vars ')'
-    |          tTYPE tIDENTIFIER '(' vars ')' blk
+    |          tTYPE tIDENTIFIER '(' vars ')' block
     |          tAUTO tIDENTIFIER '('      ')'
-    |          tAUTO tIDENTIFIER '('      ')' blk
+    |          tAUTO tIDENTIFIER '('      ')' block
     |          tAUTO tIDENTIFIER '(' vars ')'
-    |          tAUTO tIDENTIFIER '(' vars ')' blk
+    |          tAUTO tIDENTIFIER '(' vars ')' block
     | tPUBLIC  tTYPE tIDENTIFIER '('      ')'
-    | tPUBLIC  tTYPE tIDENTIFIER '('      ')' blk
+    | tPUBLIC  tTYPE tIDENTIFIER '('      ')' block
     | tPUBLIC  tTYPE tIDENTIFIER '(' vars ')'
-    | tPUBLIC  tTYPE tIDENTIFIER '(' vars ')' blk
+    | tPUBLIC  tTYPE tIDENTIFIER '(' vars ')' block
     | tPUBLIC  tAUTO tIDENTIFIER '('      ')'
-    | tPUBLIC  tAUTO tIDENTIFIER '('      ')' blk
+    | tPUBLIC  tAUTO tIDENTIFIER '('      ')' block
     | tPUBLIC  tAUTO tIDENTIFIER '(' vars ')'
-    | tPUBLIC  tAUTO tIDENTIFIER '(' vars ')' blk
+    | tPUBLIC  tAUTO tIDENTIFIER '(' vars ')' block
     | tREQUIRE tTYPE tIDENTIFIER '('      ')'
-    | tREQUIRE tTYPE tIDENTIFIER '('      ')' blk
+    | tREQUIRE tTYPE tIDENTIFIER '('      ')' block
     | tREQUIRE tTYPE tIDENTIFIER '(' vars ')'
-    | tREQUIRE tTYPE tIDENTIFIER '(' vars ')' blk
+    | tREQUIRE tTYPE tIDENTIFIER '(' vars ')' block
     | tREQUIRE tAUTO tIDENTIFIER '('      ')'
-    | tREQUIRE tAUTO tIDENTIFIER '('      ')' blk
+    | tREQUIRE tAUTO tIDENTIFIER '('      ')' block
     | tREQUIRE tAUTO tIDENTIFIER '(' vars ')'
-    | tREQUIRE tAUTO tIDENTIFIER '(' vars ')' blk
+    | tREQUIRE tAUTO tIDENTIFIER '(' vars ')' block
     ;
 
 
 proc :          tPROCEDURE tIDENTIFIER '('      ')'
-     |          tPROCEDURE tIDENTIFIER '('      ')' blk
+     |          tPROCEDURE tIDENTIFIER '('      ')' block
      |          tPROCEDURE tIDENTIFIER '(' vars ')'
-     |          tPROCEDURE tIDENTIFIER '(' vars ')' blk
+     |          tPROCEDURE tIDENTIFIER '(' vars ')' block
      | tPUBLIC  tPROCEDURE tIDENTIFIER '('      ')'
-     | tPUBLIC  tPROCEDURE tIDENTIFIER '('      ')' blk
+     | tPUBLIC  tPROCEDURE tIDENTIFIER '('      ')' block
      | tPUBLIC  tPROCEDURE tIDENTIFIER '(' vars ')'
-     | tPUBLIC  tPROCEDURE tIDENTIFIER '(' vars ')' blk
+     | tPUBLIC  tPROCEDURE tIDENTIFIER '(' vars ')' block
      | tREQUIRE tPROCEDURE tIDENTIFIER '('      ')'
-     | tREQUIRE tPROCEDURE tIDENTIFIER '('      ')' blk
+     | tREQUIRE tPROCEDURE tIDENTIFIER '('      ')' block
      | tREQUIRE tPROCEDURE tIDENTIFIER '(' vars ')'
-     | tREQUIRE tPROCEDURE tIDENTIFIER '(' vars ')' blk
+     | tREQUIRE tPROCEDURE tIDENTIFIER '(' vars ')' block
      ;
 
 identifiers : tIDENTIFIER
@@ -129,10 +129,10 @@ type : tINTD
      | tPTR    '<' tAUTO '>'
      ;
 
-block : '{' decls instrs '}'
-      | '{'       instrs '}'
-      | '{' decls        '}'
-      | '{'              '}'
+block : '{' decls instrs '}'    { $$ = new og::block_node(LINE, $2, $3); }
+      | '{'       instrs '}'    { $$ = new og::block_node(LINE, NULL, $2); }
+      | '{' decls        '}'    { $$ = new og::block_node(LINE, $2, NULL); }
+      | '{'              '}'    { $$ = new og::block_node(LINE, NULL, NULL); }
       ;
 
 instrs : instr
@@ -213,21 +213,4 @@ integer : tINTEGER             { $$ = new cdk::integer_node(LINE, $1); } ;
 string  : tSTRING              { $$ = $1} /* string node? */
         | string tSTRING       { $$ = new std::string(*$1 + *$2) delete $1; $delete $2; }
         ;
-
-
-// list : stmt         { $$ = new cdk::sequence_node(LINE, $1); }
-//        | list stmt { $$ = new cdk::sequence_node(LINE, $2, $1); }
-//        ;
-
-
-// stmt : expr ';'                         { $$ = new og::evaluation_node(LINE, $1); }
-//         | tWRITE expr ';'                  { $$ = new og::write_node(LINE, $2); }
-//         | tWRITELN expr ';'                  { $$ = new og::write_node(LINE, $2, true); }
-//      | tINPUT ';'                   { $$ = new og::input_node(LINE); }
-//      | tFOR exprs ';' exprs ';' exprs tDO stmt         { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
-//      | tIF '(' expr ')' stmt %prec tIFX { $$ = new og::if_node(LINE, $3, $5); }
-//      | tIF '(' expr ')' stmt tELSE stmt { $$ = new og::if_else_node(LINE, $3, $5, $7); }
-//      | '{' list '}'                     { $$ = $2; } <------------------- block
-//      ;
-
 %%
