@@ -22,6 +22,7 @@
   cdk::basic_type      *t;
 
   og::block_node       *blk;
+  og::tuple_node       *tuple;
 };
 
 %token <i> tINT
@@ -45,8 +46,9 @@
 %nonassoc tUNARY
 
 %type <s> string
-%type <node> instr decl cond_instr elif iter_instr
-%type <sequence> instrs exprs file decls
+%type <node> instr decl cond_instr elif iter_instr var func proc
+%type <sequence> instrs file decls vars
+%type <tuple> exprs
 %type <expression> expr
 %type <lvalue> lval
 %type <blk> block
@@ -61,9 +63,9 @@ decls :       decl  { $$ = new cdk::sequence_node(LINE, $1); }
       | decls decl  { $$ = new cdk::sequence_node(LINE, $2, $1); }
 
 
-decl : var ';'
-     | function
-     | procedure
+decl : var ';' { $$ = $1; }
+     | func    { $$ = $1; }
+     | proc    { $$ = $1; }
      ;
 
 var :           type tIDENTIFIER
@@ -126,17 +128,17 @@ vars : var
      | vars ',' var
      ;
 
-type : tINTD                                     { $$ = new cdk::primitive_type(4, cdk::typename_type::TYPE_INT); }
-     | tREALD                                    { $$ = new cdk::primitive_type(8, cdk::typename_type::TYPE_DOUBLE); }
-     | tSTRINGD                                  { $$ = new cdk::primitive_type(8, cdk::typename_type::TYPE_STRING); }
-     | tPTR    '<' type  '>'                     { $$ = new cdk::reference_type(8, std::shared_ptr<cdk::basic_type>($3)); }
-     | tPTR    '<' tAUTO '>                      { $$ = new cdk::primitive_type(8, basic_type::TYPE_POINTER); }'
+type : tINTD                    { $$ = new cdk::primitive_type(4, cdk::typename_type::TYPE_INT); }
+     | tREALD                   { $$ = new cdk::primitive_type(8, cdk::typename_type::TYPE_DOUBLE); }
+     | tSTRINGD                 { $$ = new cdk::primitive_type(8, cdk::typename_type::TYPE_STRING); }
+     | tPTR    '<' type  '>'    { $$ = new cdk::reference_type(8, std::shared_ptr<cdk::basic_type>($3)); }
+     | tPTR    '<' tAUTO '>'    { $$ = new cdk::primitive_type(8, cdk::typename_type::TYPE_POINTER); }
      ;
 
 block : '{' decls instrs '}'    { $$ = new og::block_node(LINE, $2, $3); }
-      | '{'       instrs '}'    { $$ = new og::block_node(LINE, NULL, $2); }
-      | '{' decls        '}'    { $$ = new og::block_node(LINE, $2, NULL); }
-      | '{'              '}'    { $$ = new og::block_node(LINE, NULL, NULL); }
+      | '{'       instrs '}'    { $$ = new og::block_node(LINE, nullptr, $2); }
+      | '{' decls        '}'    { $$ = new og::block_node(LINE, $2, nullptr); }
+      | '{'              '}'    { $$ = new og::block_node(LINE, nullptr, nullptr); }
       ;
 
 instrs : instr
@@ -148,8 +150,8 @@ instr : expr ';'                   { $$ = new og::evaluation_node(LINE, $1); }
       | tWRITELN exprs ';'         { $$ = new og::write_node(LINE, $2, true); }
       | tBREAK                     { $$ = new og::break_node(LINE); }
       | tCONTINUE                  { $$ = new og::continue_node(LINE);}
-      | tRETURN                    { $$ = new og::return_node(LINE); }
-      | tRETURN  exprs ';'         { $$ = new og::return_node(LINE, $2); }
+      | tRETURN ';'                { $$ = new og::return_node(LINE); }
+      | tRETURN exprs ';'          { $$ = new og::return_node(LINE, $2); }
       | cond_instr                 { $$ = $1; }
       | iter_instr                 { $$ = $1; }
       | block                      { $$ = $1; }
@@ -174,14 +176,14 @@ iter_instr : tFOR vars ';' exprs ';' exprs tDO instr
            | tFOR      ';'       ';'       tDO instr
            ;
 
-exprs : expr         { $$ = new cdk::sequence_node(LINE, $1); }
-      | exprs ',' expr { $$ = new cdk::sequence_node(LINE, $3, $1); }
+exprs : expr                        { $$ = new og::tuple_node(LINE, $1); }
+      | exprs ',' expr              { $$ = new og::tuple_node(LINE, $3, $1); }
       ;
 
 expr : tINT                    { $$ = new cdk::integer_node(LINE, $1); }
      | tREAL                   { $$ = new cdk::double_node(LINE, $1);  }
      | string                  { $$ = new cdk::string_node(LINE, $1);  }
-     | tNULLPTR                { $$ = new cdk::nullptr_node(LINE);     }
+     | tNULLPTR                { $$ = new og::nullptr_node(LINE);      }
      | '+' expr %prec tUNARY   { $$ = new og::identity_node(LINE, $2); }
      | '-' expr %prec tUNARY   { $$ = new cdk::neg_node(LINE, $2);     }
      | expr '+' expr           { $$ = new cdk::add_node(LINE, $1, $3); }
