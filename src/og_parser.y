@@ -27,7 +27,8 @@
 %token <i> tINT
 %token <d> tREAL
 %token <s> tIDENTIFIER tSTRING
-%token tFOR tDO tTHEN tWRITE tWRITELN tPUBLIC tREQUIRE
+%token tPRIVATE tPUBLIC tREQUIRE
+%token tFOR tDO tTHEN tWRITE tWRITELN
 %token tAUTO tINTD tREALD tSTRINGD tPTR tNULLPTR
 %token tPROCEDURE tBREAK tCONTINUE tRETURN
 %token tINPUT tSIZEOF
@@ -54,7 +55,7 @@
 %type <expression> expr
 %type <lvalue> lval
 %type <blk> block
-%type <t> type
+%type <t> type auto_t void_t
 
 %%
 
@@ -80,51 +81,55 @@ var :           type tIDENTIFIER
     | tPUBLIC  tAUTO identifiers '=' exprs
     ;
 
-func :           type tIDENTIFIER '('      ')' %prec tNOBLOCK
-     |           type tIDENTIFIER '('      ')' block
-     |           type tIDENTIFIER '(' vars ')' %prec tNOBLOCK
-     |           type tIDENTIFIER '(' vars ')' block
-     |          tAUTO tIDENTIFIER '('      ')' %prec tNOBLOCK
-     |          tAUTO tIDENTIFIER '('      ')' block
-     |          tAUTO tIDENTIFIER '(' vars ')' %prec tNOBLOCK
-     |          tAUTO tIDENTIFIER '(' vars ')' block
-     | tPUBLIC   type tIDENTIFIER '('      ')' %prec tNOBLOCK
-     | tPUBLIC   type tIDENTIFIER '('      ')' block
-     | tPUBLIC   type tIDENTIFIER '(' vars ')' %prec tNOBLOCK
-     | tPUBLIC   type tIDENTIFIER '(' vars ')' block
-     | tPUBLIC  tAUTO tIDENTIFIER '('      ')' %prec tNOBLOCK
-     | tPUBLIC  tAUTO tIDENTIFIER '('      ')' block
-     | tPUBLIC  tAUTO tIDENTIFIER '(' vars ')' %prec tNOBLOCK
-     | tPUBLIC  tAUTO tIDENTIFIER '(' vars ')' block
-     | tREQUIRE  type tIDENTIFIER '('      ')' %prec tNOBLOCK
-     | tREQUIRE  type tIDENTIFIER '('      ')' block
-     | tREQUIRE  type tIDENTIFIER '(' vars ')' %prec tNOBLOCK
-     | tREQUIRE  type tIDENTIFIER '(' vars ')' block
-     | tREQUIRE tAUTO tIDENTIFIER '('      ')' %prec tNOBLOCK
-     | tREQUIRE tAUTO tIDENTIFIER '('      ')' block
-     | tREQUIRE tAUTO tIDENTIFIER '(' vars ')' %prec tNOBLOCK
-     | tREQUIRE tAUTO tIDENTIFIER '(' vars ')' block
-     ;
+/* just shorthands for them to be used as any other type */
+void_t : tPROCEDURE { $$ = new cdk::primitive_type(0, cdk::typename_type::TYPE_VOID); }
+auto_t : tAUTO      { $$ = new cdk::primitive_type(); }
 
 
-proc :          tPROCEDURE tIDENTIFIER '('      ')' %prec tNOBLOCK
-     |          tPROCEDURE tIDENTIFIER '('      ')' block
-     |          tPROCEDURE tIDENTIFIER '(' vars ')' %prec tNOBLOCK
-     |          tPROCEDURE tIDENTIFIER '(' vars ')' block
-     | tPUBLIC  tPROCEDURE tIDENTIFIER '('      ')' %prec tNOBLOCK
-     | tPUBLIC  tPROCEDURE tIDENTIFIER '('      ')' block
-     | tPUBLIC  tPROCEDURE tIDENTIFIER '(' vars ')' %prec tNOBLOCK
-     | tPUBLIC  tPROCEDURE tIDENTIFIER '(' vars ')' block
-     | tREQUIRE tPROCEDURE tIDENTIFIER '('      ')' %prec tNOBLOCK
-     | tREQUIRE tPROCEDURE tIDENTIFIER '('      ')' block
-     | tREQUIRE tPROCEDURE tIDENTIFIER '(' vars ')' %prec tNOBLOCK
-     | tREQUIRE tPROCEDURE tIDENTIFIER '(' vars ')' block
+
+func : tPUBLIC  type   tIDENTIFIER '('      ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPUBLIC, $2, *$3); delete $3; }
+     | tPUBLIC  type   tIDENTIFIER '(' vars ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPUBLIC, $2, *$3, $5); delete $3; }
+     | tPUBLIC  type   tIDENTIFIER '('      ')' block          { $$ = new og::function_definition_node(LINE, tPUBLIC, $2, *$3, $6); delete $3; }
+     | tPUBLIC  type   tIDENTIFIER '(' vars ')' block          { $$ = new og::function_definition_node(LINE, tPUBLIC, $2, *$3, $5, $7); delete $3; }
+     | tREQUIRE type   tIDENTIFIER '('      ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tREQUIRE, $2, *$3); delete $3; }
+     | tREQUIRE type   tIDENTIFIER '(' vars ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tREQUIRE, $2, *$3, $5); delete $3; }
+     | tREQUIRE type   tIDENTIFIER '('      ')' block          { $$ = new og::function_definition_node(LINE, tREQUIRE, $2, *$3, $6); delete $3; }
+     | tREQUIRE type   tIDENTIFIER '(' vars ')' block          { $$ = new og::function_definition_node(LINE, tREQUIRE, $2, *$3, $5, $7); delete $3; }
+     |          type   tIDENTIFIER '('      ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
+     |          type   tIDENTIFIER '(' vars ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
+     |          type   tIDENTIFIER '('      ')' block          { $$ = new og::function_definition_node(LINE, tPRIVATE, $1, *$2, $5); delete $2; }
+     |          type   tIDENTIFIER '(' vars ')' block          { $$ = new og::function_definition_node(LINE, tPRIVATE, $1, *$2, $4, $6); delete $2; }
+     | tPUBLIC  auto_t tIDENTIFIER '('      ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPUBLIC, $2, *$3); delete $3; }
+     | tPUBLIC  auto_t tIDENTIFIER '(' vars ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPUBLIC, $2, *$3, $5); delete $3; }
+     | tPUBLIC  auto_t tIDENTIFIER '('      ')' block          { $$ = new og::function_definition_node(LINE, tPUBLIC, $2, *$3, $6); delete $3; }
+     | tPUBLIC  auto_t tIDENTIFIER '(' vars ')' block          { $$ = new og::function_definition_node(LINE, tPUBLIC, $2, *$3, $5, $7); delete $3; }
+     | tREQUIRE auto_t tIDENTIFIER '('      ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tREQUIRE, $2, *$3); delete $3; }
+     | tREQUIRE auto_t tIDENTIFIER '(' vars ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tREQUIRE, $2, *$3, $5); delete $3; }
+     | tREQUIRE auto_t tIDENTIFIER '('      ')' block          { $$ = new og::function_definition_node(LINE, tREQUIRE, $2, *$3, $6); delete $3; }
+     | tREQUIRE auto_t tIDENTIFIER '(' vars ')' block          { $$ = new og::function_definition_node(LINE, tREQUIRE, $2, *$3, $5, $7); delete $3; }
+     |          auto_t tIDENTIFIER '('      ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
+     |          auto_t tIDENTIFIER '(' vars ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
+     |          auto_t tIDENTIFIER '('      ')' block          { $$ = new og::function_definition_node(LINE, tPRIVATE, $1, *$2, $5); delete $2; }
+     |          auto_t tIDENTIFIER '(' vars ')' block          { $$ = new og::function_definition_node(LINE, tPRIVATE, $1, *$2, $4, $6); delete $2; }
      ;
 
 identifiers : tIDENTIFIER
             | identifiers ',' tIDENTIFIER
             ;
 
+proc : tPUBLIC  void_t tIDENTIFIER '('      ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPUBLIC, $2, *$3); delete $3; }
+     | tPUBLIC  void_t tIDENTIFIER '(' vars ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPUBLIC, $2, *$3, $5); delete $3; }
+     | tPUBLIC  void_t tIDENTIFIER '('      ')' block          { $$ = new og::function_definition_node(LINE, tPUBLIC, $2, *$3, $6); delete $3; }
+     | tPUBLIC  void_t tIDENTIFIER '(' vars ')' block          { $$ = new og::function_definition_node(LINE, tPUBLIC, $2, *$3, $5, $7); delete $3; }
+     | tREQUIRE void_t tIDENTIFIER '('      ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tREQUIRE, $2, *$3); delete $3; }
+     | tREQUIRE void_t tIDENTIFIER '(' vars ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tREQUIRE, $2, *$3, $5); delete $3; }
+     | tREQUIRE void_t tIDENTIFIER '('      ')' block          { $$ = new og::function_definition_node(LINE, tREQUIRE, $2, *$3, $6); delete $3; }
+     | tREQUIRE void_t tIDENTIFIER '(' vars ')' block          { $$ = new og::function_definition_node(LINE, tREQUIRE, $2, *$3, $5, $7); delete $3; }
+     |          void_t tIDENTIFIER '('      ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
+     |          void_t tIDENTIFIER '(' vars ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
+     |          void_t tIDENTIFIER '('      ')' block          { $$ = new og::function_definition_node(LINE, tPRIVATE, $1, *$2, $5); delete $2; }
+     |          void_t tIDENTIFIER '(' vars ')' block          { $$ = new og::function_definition_node(LINE, tPRIVATE, $1, *$2, $4, $6); delete $2; }
+     ;
 
 vars : var                 { $$ = new cdk::sequence_node(LINE, $1); }
      | vars ',' var        { $$ = new cdk::sequence_node(LINE, $3, $1); }

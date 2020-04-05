@@ -19,15 +19,15 @@ namespace og {
     block_node *_block;
 
   public:
-    function_definition_node(int lineno, int qualifier, const std::string &identifier, cdk::sequence_node *arguments, block_node *block) :
-        function_definition_node(lineno, qualifier, std::make_shared<cdk::primitive_type>(0, cdk::typename_type::TYPE_VOID), identifier, arguments, block) {}
-    function_definition_node(int lineno, int qualifier, std::shared_ptr<cdk::basic_type> type, const std::string &identifier, cdk::sequence_node *arguments, block_node *block) :
+    function_definition_node(int lineno, int qualifier, cdk::basic_type *type, const std::string &identifier, block_node *block) :
+        function_definition_node(lineno, qualifier, type, identifier, nullptr, block) {}
+    function_definition_node(int lineno, int qualifier, cdk::basic_type *type, const std::string &identifier, cdk::sequence_node *arguments, block_node *block) :
         cdk::typed_node(lineno),
         _qualifier(qualifier),
         _identifier(identifier),
         _arguments(arguments),
         _block(block) {
-          this->type(type);
+          this->type(std::shared_ptr<cdk::basic_type>(type));
         }
 
   public:

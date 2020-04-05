@@ -17,14 +17,14 @@ namespace og {
     cdk::sequence_node *_arguments;
 
   public:
-    function_declaration_node(int lineno, int qualifier, const std::string &identifier, cdk::sequence_node *arguments) :
-        function_declaration_node(lineno, qualifier, std::make_shared<cdk::primitive_type>(0, cdk::typename_type::TYPE_VOID), identifier, arguments) {}
-    function_declaration_node(int lineno, int qualifier, std::shared_ptr<cdk::basic_type> type, const std::string &identifier, cdk::sequence_node *arguments) :
+    function_declaration_node(int lineno, int qualifier, cdk::basic_type *type, const std::string &identifier) :
+        function_declaration_node(lineno, qualifier, type, identifier, nullptr) {}
+    function_declaration_node(int lineno, int qualifier, cdk::basic_type *type, const std::string &identifier, cdk::sequence_node *arguments) :
         cdk::typed_node(lineno),
         _qualifier(qualifier),
         _identifier(identifier),
         _arguments(arguments) {
-          this->type(type);
+          this->type(std::shared_ptr<cdk::basic_type>(type));
         }
 
   public:
