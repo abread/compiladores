@@ -12,7 +12,7 @@
 %}
 
 %union {
-  int                  i; /* integer value */
+  int                  i; /* tINT value */
   double               d; /* double value */
   std::string          *s; /* symbol name or string literal */
   cdk::basic_node      *node; /* node pointer */
@@ -44,6 +44,7 @@
 %left '*' '/' '%'
 %nonassoc tUNARY
 
+%type <s> string
 %type <node> instr cond_instr elif
 %type <sequence> instrs exprs
 %type <expression> expr
@@ -177,8 +178,8 @@ exprs : expr         { $$ = new cdk::sequence_node(LINE, $1); }
       | exprs ',' expr { $$ = new cdk::sequence_node(LINE, $3, $1); }
       ;
 
-expr : integer                 { $$ = new cdk::integer_node(LINE, $1); }
-     | real                    { $$ = new cdk::double_node(LINE, $1);  }
+expr : tINT                    { $$ = new cdk::integer_node(LINE, $1); }
+     | tREAL                   { $$ = new cdk::double_node(LINE, $1);  }
      | string                  { $$ = new cdk::string_node(LINE, $1);  }
      | tNULLPTR                { $$ = new cdk::nullptr_node(LINE);     }
      | '+' expr %prec tUNARY   { $$ = new og::identity_node(LINE, $2); }
@@ -207,9 +208,7 @@ lval :      tIDENTIFIER        { $$ = new cdk::variable_node(LINE, $1); }
      | type tIDENTIFIER        { $$ = new cdk::variable_node(LINE, $1, $2); }
      ;
 
-real    : tREAL                { $$ = new cdk::double_node(LINE, $1);  } ;
-integer : tINTEGER             { $$ = new cdk::integer_node(LINE, $1); } ;
-string  : tSTRING              { $$ = $1} /* string node? */
+string  : tSTRING              { $$ = $1; }
         | string tSTRING       { $$ = new std::string(*$1 + *$2) delete $1; $delete $2; }
         ;
 %%
