@@ -74,7 +74,7 @@ decl : var ';' { $$ = $1; }
      | proc    { $$ = $1; }
      ;
 
-var_idents  : tIDENTIFIER                { $$ = new std::vector(1, std::string(*$1)); delete $1; }
+var_idents  : tIDENTIFIER                { $$ = new std::vector<std::string>(1, std::string(*$1)); delete $1; }
             | var_idents ',' tIDENTIFIER { $$ = new std::vector<std::string>(*$1); $$->push_back(*$3); delete $1; delete $3; }
             ;
 

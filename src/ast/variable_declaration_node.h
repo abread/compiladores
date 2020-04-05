@@ -20,7 +20,7 @@ namespace og {
     variable_declaration_node(int lineno, int qual, cdk::basic_type *type, std::string &id, cdk::expression_node *init) :
       cdk::typed_node(lineno),
       _qualifier(qual),
-      _identifiers(std::vector(1, id)),
+      _identifiers(std::vector<std::string>(1, id)),
       _initializer(init) {
         this->type(std::shared_ptr<cdk::basic_type>(type));
       }
