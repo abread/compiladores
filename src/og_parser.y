@@ -209,6 +209,6 @@ lval :      tIDENTIFIER        { $$ = new cdk::variable_node(LINE, $1); }
      ;
 
 string  : tSTRING              { $$ = $1; }
-        | string tSTRING       { $$ = new std::string(*$1 + *$2) delete $1; $delete $2; }
+        | string tSTRING       { $$ = new std::string(*$1 + *$2); delete $1; $delete $2; }
         ;
 %%
