@@ -168,14 +168,18 @@ elif : tELSE instr                       { $$ = $2; }
      | tELIF expr tTHEN instr elif       { $$ = new og::if_else_node(LINE, $2, $4, $5); }
      ;
 
-iter_instr : tFOR vars ';' exprs ';' exprs tDO instr
-           | tFOR vars ';' exprs ';'       tDO instr
-           | tFOR vars ';'       ';' exprs tDO instr
-           | tFOR vars ';'       ';'       tDO instr
-           | tFOR      ';' exprs ';' exprs tDO instr
-           | tFOR      ';' exprs ';'       tDO instr
-           | tFOR      ';'       ';' exprs tDO instr
-           | tFOR      ';'       ';'       tDO instr
+iter_instr : tFOR vars  ';' exprs ';' exprs tDO instr    { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
+           | tFOR vars  ';' exprs ';'       tDO instr    { $$ = new og::for_node(LINE, $2, $4, nullptr, $7); }
+           | tFOR vars  ';'       ';' exprs tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, $5, $7); }
+           | tFOR vars  ';'       ';'       tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, nullptr, $6); }
+           | tFOR exprs ';' exprs ';' exprs tDO instr    { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
+           | tFOR exprs ';' exprs ';'       tDO instr    { $$ = new og::for_node(LINE, $2, $4, nullptr, $7); }
+           | tFOR exprs ';'       ';' exprs tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, $5, $7); }
+           | tFOR exprs ';'       ';'       tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, nullptr, $6); }
+           | tFOR       ';' exprs ';' exprs tDO instr    { $$ = new og::for_node(LINE, nullptr, $3, $5, $7); }
+           | tFOR       ';' exprs ';'       tDO instr    { $$ = new og::for_node(LINE, nullptr, $3, nullptr, $6); }
+           | tFOR       ';'       ';' exprs tDO instr    { $$ = new og::for_node(LINE, nullptr, nullptr, $4, $6); }
+           | tFOR       ';'       ';'       tDO instr    { $$ = new og::for_node(LINE, nullptr, nullptr, nullptr, $5); }
            ;
 
 exprs : expr                        { $$ = new cdk::sequence_node(LINE, $1); }
