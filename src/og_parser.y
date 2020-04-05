@@ -45,8 +45,8 @@
 %nonassoc tUNARY
 
 %type <s> string
-%type <node> instr cond_instr elif
-%type <sequence> instrs exprs
+%type <node> instr decl cond_instr elif iter_instr
+%type <sequence> instrs exprs file decls
 %type <expression> expr
 %type <lvalue> lval
 %type <blk> block
@@ -54,11 +54,11 @@
 
 %%
 
-file : decls        { $$ = decl.value}
+file : decls        { $$ = $1; }
      ;
 
-decls :       decl
-      | decls decl
+decls :       decl  { $$ = new cdk::sequence_node(LINE, $1); }
+      | decls decl  { $$ = new cdk::sequence_node(LINE, $2, $1); }
 
 
 decl : var ';'
