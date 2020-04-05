@@ -1,4 +1,5 @@
 %{
+#include <memory>
 //-- don't change *any* of these: if you do, you'll break the compiler.
 #include <cdk/compiler.h>
 #include "ast/all.h"
@@ -18,6 +19,7 @@
   cdk::sequence_node   *sequence;
   cdk::expression_node *expression; /* expression nodes */
   cdk::lvalue_node     *lvalue;
+  cdk::basic_type      *t;
 
   og::block_node       *blk;
 };
@@ -47,6 +49,7 @@
 %type <expression> expr
 %type <lvalue> lval
 %type <blk> block
+%type <t> type
 
 %%
 
@@ -62,36 +65,36 @@ decl : var ';'
      | procedure
      ;
 
-var :          tTYPE tIDENTIFIER
-    |          tTYPE tIDENTIFIER '=' expr
-    | tPUBLIC  tTYPE tIDENTIFIER
-    | tPUBLIC  tTYPE tIDENTIFIER '=' expr
-    | tREQUIRE tTYPE tIDENTIFIER
-    | tREQUIRE tTYPE tIDENTIFIER '=' expr
+var :           type tIDENTIFIER
+    |           type tIDENTIFIER '=' expr
+    | tPUBLIC   type tIDENTIFIER
+    | tPUBLIC   type tIDENTIFIER '=' expr
+    | tREQUIRE  type tIDENTIFIER
+    | tREQUIRE  type tIDENTIFIER '=' expr
     |          tAUTO identifiers '=' exprs
     | tPUBLIC  tAUTO identifiers '=' exprs
     ;
 
-fun :          tTYPE tIDENTIFIER '('      ')'
-    |          tTYPE tIDENTIFIER '('      ')' block
-    |          tTYPE tIDENTIFIER '(' vars ')'
-    |          tTYPE tIDENTIFIER '(' vars ')' block
+fun :           type tIDENTIFIER '('      ')'
+    |           type tIDENTIFIER '('      ')' block
+    |           type tIDENTIFIER '(' vars ')'
+    |           type tIDENTIFIER '(' vars ')' block
     |          tAUTO tIDENTIFIER '('      ')'
     |          tAUTO tIDENTIFIER '('      ')' block
     |          tAUTO tIDENTIFIER '(' vars ')'
     |          tAUTO tIDENTIFIER '(' vars ')' block
-    | tPUBLIC  tTYPE tIDENTIFIER '('      ')'
-    | tPUBLIC  tTYPE tIDENTIFIER '('      ')' block
-    | tPUBLIC  tTYPE tIDENTIFIER '(' vars ')'
-    | tPUBLIC  tTYPE tIDENTIFIER '(' vars ')' block
+    | tPUBLIC   type tIDENTIFIER '('      ')'
+    | tPUBLIC   type tIDENTIFIER '('      ')' block
+    | tPUBLIC   type tIDENTIFIER '(' vars ')'
+    | tPUBLIC   type tIDENTIFIER '(' vars ')' block
     | tPUBLIC  tAUTO tIDENTIFIER '('      ')'
     | tPUBLIC  tAUTO tIDENTIFIER '('      ')' block
     | tPUBLIC  tAUTO tIDENTIFIER '(' vars ')'
     | tPUBLIC  tAUTO tIDENTIFIER '(' vars ')' block
-    | tREQUIRE tTYPE tIDENTIFIER '('      ')'
-    | tREQUIRE tTYPE tIDENTIFIER '('      ')' block
-    | tREQUIRE tTYPE tIDENTIFIER '(' vars ')'
-    | tREQUIRE tTYPE tIDENTIFIER '(' vars ')' block
+    | tREQUIRE  type tIDENTIFIER '('      ')'
+    | tREQUIRE  type tIDENTIFIER '('      ')' block
+    | tREQUIRE  type tIDENTIFIER '(' vars ')'
+    | tREQUIRE  type tIDENTIFIER '(' vars ')' block
     | tREQUIRE tAUTO tIDENTIFIER '('      ')'
     | tREQUIRE tAUTO tIDENTIFIER '('      ')' block
     | tREQUIRE tAUTO tIDENTIFIER '(' vars ')'
@@ -122,11 +125,11 @@ vars : var
      | vars ',' var
      ;
 
-type : tINTD
-     | tREALD
-     | tSTRINGD
-     | tPTR    '<' type  '>'
-     | tPTR    '<' tAUTO '>'
+type : tINTD                                     { $$ = new cdk::primitive_type(4, cdk::typename_type::TYPE_INT); }
+     | tREALD                                    { $$ = new cdk::primitive_type(8, cdk::typename_type::TYPE_DOUBLE); }
+     | tSTRINGD                                  { $$ = new cdk::primitive_type(8, cdk::typename_type::TYPE_STRING); }
+     | tPTR    '<' type  '>'                     { $$ = new cdk::reference_type(8, std::shared_ptr<cdk::basic_type>($3)); }
+     | tPTR    '<' tAUTO '>                      { $$ = new cdk::primitive_type(8, basic_type::TYPE_POINTER); }'
      ;
 
 block : '{' decls instrs '}'    { $$ = new og::block_node(LINE, $2, $3); }
@@ -201,7 +204,7 @@ expr : integer                 { $$ = new cdk::integer_node(LINE, $1); }
      ;
 
 lval :      tIDENTIFIER        { $$ = new cdk::variable_node(LINE, $1); }
-     | type tIDENTIFIER        { $$ = new cdk::variable_node(LINE, $1); }
+     | type tIDENTIFIER        { $$ = new cdk::variable_node(LINE, $1, $2); }
      ;
 
 real    : tREAL                { $$ = new cdk::double_node(LINE, $1);  } ;
