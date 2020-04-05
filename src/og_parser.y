@@ -38,6 +38,10 @@
 %nonassoc tELIF
 %nonassoc tELSE
 
+%nonassoc tNOBLOCK
+%nonassoc '{'
+%nonassoc ','
+
 %right '='
 %left tAND tOR
 %left tGE tLE tEQ tNE '>' '<'
@@ -78,44 +82,44 @@ var :           type tIDENTIFIER
     | tPUBLIC  tAUTO identifiers '=' exprs
     ;
 
-fun :           type tIDENTIFIER '('      ')'
-    |           type tIDENTIFIER '('      ')' block
-    |           type tIDENTIFIER '(' vars ')'
-    |           type tIDENTIFIER '(' vars ')' block
-    |          tAUTO tIDENTIFIER '('      ')'
-    |          tAUTO tIDENTIFIER '('      ')' block
-    |          tAUTO tIDENTIFIER '(' vars ')'
-    |          tAUTO tIDENTIFIER '(' vars ')' block
-    | tPUBLIC   type tIDENTIFIER '('      ')'
-    | tPUBLIC   type tIDENTIFIER '('      ')' block
-    | tPUBLIC   type tIDENTIFIER '(' vars ')'
-    | tPUBLIC   type tIDENTIFIER '(' vars ')' block
-    | tPUBLIC  tAUTO tIDENTIFIER '('      ')'
-    | tPUBLIC  tAUTO tIDENTIFIER '('      ')' block
-    | tPUBLIC  tAUTO tIDENTIFIER '(' vars ')'
-    | tPUBLIC  tAUTO tIDENTIFIER '(' vars ')' block
-    | tREQUIRE  type tIDENTIFIER '('      ')'
-    | tREQUIRE  type tIDENTIFIER '('      ')' block
-    | tREQUIRE  type tIDENTIFIER '(' vars ')'
-    | tREQUIRE  type tIDENTIFIER '(' vars ')' block
-    | tREQUIRE tAUTO tIDENTIFIER '('      ')'
-    | tREQUIRE tAUTO tIDENTIFIER '('      ')' block
-    | tREQUIRE tAUTO tIDENTIFIER '(' vars ')'
-    | tREQUIRE tAUTO tIDENTIFIER '(' vars ')' block
-    ;
+func :           type tIDENTIFIER '('      ')' %prec tNOBLOCK
+     |           type tIDENTIFIER '('      ')' block
+     |           type tIDENTIFIER '(' vars ')' %prec tNOBLOCK
+     |           type tIDENTIFIER '(' vars ')' block
+     |          tAUTO tIDENTIFIER '('      ')' %prec tNOBLOCK
+     |          tAUTO tIDENTIFIER '('      ')' block
+     |          tAUTO tIDENTIFIER '(' vars ')' %prec tNOBLOCK
+     |          tAUTO tIDENTIFIER '(' vars ')' block
+     | tPUBLIC   type tIDENTIFIER '('      ')' %prec tNOBLOCK
+     | tPUBLIC   type tIDENTIFIER '('      ')' block
+     | tPUBLIC   type tIDENTIFIER '(' vars ')' %prec tNOBLOCK
+     | tPUBLIC   type tIDENTIFIER '(' vars ')' block
+     | tPUBLIC  tAUTO tIDENTIFIER '('      ')' %prec tNOBLOCK
+     | tPUBLIC  tAUTO tIDENTIFIER '('      ')' block
+     | tPUBLIC  tAUTO tIDENTIFIER '(' vars ')' %prec tNOBLOCK
+     | tPUBLIC  tAUTO tIDENTIFIER '(' vars ')' block
+     | tREQUIRE  type tIDENTIFIER '('      ')' %prec tNOBLOCK
+     | tREQUIRE  type tIDENTIFIER '('      ')' block
+     | tREQUIRE  type tIDENTIFIER '(' vars ')' %prec tNOBLOCK
+     | tREQUIRE  type tIDENTIFIER '(' vars ')' block
+     | tREQUIRE tAUTO tIDENTIFIER '('      ')' %prec tNOBLOCK
+     | tREQUIRE tAUTO tIDENTIFIER '('      ')' block
+     | tREQUIRE tAUTO tIDENTIFIER '(' vars ')' %prec tNOBLOCK
+     | tREQUIRE tAUTO tIDENTIFIER '(' vars ')' block
+     ;
 
 
-proc :          tPROCEDURE tIDENTIFIER '('      ')'
+proc :          tPROCEDURE tIDENTIFIER '('      ')' %prec tNOBLOCK
      |          tPROCEDURE tIDENTIFIER '('      ')' block
-     |          tPROCEDURE tIDENTIFIER '(' vars ')'
+     |          tPROCEDURE tIDENTIFIER '(' vars ')' %prec tNOBLOCK
      |          tPROCEDURE tIDENTIFIER '(' vars ')' block
-     | tPUBLIC  tPROCEDURE tIDENTIFIER '('      ')'
+     | tPUBLIC  tPROCEDURE tIDENTIFIER '('      ')' %prec tNOBLOCK
      | tPUBLIC  tPROCEDURE tIDENTIFIER '('      ')' block
-     | tPUBLIC  tPROCEDURE tIDENTIFIER '(' vars ')'
+     | tPUBLIC  tPROCEDURE tIDENTIFIER '(' vars ')' %prec tNOBLOCK
      | tPUBLIC  tPROCEDURE tIDENTIFIER '(' vars ')' block
-     | tREQUIRE tPROCEDURE tIDENTIFIER '('      ')'
+     | tREQUIRE tPROCEDURE tIDENTIFIER '('      ')' %prec tNOBLOCK
      | tREQUIRE tPROCEDURE tIDENTIFIER '('      ')' block
-     | tREQUIRE tPROCEDURE tIDENTIFIER '(' vars ')'
+     | tREQUIRE tPROCEDURE tIDENTIFIER '(' vars ')' %prec tNOBLOCK
      | tREQUIRE tPROCEDURE tIDENTIFIER '(' vars ')' block
      ;
 
@@ -157,13 +161,13 @@ instr : expr ';'                   { $$ = new og::evaluation_node(LINE, $1); }
       | block                      { $$ = $1; }
       ;
 
-cond_instr : tIF expr tTHEN instr                  { $$ = new og::if_node(LINE, $2, $4); }
+cond_instr : tIF expr tTHEN instr %prec tIFX       { $$ = new og::if_node(LINE, $2, $4); }
            | tIF expr tTHEN instr elif             { $$ = new og::if_else_node(LINE, $2, $4, $5); }
            ;
 
-elif : tELSE instr                  { $$ = $2; }
-     | tELIF expr tTHEN instr       { $$ = new og::if_node(LINE, $2, $4); }
-     | tELIF expr tTHEN instr elif  { $$ = new og::if_else_node(LINE, $2, $4, $5); }
+elif : tELSE instr                       { $$ = $2; }
+     | tELIF expr tTHEN instr %prec tIFX { $$ = new og::if_node(LINE, $2, $4); }
+     | tELIF expr tTHEN instr elif       { $$ = new og::if_else_node(LINE, $2, $4, $5); }
      ;
 
 iter_instr : tFOR vars ';' exprs ';' exprs tDO instr
