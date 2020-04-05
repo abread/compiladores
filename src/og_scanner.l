@@ -58,15 +58,18 @@
 \"                     yy_push_state(X_STRING); yylval.s = new std::string("");
 <X_STRING>\"           yy_pop_state(); return tSTRING;
 <X_STRING>\\\"         *yylval.s += yytext + 1;
+<X_STRING>\\\\         *yylval.s += yytext + 1;
 <X_STRING>.            *yylval.s += yytext;
 <X_STRING>\n           yyerror("newline in string");
 
 
-[0-9]+                                             yylval.i = strtol(yytext, nullptr, 10); return tINT;
-0x[0-9]+                                           yylval.i = strtol(yytext, nullptr, 16); return tINT;
-([0-9]*\.[0-9]+|[0-9]+\.[0-9])([Ee]([-+])?[0-9]+)? yylval.d = strtod(yytext, nullptr); return tREAL; //check meee
+[0-9]+                               yylval.i = strtol(yytext, NULL, 10); return tINT;
+0x[0-9]+                             yylval.i = strtol(yytext, NULL, 16); return tINT;
+[0-9]*\.[0-9]+([Ee][-+]?[0-9]+)?     yylval.d = strtod(yytext, NULL); return tREAL;
+[0-9]+\.[0-9]*([Ee][-+]?[0-9]+)?     yylval.d = strtod(yytext, NULL); return tREAL;
+[0-9]+([Ee][-+]?[0-9]+)              yylval.d = strtod(yytext, NULL); return tREAL;
 
-[-()<>=+*/%;{}.~?\[\]] return *yytext;
+[-()<>=+*/%;{}.~?\[\],] return *yytext;
 
 [ \t\n]+               ; /* ignore whitespace */
 
