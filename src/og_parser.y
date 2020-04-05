@@ -202,12 +202,15 @@ expr : tINT                    { $$ = new cdk::integer_node(LINE, $1); }
      | '(' expr ')'            { $$ = $2; }
      | lval                    { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME
      | lval '=' expr           { $$ = new cdk::assignment_node(LINE, $1, $3); }
+     | lval '?'                { $$ = new og::address_of_node(LINE, $1); }
      | tINPUT  '(' lval  ')'   { $$ = new og::input_node(LINE); }
      | tSIZEOF '(' exprs ')'   { $$ = new og::sizeof_node(LINE, $3); }
+     | '[' expr ']'            { $$ = new og::stack_alloc_node(LINE, $2); }
      ;
 
-lval :      tIDENTIFIER        { $$ = new cdk::variable_node(LINE, $1); }
-     | type tIDENTIFIER        { $$ = new cdk::variable_node(LINE, $1, $2); }
+lval : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, $1); }
+     | lval '[' expr ']'       { $$ = new og::pointer_index_node(LINE, new cdk::rvalue_node(LINE, $1), $3); }
+     | lval '@' tINT           { $$ = new og::tuple_index_node(LINE, new cdk::rvalue_node(LINE, $1), $3); }
      ;
 
 string  : tSTRING              { $$ = $1; }
