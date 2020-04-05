@@ -41,6 +41,7 @@
 
 %nonassoc tNOBLOCK
 %nonassoc '{'
+%nonassoc tVARX
 %nonassoc ','
 
 %right '='
@@ -81,15 +82,15 @@ var_idents  : tIDENTIFIER                { $$ = new std::vector(1, std::string(*
 void_t : tPROCEDURE { $$ = new cdk::primitive_type(0, cdk::typename_type::TYPE_VOID); }
 auto_t : tAUTO      { $$ = new cdk::primitive_type(); }
 
-var : tPUBLIC  type tIDENTIFIER            { $$ = new og::variable_declaration_node(LINE, tPUBLIC, $2, *$3); delete $3; }
-    | tREQUIRE type tIDENTIFIER            { $$ = new og::variable_declaration_node(LINE, tREQUIRE, $2, *$3); delete $3; }
-    |          type tIDENTIFIER            { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
-    | tPUBLIC  type tIDENTIFIER  '=' expr  { $$ = new og::variable_declaration_node(LINE, tPUBLIC, $2, *$3, $5); delete $3; }
-    |          type tIDENTIFIER  '=' expr  { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
-    |          auto_t var_idents           { $$ = new og::variable_declaration_node(LINE, tPRIVATE, *$2); delete $2; }
-    | tPUBLIC  auto_t var_idents           { $$ = new og::variable_declaration_node(LINE, tPUBLIC, *$3); delete $3; }
-    |          auto_t var_idents '=' exprs { $$ = new og::variable_declaration_node(LINE, tPRIVATE, *$2, new og::tuple_node(LINE, $4)); delete $2; }
-    | tPUBLIC  auto_t var_idents '=' exprs { $$ = new og::variable_declaration_node(LINE, tPUBLIC, *$3, new og::tuple_node(LINE, $5)); delete $3; }
+var : tPUBLIC  type tIDENTIFIER              { $$ = new og::variable_declaration_node(LINE, tPUBLIC, $2, *$3); delete $3; }
+    | tREQUIRE type tIDENTIFIER              { $$ = new og::variable_declaration_node(LINE, tREQUIRE, $2, *$3); delete $3; }
+    |          type tIDENTIFIER              { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
+    | tPUBLIC  type tIDENTIFIER  '=' expr    { $$ = new og::variable_declaration_node(LINE, tPUBLIC, $2, *$3, $5); delete $3; }
+    |          type tIDENTIFIER  '=' expr    { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
+    |          auto_t var_idents %prec tVARX { $$ = new og::variable_declaration_node(LINE, tPRIVATE, *$2); delete $2; }
+    | tPUBLIC  auto_t var_idents %prec tVARX { $$ = new og::variable_declaration_node(LINE, tPUBLIC, *$3); delete $3; }
+    |          auto_t var_idents '=' exprs   { $$ = new og::variable_declaration_node(LINE, tPRIVATE, *$2, new og::tuple_node(LINE, $4)); delete $2; }
+    | tPUBLIC  auto_t var_idents '=' exprs   { $$ = new og::variable_declaration_node(LINE, tPUBLIC, *$3, new og::tuple_node(LINE, $5)); delete $3; }
     ;
 
 
