@@ -3,6 +3,7 @@
 %{
 // make relevant includes before including the parser's tab file
 #include <string>
+#include <cstdlib>
 #include <cdk/ast/sequence_node.h>
 #include <cdk/ast/expression_node.h>
 #include <cdk/ast/lvalue_node.h>
@@ -18,7 +19,7 @@
 
 "/*"                   yy_push_state(X_COMMENT);
 <X_COMMENT>"*/"        yy_pop_state();
-<X_COMMENT>"/*"        yy_push_state();
+<X_COMMENT>"/*"        yy_push_state(X_COMMENT);
 <X_COMMENT>.|\n         ; /* ignore comments */
 
 ">="                   return tGE;
@@ -57,15 +58,18 @@
 \"                     yy_push_state(X_STRING); yylval.s = new std::string("");
 <X_STRING>\"           yy_pop_state(); return tSTRING;
 <X_STRING>\\\"         *yylval.s += yytext + 1;
+<X_STRING>\\\\         *yylval.s += yytext + 1;
 <X_STRING>.            *yylval.s += yytext;
 <X_STRING>\n           yyerror("newline in string");
 
 
-[0-9]+                                             yylval.i = strtol(yytext, nullptr, 10); return tINTEGER;
-0x[0-9]+                                           yylval.i = strtol(yytext, nullptr, 16); return tINTEGER;
-([0-9]*\.[0-9]+|[0-9]+\.[0-9])([Ee]([-+])?[0-9]+)? yylval.i = strtod(yytext, nullptr, 10); return tREAL; //check meee
+[0-9]+                               yylval.i = strtol(yytext, NULL, 10); return tINT;
+0x[0-9]+                             yylval.i = strtol(yytext, NULL, 16); return tINT;
+[0-9]*\.[0-9]+([Ee][-+]?[0-9]+)?     yylval.d = strtod(yytext, NULL); return tREAL;
+[0-9]+\.[0-9]*([Ee][-+]?[0-9]+)?     yylval.d = strtod(yytext, NULL); return tREAL;
+[0-9]+([Ee][-+]?[0-9]+)              yylval.d = strtod(yytext, NULL); return tREAL;
 
-[-()<>=+*/%;{}.~?\[\]] return *yytext;
+[-()<>=+*/%;{}.~?\[\],] return *yytext;
 
 [ \t\n]+               ; /* ignore whitespace */
 

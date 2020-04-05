@@ -12,7 +12,7 @@
 
 %union {
   int                  i; /* integer value */
-  double               double; /* double value */
+  double               d; /* double value */
   std::string          *s; /* symbol name or string literal */
   cdk::basic_node      *node; /* node pointer */
   cdk::sequence_node   *sequence;
@@ -22,14 +22,15 @@
   og::block_node       *blk;
 };
 
-%token <i> tINTEGER
-%token <d> tDOUBLE
+%token <i> tINT
+%token <d> tREAL
 %token <s> tIDENTIFIER tSTRING
-%token tFOR tDO tIF tTHEN tELIF tELSE tWRITE tWRITELN
+%token tFOR tDO tTHEN tWRITE tWRITELN tPUBLIC tREQUIRE
 %token tAUTO tINTD tREALD tSTRINGD tPTR tNULLPTR
 %token tPROCEDURE tBREAK tCONTINUE tRETURN
 %token tINPUT tSIZEOF
 
+%nonassoc tIFX
 %nonassoc tIF
 %nonassoc tELIF
 %nonassoc tELSE
@@ -63,7 +64,7 @@ decl : var ';'
 
 var :          tTYPE tIDENTIFIER
     |          tTYPE tIDENTIFIER '=' expr
-    | tPUBLIC  tTYPE tIDENTIFIER 
+    | tPUBLIC  tTYPE tIDENTIFIER
     | tPUBLIC  tTYPE tIDENTIFIER '=' expr
     | tREQUIRE tTYPE tIDENTIFIER
     | tREQUIRE tTYPE tIDENTIFIER '=' expr
@@ -155,7 +156,7 @@ cond_instr : tIF expr THEN instr
            | tIF expr THEN elif_instrs
            | tIF expr THEN elif_instrs tELSE instr
            ;
-        
+
 elif_instr : tELIF expr THEN instr
            ;
 
@@ -226,7 +227,7 @@ string  : tSTRING              { $$ = $1} /* string node? */
 //      | tFOR exprs ';' exprs ';' exprs tDO stmt         { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
 //      | tIF '(' expr ')' stmt %prec tIFX { $$ = new og::if_node(LINE, $3, $5); }
 //      | tIF '(' expr ')' stmt tELSE stmt { $$ = new og::if_else_node(LINE, $3, $5, $7); }
-//      | '{' list '}'                     { $$ = $2; }
+//      | '{' list '}'                     { $$ = $2; } <------------------- block
 //      ;
 
 %%
