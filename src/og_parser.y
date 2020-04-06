@@ -62,7 +62,7 @@
 
 %%
 
-file : decls        { $$ = $1; }
+file : decls        { compiler->ast($1); }
      ;
 
 decls :       decl  { $$ = new cdk::sequence_node(LINE, $1); }
