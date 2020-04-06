@@ -17,7 +17,7 @@ src/$(LANGUAGE): build-cdk build-rts .PHONY
 examples: $(LANGUAGE) .PHONY
 	$(MAKE) -C examples $(MAKEOPTS) all
 
-test: examples .PHONY
+test: .PHONY
 	$(MAKE) -C tests $(MAKEOPTS) test
 
 clean-proj: .PHONY
