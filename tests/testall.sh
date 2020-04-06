@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # default
 # assumes script inside test folder and `og` in ../
