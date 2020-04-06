@@ -10,7 +10,7 @@ namespace og {
     cdk::expression_node *_retval;
 
   public:
-    return_node(int lineno, cdk::expression_node *retval) :
+    return_node(int lineno, cdk::expression_node *retval = nullptr) :
         cdk::basic_node(lineno), _retval(retval) {
     }
 

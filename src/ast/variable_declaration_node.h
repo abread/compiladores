@@ -14,25 +14,30 @@ namespace og {
     cdk::expression_node *_initializer;
 
   public:
-    variable_declaration_node(int lineno, int qualifier, std::string id) :
+    variable_declaration_node(int lineno, int qual, cdk::basic_type *type, std::string &id) :
+      variable_declaration_node(lineno, qual, type, id, nullptr) {}
+
+    variable_declaration_node(int lineno, int qual, cdk::basic_type *type, std::string &id, cdk::expression_node *init) :
       cdk::typed_node(lineno),
-      _qualifier(qualifier),
-      _identifiers(),
-      _initializer(nullptr) {
-        _identifiers.push_back(id);
+      _qualifier(qual),
+      _identifiers(std::vector<std::string>(1, id)),
+      _initializer(init) {
+        this->type(std::shared_ptr<cdk::basic_type>(type));
       }
-    variable_declaration_node(variable_declaration_node *old, std::string id) :
-      cdk::typed_node(old->lineno()),
-      _qualifier(old->qualifier()),
-      _identifiers(old->identifiers()),
-      _initializer(old->initializer()) {
-        _identifiers.push_back(id);
+
+    variable_declaration_node(int lineno, int qual, std::vector<std::string> &ids) :
+      variable_declaration_node(lineno, qual, new cdk::primitive_type(), ids, nullptr) {}
+
+    variable_declaration_node(int lineno, int qual, std::vector<std::string> &ids, cdk::expression_node *init) :
+      variable_declaration_node(lineno, qual, new cdk::primitive_type(), ids, init) {}
+
+    variable_declaration_node(int lineno, int qual, cdk::basic_type *type, std::vector<std::string> &ids, cdk::expression_node *init) :
+      cdk::typed_node(lineno),
+      _qualifier(qual),
+      _identifiers(ids),
+      _initializer(init) {
+        this->type(std::shared_ptr<cdk::basic_type>(type));
       }
-    variable_declaration_node(variable_declaration_node *old, cdk::expression_node* initializer) :
-      cdk::typed_node(old->lineno()),
-      _qualifier(old->qualifier()),
-      _identifiers(old->identifiers()),
-      _initializer(initializer) {}
 
   public:
     int qualifier() {
