@@ -299,7 +299,12 @@ void og::xml_writer::do_if_else_node(og::if_else_node * const node, int lvl) {
 }
 
 void og::xml_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
-  // TODO
+  ASSERT_SAFE_EXPRESSIONS;
+  openTag(node, lvl);
+  openTag("elements", lvl + 2);
+  node->elements()->accept(this, lvl + 4);
+  closeTag("elements", lvl + 2);
+  closeTag(node, lvl);
 }
 
 void og::xml_writer::do_variable_declaration_node(og::variable_declaration_node *const node, int lvl) {
