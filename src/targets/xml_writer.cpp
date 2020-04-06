@@ -130,7 +130,7 @@ void og::xml_writer::do_assignment_node(cdk::assignment_node * const node, int l
 //---------------------------------------------------------------------------
 
 void og::xml_writer::do_function_definition_node(og::function_definition_node * const node, int lvl) {
-  // TODO: HMMMMM why was this here? Only visit the block?
+  // TODO: HMMMMM why was this here? Only visit the block? Maybe a definition isn't also a declaration afterall?
   openTag(node, lvl);
   node->block()->accept(this, lvl + 4);
   closeTag(node, lvl);
@@ -150,7 +150,14 @@ void og::xml_writer::do_function_call_node(og::function_call_node *const node, i
 //---------------------------------------------------------------------------
 
 void og::xml_writer::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
-  // TODO
+  ASSERT_SAFE_EXPRESSIONS;
+  os() << std::string(lvl, ' ') << "<function_declaration_node qualifier='" << node->qualifier() << "' identifier='" << node->identifier() << "'>" << std::endl;
+  if (node->arguments()) { //TODO: empty sequence vs nullptr again
+    openTag("arguments", lvl + 2);
+    node->arguments()->accept(this, lvl + 4);
+    closeTag("arguments", lvl + 2);
+  }
+  closeTag(node, lvl);
 }
 
 //---------------------------------------------------------------------------
