@@ -103,9 +103,8 @@ void og::xml_writer::do_or_node(cdk::or_node * const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::xml_writer::do_variable_node(cdk::variable_node * const node, int lvl) {
-  //TODO: I guess this is fine but TODO anyway
   ASSERT_SAFE_EXPRESSIONS;
-  os() << std::string(lvl, ' ') << "<" << node->label() << ">" << node->name() << "</" << node->label() << ">" << std::endl;
+  os() << std::string(lvl, ' ') << "<" << node->label() << " name='" << node->name() << "' />" << std::endl;
 }
 
 void og::xml_writer::do_rvalue_node(cdk::rvalue_node * const node, int lvl) {
@@ -215,9 +214,8 @@ void og::xml_writer::do_stack_alloc_node(og::stack_alloc_node * const node, int 
 }
 
 void og::xml_writer::do_nullptr_node(og::nullptr_node * const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS; //TODO: Not a literal?
-  openTag(node, lvl);
-  closeTag(node, lvl);
+  ASSERT_SAFE_EXPRESSIONS;
+  emptyTag(node, lvl);
 }
 
 void og::xml_writer::do_write_node(og::write_node * const node, int lvl) {
@@ -231,8 +229,7 @@ void og::xml_writer::do_write_node(og::write_node * const node, int lvl) {
 
 void og::xml_writer::do_input_node(og::input_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  openTag(node, lvl);
-  closeTag(node, lvl);
+  emptyTag(node, lvl);
 }
 
 //---------------------------------------------------------------------------
@@ -262,20 +259,19 @@ void og::xml_writer::do_for_node(og::for_node * const node, int lvl) {
   openTag("block", lvl + LVL_INCR);
   node->block()->accept(this, lvl + 2*LVL_INCR);
   closeTag("block", lvl + LVL_INCR);
+
   closeTag(node, lvl);
 }
 
 
 void og::xml_writer::do_break_node(og::break_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  openTag(node, lvl);
-  closeTag(node, lvl);
+  emptyTag(node, lvl);
 }
 
 void og::xml_writer::do_continue_node(og::continue_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  openTag(node, lvl);
-  closeTag(node, lvl);
+  emptyTag(node, lvl);
 }
 
 void og::xml_writer::do_return_node(og::return_node * const node, int lvl) {
