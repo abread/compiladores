@@ -36,6 +36,9 @@ all: $(EXECUTABLES) .PHONY
 %.asm: %.og $(COMPILER)
 	$(COMPILER) $< -o $@
 
+%.xml: %.og $(COMPILER)
+	$(COMPILER) $< --target xml -o $@
+
 %.o: %.asm
 	$(ASM) -felf32 $< -o $@
 
