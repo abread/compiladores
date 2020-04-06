@@ -103,6 +103,7 @@ void og::xml_writer::do_or_node(cdk::or_node * const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::xml_writer::do_variable_node(cdk::variable_node * const node, int lvl) {
+  //TODO: I guess this is fine but TODO anyway
   ASSERT_SAFE_EXPRESSIONS;
   os() << std::string(lvl, ' ') << "<" << node->label() << ">" << node->name() << "</" << node->label() << ">" << std::endl;
 }
@@ -115,6 +116,7 @@ void og::xml_writer::do_rvalue_node(cdk::rvalue_node * const node, int lvl) {
 }
 
 void og::xml_writer::do_assignment_node(cdk::assignment_node * const node, int lvl) {
+  //TODO: multiple assignment?
   ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
 
@@ -190,21 +192,15 @@ void og::xml_writer::do_pointer_index_node(og::pointer_index_node * const node, 
 }
 
 void og::xml_writer::do_address_of_node(og::address_of_node * const node, int lvl) {
-  //TODO
-#if 0
-  ASSERT_SAFE_EXPRESSIONS;
-  openTag(node, lvl);
-  node->lvalue()->accept(this, lvl + 2);
-#endif
+  //TODO: unary operation?
+  //do_unary_operation(node, lvl);
 }
 
 void og::xml_writer::do_stack_alloc_node(og::stack_alloc_node * const node, int lvl) {
-  // TODO
-#if 0
+  ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
   node->argument()->accept(this, lvl + 2);
   closeTag(node, lvl);
-#endif
 }
 
 void og::xml_writer::do_nullptr_node(og::nullptr_node * const node, int lvl) {
@@ -215,7 +211,7 @@ void og::xml_writer::do_nullptr_node(og::nullptr_node * const node, int lvl) {
 
 void og::xml_writer::do_write_node(og::write_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  os() << std::string(lvl, ' ') << "<write_node newline='" << (node->newline()) ? "true" : "false" << "'>" << std::endl;
+  os() << std::string(lvl, ' ') << "<write_node newline='" << ((node->newline()) ? "true" : "false") << "'>" << std::endl;
   node->argument()->accept(this, lvl + 2);
   closeTag(node, lvl);
 }
@@ -308,7 +304,19 @@ void og::xml_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
 }
 
 void og::xml_writer::do_variable_declaration_node(og::variable_declaration_node *const node, int lvl) {
-  // TODO
+  ASSERT_SAFE_EXPRESSIONS; //TODO: a bit dirty no? And maybe get qualifier name somehow?
+  os() << std::string(lvl, ' ') << "<variable_declaration_node qualifier='" << node->qualifier() << "'>" << std::endl;
+  openTag("identifiers", lvl + 2);
+  for (const std::string& identifier : node->identifiers()) {
+    os() << std::string(lvl + 4, ' ') << "<identifier>" << identifier << "</identifier>" << std::endl;
+  }
+  closeTag("identifiers", lvl + 2);
+  if (node->initializer()) {
+    openTag("initializer", lvl + 2);
+    node->initializer()->accept(this, lvl + 4);
+    closeTag("initializer", lvl + 2);
+  }
+  closeTag(node, lvl);
 }
 
 void og::xml_writer::do_tuple_index_node(og::tuple_index_node *const node, int lvl) {
@@ -321,7 +329,11 @@ void og::xml_writer::do_tuple_index_node(og::tuple_index_node *const node, int l
 }
 
 void og::xml_writer::do_sizeof_node(og::sizeof_node *const node, int lvl) {
-  // TODO
+  openTag(node, lvl);
+  openTag("arguments", lvl + 2);
+  node->arguments()->accept(this, lvl + 4);
+  closeTag("arguments", lvl + 2);
+  closeTag(node, lvl);
 }
 
 void og::xml_writer::do_identity_node(og::identity_node *const node, int lvl) {
