@@ -64,12 +64,12 @@
 
 
 [0-9]+                               yylval.i = strtol(yytext, NULL, 10); return tINT;
-0x[0-9]+                             yylval.i = strtol(yytext, NULL, 16); return tINT;
+0x[0-9a-fA-F]+                       yylval.i = strtol(yytext, NULL, 16); return tINT;
 [0-9]*\.[0-9]+([Ee][-+]?[0-9]+)?     yylval.d = strtod(yytext, NULL); return tREAL;
 [0-9]+\.[0-9]*([Ee][-+]?[0-9]+)?     yylval.d = strtod(yytext, NULL); return tREAL;
 [0-9]+([Ee][-+]?[0-9]+)              yylval.d = strtod(yytext, NULL); return tREAL;
 
-[-()<>=+*/%;{}.~?\[\],] return *yytext;
+[-()<>=+*/%;{}.~?\[\],@] return *yytext;
 
 [ \t\n]+               ; /* ignore whitespace */
 

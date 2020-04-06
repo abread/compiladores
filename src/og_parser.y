@@ -42,6 +42,7 @@
 %nonassoc tNOBLOCK
 %nonassoc '{'
 %nonassoc tVARX
+%nonassoc tNOMOREEXPRS
 %nonassoc ','
 
 %right '='
@@ -89,8 +90,8 @@ var : tPUBLIC  type tIDENTIFIER              { $$ = new og::variable_declaration
     |          type tIDENTIFIER  '=' expr    { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
     |          auto_t var_idents %prec tVARX { $$ = new og::variable_declaration_node(LINE, tPRIVATE, *$2); delete $2; }
     | tPUBLIC  auto_t var_idents %prec tVARX { $$ = new og::variable_declaration_node(LINE, tPUBLIC, *$3); delete $3; }
-    |          auto_t var_idents '=' exprs   { $$ = new og::variable_declaration_node(LINE, tPRIVATE, *$2, new og::tuple_node(LINE, $4)); delete $2; }
-    | tPUBLIC  auto_t var_idents '=' exprs   { $$ = new og::variable_declaration_node(LINE, tPUBLIC, *$3, new og::tuple_node(LINE, $5)); delete $3; }
+    |          auto_t var_idents '=' exprs %prec tNOMOREEXPRS { $$ = new og::variable_declaration_node(LINE, tPRIVATE, *$2, new og::tuple_node(LINE, $4)); delete $2; }
+    | tPUBLIC  auto_t var_idents '=' exprs %prec tNOMOREEXPRS { $$ = new og::variable_declaration_node(LINE, tPUBLIC, *$3, new og::tuple_node(LINE, $5)); delete $3; }
     ;
 
 
@@ -226,9 +227,11 @@ expr : tINT                      { $$ = new cdk::integer_node(LINE, $1); }
      | tIDENTIFIER '('       ')' { $$ = new og::function_call_node(LINE, *$1); delete $1; }
      ;
 
-lval : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, *$1); delete $1; }
-     | lval '[' expr ']'       { $$ = new og::pointer_index_node(LINE, new cdk::rvalue_node(LINE, $1), $3); }
-     | lval '@' tINT           { $$ = new og::tuple_index_node(LINE, new cdk::rvalue_node(LINE, $1), $3); }
+lval : tIDENTIFIER               { $$ = new cdk::variable_node(LINE, *$1); delete $1; }
+     | lval '[' expr ']'         { $$ = new og::pointer_index_node(LINE, new cdk::rvalue_node(LINE, $1), $3); }
+     | '(' expr ')' '[' expr ']' { $$ = new og::pointer_index_node(LINE, $2, $5); }
+     | lval '@' tINT             { $$ = new og::tuple_index_node(LINE, new cdk::rvalue_node(LINE, $1), $3); }
+     | '(' expr ')' '@' tINT     { $$ = new og::tuple_index_node(LINE, $2, $5); }
      ;
 
 string : tSTRING              { $$ = $1; }

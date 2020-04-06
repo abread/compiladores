@@ -23,6 +23,7 @@ namespace og {
     }
 
   private:
+    const int LVL_INCR = 2;
     void openTag(const std::string &tag, int lvl) {
       os() << std::string(lvl, ' ') + "<" + tag + ">" << std::endl;
     }
@@ -35,13 +36,19 @@ namespace og {
     void closeTag(const cdk::basic_node *node, int lvl) {
       closeTag(node->label(), lvl);
     }
+    void emptyTag(const std::string &tag, int lvl) {
+      os() << std::string(lvl, ' ') << '<' << tag << " />";
+    }
+    void emptyTag(const cdk::basic_node *node, int lvl) {
+      emptyTag(node->label(), lvl);
+    }
 
   protected:
     void do_binary_operation(cdk::binary_operation_node *const node, int lvl);
     void do_unary_operation(cdk::unary_operation_node *const node, int lvl);
     template<typename T>
     void process_literal(cdk::literal_node<T> *const node, int lvl) {
-      os() << std::string(lvl, ' ') << "<" << node->label() << ">" << node->value() << "</" << node->label() << ">" << std::endl;
+      os() << std::string(lvl, ' ') << "<" << node->label() << " value='" << node->value() << "' />" << std::endl;
     }
 
   public:

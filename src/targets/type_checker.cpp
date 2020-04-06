@@ -99,11 +99,11 @@ void og::type_checker::do_nullptr_node(og::nullptr_node * const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::type_checker::processUnaryExpression(cdk::unary_operation_node *const node, int lvl) {
-  node->argument()->accept(this, lvl + 2);
+  /*node->argument()->accept(this, lvl + 2);
   if (!node->argument()->is_typed(cdk::TYPE_INT)) throw std::string("wrong type in argument of unary expression");
 
   // in Simple, expressions are always int
-  node->type(cdk::make_primitive_type(4, cdk::TYPE_INT));
+  node->type(cdk::make_primitive_type(4, cdk::TYPE_INT));*/
 }
 
 void og::type_checker::do_neg_node(cdk::neg_node *const node, int lvl) {
@@ -114,14 +114,14 @@ void og::type_checker::do_neg_node(cdk::neg_node *const node, int lvl) {
 
 void og::type_checker::processBinaryExpression(cdk::binary_operation_node *const node, int lvl) {
   ASSERT_UNSPEC;
-  node->left()->accept(this, lvl + 2);
+  /*node->left()->accept(this, lvl + 2);
   if (!node->left()->is_typed(cdk::TYPE_INT)) throw std::string("wrong type in left argument of binary expression");
 
   node->right()->accept(this, lvl + 2);
   if (!node->right()->is_typed(cdk::TYPE_INT)) throw std::string("wrong type in right argument of binary expression");
 
   // in Simple, expressions are always int
-  node->type(cdk::make_primitive_type(4, cdk::TYPE_INT));
+  node->type(cdk::make_primitive_type(4, cdk::TYPE_INT));*/
 }
 
 void og::type_checker::do_add_node(cdk::add_node *const node, int lvl) {
@@ -162,14 +162,14 @@ void og::type_checker::do_eq_node(cdk::eq_node *const node, int lvl) {
 
 void og::type_checker::do_variable_node(cdk::variable_node *const node, int lvl) {
   ASSERT_UNSPEC;
-  const std::string &id = node->name();
+  /*const std::string &id = node->name();
   std::shared_ptr<og::symbol> symbol = _symtab.find(id);
 
   if (symbol != nullptr) {
     node->type(symbol->type());
   } else {
     throw id;
-  }
+  }*/
 }
 
 void og::type_checker::do_pointer_index_node(og::pointer_index_node * const node, int lvl) {
@@ -192,18 +192,18 @@ void og::type_checker::do_pointer_index_node(og::pointer_index_node * const node
 
 void og::type_checker::do_rvalue_node(cdk::rvalue_node *const node, int lvl) {
   ASSERT_UNSPEC;
-  try {
+  /*try {
     node->lvalue()->accept(this, lvl);
     node->type(node->lvalue()->type());
   } catch (const std::string &id) {
     throw "undeclared variable '" + id + "'";
-  }
+  }*/
 }
 
 void og::type_checker::do_assignment_node(cdk::assignment_node *const node, int lvl) {
   ASSERT_UNSPEC;
 
-  try {
+  /*try {
     node->lvalue()->accept(this, lvl);
   } catch (const std::string &id) {
     auto symbol = std::make_shared<og::symbol>(cdk::make_primitive_type(4, cdk::TYPE_INT), id, 0);
@@ -218,7 +218,7 @@ void og::type_checker::do_assignment_node(cdk::assignment_node *const node, int 
   if (!node->rvalue()->is_typed(cdk::TYPE_INT)) throw std::string("wrong type in right argument of assignment expression");
 
   // in Simple, expressions are always int
-  node->type(cdk::make_primitive_type(4, cdk::TYPE_INT));
+  node->type(cdk::make_primitive_type(4, cdk::TYPE_INT));*/
 }
 
 //---------------------------------------------------------------------------

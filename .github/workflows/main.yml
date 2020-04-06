@@ -27,3 +27,5 @@ jobs:
         key: ${{ runner.os }}-rts
     - name: make
       run: make
+    - name: test
+      run: make test
