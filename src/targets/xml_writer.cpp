@@ -155,9 +155,18 @@ void og::xml_writer::do_evaluation_node(og::evaluation_node * const node, int lv
 }
 
 void og::xml_writer::do_block_node(og::block_node * const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
+  ASSERT_SAFE_EXPRESSIONS; //TODO: empty sequences instead of nullptr?
   openTag(node, lvl);
-  //TODO block node
+  if (node->declarations()) {
+    openTag("declarations", lvl + 2);
+    node->declarations()->accept(this, lvl + 4);
+    closeTag("declarations", lvl + 2);
+  }
+  if (node->instructions()) {
+    openTag("instructions", lvl + 2);
+    node->instructions()->accept(this, lvl + 4);
+    closeTag("instructions", lvl + 2);
+  }
   closeTag(node, lvl);
 }
 
@@ -196,12 +205,9 @@ void og::xml_writer::do_stack_alloc_node(og::stack_alloc_node * const node, int 
 }
 
 void og::xml_writer::do_nullptr_node(og::nullptr_node * const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
-  //TODO
-#if 0
+  ASSERT_SAFE_EXPRESSIONS; //TODO: Not a literal?
   openTag(node, lvl);
   closeTag(node, lvl);
-#endif
 }
 
 void og::xml_writer::do_write_node(og::write_node * const node, int lvl) {
