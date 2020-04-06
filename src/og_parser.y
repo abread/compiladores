@@ -42,6 +42,7 @@
 %nonassoc tNOBLOCK
 %nonassoc '{'
 %nonassoc tVARX
+%nonassoc tNOMOREEXPRS
 %nonassoc ','
 
 %right '='
@@ -89,8 +90,8 @@ var : tPUBLIC  type tIDENTIFIER              { $$ = new og::variable_declaration
     |          type tIDENTIFIER  '=' expr    { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
     |          auto_t var_idents %prec tVARX { $$ = new og::variable_declaration_node(LINE, tPRIVATE, *$2); delete $2; }
     | tPUBLIC  auto_t var_idents %prec tVARX { $$ = new og::variable_declaration_node(LINE, tPUBLIC, *$3); delete $3; }
-    |          auto_t var_idents '=' exprs   { $$ = new og::variable_declaration_node(LINE, tPRIVATE, *$2, new og::tuple_node(LINE, $4)); delete $2; }
-    | tPUBLIC  auto_t var_idents '=' exprs   { $$ = new og::variable_declaration_node(LINE, tPUBLIC, *$3, new og::tuple_node(LINE, $5)); delete $3; }
+    |          auto_t var_idents '=' exprs %prec tNOMOREEXPRS { $$ = new og::variable_declaration_node(LINE, tPRIVATE, *$2, new og::tuple_node(LINE, $4)); delete $2; }
+    | tPUBLIC  auto_t var_idents '=' exprs %prec tNOMOREEXPRS { $$ = new og::variable_declaration_node(LINE, tPUBLIC, *$3, new og::tuple_node(LINE, $5)); delete $3; }
     ;
 
 
