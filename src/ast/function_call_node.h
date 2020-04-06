@@ -28,7 +28,7 @@ namespace og {
     function_call_node(int lineno, const std::string &identifier) :
         cdk::expression_node(lineno),
         _identifier(identifier),
-        _arguments(new tuple_node(lineno)) {}
+        _arguments(nullptr) {}
 
     /**
      * Constructor for a function call with arguments.

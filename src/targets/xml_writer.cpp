@@ -141,9 +141,13 @@ void og::xml_writer::do_function_definition_node(og::function_definition_node * 
 void og::xml_writer::do_function_call_node(og::function_call_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   os() << std::string(lvl, ' ') << "<function_call_node identifier='" << node->identifier() << "'>" << std::endl;
-  openTag("arguments", lvl + LVL_INCR);
-  node->arguments()->accept(this, lvl + 2*LVL_INCR);
-  closeTag("arguments", lvl + LVL_INCR);
+
+  if (node->arguments()) {
+    openTag("arguments", lvl + LVL_INCR);
+    node->arguments()->accept(this, lvl + 2*LVL_INCR);
+    closeTag("arguments", lvl + LVL_INCR);
+  }
+
   closeTag(node, lvl);
 }
 

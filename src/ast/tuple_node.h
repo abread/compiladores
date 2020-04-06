@@ -13,9 +13,6 @@ namespace og {
     cdk::sequence_node *_elements;
 
   public:
-    tuple_node(int lineno) :
-      cdk::expression_node(lineno), _elements(new cdk::sequence_node(lineno)) {}
-
     tuple_node(int lineno, cdk::sequence_node* seq) :
       cdk::expression_node(lineno), _elements(seq) {}
 
