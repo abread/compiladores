@@ -220,8 +220,10 @@ void og::xml_writer::do_pointer_index_node(og::pointer_index_node * const node, 
 }
 
 void og::xml_writer::do_address_of_node(og::address_of_node * const node, int lvl) {
-  //TODO: unary operation?
-  //do_unary_operation(node, lvl);
+  ASSERT_SAFE_EXPRESSIONS;
+  openTag(node, lvl);
+  node->lvalue()->accept(this, lvl + LVL_INCR);
+  closeTag(node, lvl);
 }
 
 void og::xml_writer::do_stack_alloc_node(og::stack_alloc_node * const node, int lvl) {
