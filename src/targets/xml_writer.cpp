@@ -14,9 +14,6 @@ void og::xml_writer::do_data_node(cdk::data_node * const node, int lvl) {
 void og::xml_writer::do_double_node(cdk::double_node * const node, int lvl) {
   // EMPTY
 }
-void og::xml_writer::do_not_node(cdk::not_node * const node, int lvl) {
-  // EMPTY
-}
 void og::xml_writer::do_and_node(cdk::and_node * const node, int lvl) {
   // EMPTY
 }
@@ -314,5 +311,5 @@ void og::xml_writer::do_sizeof_node(og::sizeof_node *const node, int lvl) {
 }
 
 void og::xml_writer::do_identity_node(og::identity_node *const node, int lvl) {
-  // TODO
+  do_unary_operation(node, lvl);
 }
