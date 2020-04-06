@@ -129,8 +129,18 @@ void og::xml_writer::do_assignment_node(cdk::assignment_node * const node, int l
 //---------------------------------------------------------------------------
 
 void og::xml_writer::do_function_definition_node(og::function_definition_node * const node, int lvl) {
-  // TODO: HMMMMM why was this here? Only visit the block? Maybe a definition isn't also a declaration afterall?
-  openTag(node, lvl);
+  ASSERT_SAFE_EXPRESSIONS;
+  os() << std::string(lvl, ' ') << "<function_definition_node"
+       << " qualifier='" << node->qualifier() << "'"
+       << " identifier='" << node->identifier() << "'"
+       << " type='" << node->type()->name() << "'>" << std::endl;
+
+  if (node->arguments()) {
+    openTag("arguments", lvl + LVL_INCR);
+    node->arguments()->accept(this, lvl + 2*LVL_INCR);
+    closeTag("arguments", lvl + LVL_INCR);
+  }
+
   node->block()->accept(this, lvl + LVL_INCR);
   closeTag(node, lvl);
 }
