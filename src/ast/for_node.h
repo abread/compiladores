@@ -24,7 +24,7 @@ namespace og {
     inline cdk::sequence_node *initializers() {
       return _initializers;
     }
-    inline cdk::sequence_node *condition() {
+    inline cdk::sequence_node *conditions() {
       return _conditions;
     }
     inline cdk::sequence_node *increments() {
