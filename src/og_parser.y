@@ -218,8 +218,9 @@ expr : tINT                      { $$ = new cdk::integer_node(LINE, $1); }
      | lval                      { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME
      | lval '=' expr             { $$ = new cdk::assignment_node(LINE, $1, $3); }
      | lval '?'                  { $$ = new og::address_of_node(LINE, $1); }
-     | tINPUT  '(' lval  ')'     { $$ = new og::input_node(LINE); }
+     | tINPUT                    { $$ = new og::input_node(LINE); }
      | tSIZEOF '(' exprs ')'     { $$ = new og::sizeof_node(LINE, new og::tuple_node(LINE, $3)); }
+     // TODO: sizeof with empty arguments should be valid? Not sure
      | '[' expr ']'              { $$ = new og::stack_alloc_node(LINE, $2); }
      | tIDENTIFIER '(' exprs ')' { $$ = new og::function_call_node(LINE, *$1, new og::tuple_node(LINE, $3)); delete $1; }
      | tIDENTIFIER '('       ')' { $$ = new og::function_call_node(LINE, *$1); delete $1; }
