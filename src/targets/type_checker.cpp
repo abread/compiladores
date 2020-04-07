@@ -3,6 +3,10 @@
 #include "ast/all.h"  // automatically generated
 #include <cdk/types/primitive_type.h>
 
+#ifndef tREQUIRE
+#include "og_parser.tab.h"
+#endif
+
 #define ASSERT_UNSPEC { if (node->type() != nullptr && !node->is_typed(cdk::TYPE_UNSPEC)) return; }
 
 //---------------------------------------------------------------------------
