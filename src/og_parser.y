@@ -140,11 +140,17 @@ vars : var                 { $$ = new cdk::sequence_node(LINE, $1); }
      | vars ',' var        { $$ = new cdk::sequence_node(LINE, $3, $1); }
      ;
 
-type : tINTD                    { $$ = new cdk::primitive_type(4, cdk::typename_type::TYPE_INT); }
-     | tREALD                   { $$ = new cdk::primitive_type(8, cdk::typename_type::TYPE_DOUBLE); }
-     | tSTRINGD                 { $$ = new cdk::primitive_type(8, cdk::typename_type::TYPE_STRING); }
-     | tPTR    '<' type  '>'    { $$ = new cdk::reference_type(8, std::shared_ptr<cdk::basic_type>($3)); }
-     | tPTR    '<' tAUTO '>'    { $$ = new cdk::primitive_type(8, cdk::typename_type::TYPE_POINTER); }
+type : tINTD                    { $$ = new cdk::primitive_type(4, cdk::TYPE_INT); }
+     | tREALD                   { $$ = new cdk::primitive_type(8, cdk::TYPE_DOUBLE); }
+     | tSTRINGD                 { $$ = new cdk::primitive_type(4, cdk::TYPE_STRING); }
+     | tPTR    '<' type  '>'    { $$ = $3;
+          if ($3->name() == cdk::TYPE_POINTER && ((cdk::reference_type*)$3)->referenced()->name() == cdk::TYPE_VOID) {
+               $$ = $3;
+          } else {
+               $$ = new cdk::reference_type(4, std::shared_ptr<cdk::basic_type>($3));
+          }
+     }
+     | tPTR    '<' tAUTO '>'    { $$ = new cdk::reference_type(4, cdk::make_primitive_type(0, cdk::TYPE_VOID)); }
      ;
 
 block : '{' decls instrs '}'    { $$ = new og::block_node(LINE, $2, $3); }
