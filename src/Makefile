@@ -75,6 +75,9 @@ $(COMPILER): $(L_NAME).o $(Y_NAME).tab.o $(OFILES)
 clean:
 	$(RM) ast/all.h ast/visitor_decls.h *.tab.[ch] *.o $(OFILES) $(L_NAME).cpp $(Y_NAME).output $(COMPILER)
 
+# make depend doesn't figure this one out
+depend: $(Y_NAME).tab.h
+
 depend: ast/all.h ast/visitor_decls.h
 	$(CXX) $(CXXFLAGS) -MM $(SRC_CPP) > .makedeps
 
