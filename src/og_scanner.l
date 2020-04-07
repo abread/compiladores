@@ -80,12 +80,16 @@ double xstod(const std::string &s) {
 
 [A-Za-z][A-Za-z0-9_]*  yylval.s = new std::string(yytext); return tIDENTIFIER;
 
-\"                     yy_push_state(X_STRING); yylval.s = new std::string("");
-<X_STRING>\"           yy_pop_state(); return tSTRING;
-<X_STRING>\\\"         *yylval.s += yytext + 1;
-<X_STRING>\\\\         *yylval.s += yytext + 1;
-<X_STRING>.            *yylval.s += yytext;
-<X_STRING>\n           yyerror("newline in string");
+\"                           yy_push_state(X_STRING); yylval.s = new std::string("");
+<X_STRING>\"                 yy_pop_state(); return tSTRING;
+<X_STRING>\\\"               *yylval.s += yytext + 1;
+<X_STRING>\\\\               *yylval.s += yytext + 1;
+<X_STRING>\\n                *yylval.s += '\n';
+<X_STRING>\\r                *yylval.s += '\r';
+<X_STRING>\\t                *yylval.s += '\t';
+<X_STRING>\\[0-9a-fA-F]{1,2} *yylval.s += (char) xstoi(yytext+1, 16);
+<X_STRING>.                  *yylval.s += yytext;
+<X_STRING>\n                 yyerror("newline in string");
 
 
 [0-9]+                               yylval.i = xstoi(yytext); return tINT;
