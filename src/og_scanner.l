@@ -1,9 +1,10 @@
 %option c++ prefix="og_scanner_" outfile="og_scanner.cpp"
 %option stack noyywrap yylineno 8bit
+
 %{
 // make relevant includes before including the parser's tab file
 #include <string>
-#include <cstdlib>
+#include <iostream>
 #include <cdk/ast/sequence_node.h>
 #include <cdk/ast/expression_node.h>
 #include <cdk/ast/lvalue_node.h>
@@ -11,7 +12,31 @@
 
 // don't change this
 #define yyerror LexerError
+
+int xstoi(const std::string &s, int base = 10) {
+  try {
+    return std::stoi(s, NULL, base);
+  } catch (const std::invalid_argument &e) {
+    std::cerr << "invalid integer: " << s << std::endl;
+    exit(1);
+  } catch (const std::out_of_range &e) {
+    std::cerr << "integer out of range: " << s << std::endl;
+    exit(1);
+  }
+}
+double xstod(const std::string &s) {
+  try {
+    return std::stod(s, NULL);
+  } catch (const std::invalid_argument &e) {
+    std::cerr << "invalid double: " << s << std::endl;
+    exit(1);
+  } catch (const std::out_of_range &e) {
+    std::cerr << "double out of range: " << s << std::endl;
+    exit(1);
+  }
+}
 %}
+
 %x X_STRING X_COMMENT
 %%
 
@@ -63,11 +88,11 @@
 <X_STRING>\n           yyerror("newline in string");
 
 
-[0-9]+                               yylval.i = strtol(yytext, NULL, 10); return tINT;
-0x[0-9a-fA-F]+                       yylval.i = strtol(yytext, NULL, 16); return tINT;
-[0-9]*\.[0-9]+([Ee][-+]?[0-9]+)?     yylval.d = strtod(yytext, NULL); return tREAL;
-[0-9]+\.[0-9]*([Ee][-+]?[0-9]+)?     yylval.d = strtod(yytext, NULL); return tREAL;
-[0-9]+([Ee][-+]?[0-9]+)              yylval.d = strtod(yytext, NULL); return tREAL;
+[0-9]+                               yylval.i = xstoi(yytext); return tINT;
+0x[0-9a-fA-F]+                       yylval.i = xstoi(yytext, 16); return tINT;
+[0-9]*\.[0-9]+([Ee][-+]?[0-9]+)?     yylval.d = xstod(yytext); return tREAL;
+[0-9]+\.[0-9]*([Ee][-+]?[0-9]+)?     yylval.d = xstod(yytext); return tREAL;
+[0-9]+([Ee][-+]?[0-9]+)              yylval.d = xstod(yytext); return tREAL;
 
 [-()<>=+*/%;{}.~?\[\],@] return *yytext;
 
