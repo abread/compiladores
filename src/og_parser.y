@@ -52,7 +52,7 @@
 %left '*' '/' '%'
 %nonassoc tUNARY
 
-%type <s> string
+%type <s> string string_raw
 %type <node> instr decl cond_instr elif iter_instr var func proc
 %type <sequence> instrs file decls vars exprs
 %type <expression> expr
@@ -232,7 +232,10 @@ lval : tIDENTIFIER               { $$ = new cdk::variable_node(LINE, *$1); delet
      | '(' expr ')' '@' tINT     { $$ = new og::tuple_index_node(LINE, $2, $5); }
      ;
 
-string : tSTRING              { $$ = $1; }
-       | string tSTRING       { $$ = new std::string(*$1 + *$2); delete $1; delete $2; }
-       ;
+/* ignore everything after \0 (if it exists) by creating a new string from the raw C string (char*) */
+string     : string_raw               { $$ = new std::string($1->c_str()); delete $1; }
+
+string_raw : tSTRING                  { $$ = $1; }
+           | string_raw tSTRING       { $$ = new std::string(*$1 + *$2); delete $1; delete $2; }
+           ;
 %%
