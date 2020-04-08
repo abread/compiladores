@@ -37,7 +37,7 @@ double xstod(const std::string &s) {
 }
 %}
 
-%x X_STRING X_COMMENT
+%x X_STRING X_COMMENT X_STRIGN
 %%
 
 "//".*                 ; /* ignore comments */
@@ -87,10 +87,14 @@ double xstod(const std::string &s) {
 <X_STRING>\\n                *yylval.s += '\n';
 <X_STRING>\\r                *yylval.s += '\r';
 <X_STRING>\\t                *yylval.s += '\t';
+<X_STRING>\\0                yy_push_state(X_STRIGN);
 <X_STRING>\\[0-9a-fA-F]{1,2} *yylval.s += (char) xstoi(yytext+1, 16);
-<X_STRING>.                  *yylval.s += yytext;
-<X_STRING>\n                 yyerror("newline in string");
+<X_STRING>\0                 yyerror("nullbyte in string");
+<X_STRING>.|\n               *yylval.s += yytext;
 
+<X_STRIGN>\0                 yyerror("null byte in string");
+<X_STRIGN>\"                 yy_pop_state(); yy_pop_state(); return tSTRING;
+<X_STRIGN>.|\n               ; /* ignore everything after /\\0/ */
 
 [0-9]+                               yylval.i = xstoi(yytext); return tINT;
 0x[0-9a-fA-F]+                       yylval.i = xstoi(yytext, 16); return tINT;
