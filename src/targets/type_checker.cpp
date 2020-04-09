@@ -325,6 +325,8 @@ void og::type_checker::do_tuple_node(og::tuple_node *const node, int lvl) {
 void og::type_checker::do_variable_declaration_node(og::variable_declaration_node *const node, int lvl) {
   if (node->initializer() && node->qualifier() == tREQUIRE)
     throw std::string("external(required) variables cannot be initialized");
+  if (node->is_typed(cdk::TYPE_UNSPEC) && node->qualifier() == tREQUIRE)
+    throw std::string("external(required) variables must have a concrete type");
   // TODO
 }
 
