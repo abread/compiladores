@@ -342,7 +342,7 @@ void og::xml_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
   openTag("elements", lvl + LVL_INCR);
-  node->elements()->accept(this, lvl + 2*LVL_INCR);
+  node->seq()->accept(this, lvl + 2*LVL_INCR);
   closeTag("elements", lvl + LVL_INCR);
   closeTag(node, lvl);
 }

@@ -3,6 +3,10 @@
 #include "ast/all.h"  // automatically generated
 #include <cdk/types/primitive_type.h>
 
+#ifndef tREQUIRE
+#include "og_parser.tab.h"
+#endif
+
 #define ASSERT_UNSPEC { if (node->type() != nullptr && !node->is_typed(cdk::TYPE_UNSPEC)) return; }
 
 //---------------------------------------------------------------------------
@@ -225,6 +229,8 @@ void og::type_checker::do_assignment_node(cdk::assignment_node *const node, int 
 
 void og::type_checker::do_function_definition_node(og::function_definition_node *const node, int lvl) {
   // TODO
+  if (node->qualifier() == tREQUIRE)
+    throw std::string("can't require a function definition");
 }
 
 
@@ -317,6 +323,8 @@ void og::type_checker::do_tuple_node(og::tuple_node *const node, int lvl) {
 }
 
 void og::type_checker::do_variable_declaration_node(og::variable_declaration_node *const node, int lvl) {
+  if (node->initializer() && node->qualifier() == tREQUIRE)
+    throw std::string("external(required) variables cannot be initialized");
   // TODO
 }
 

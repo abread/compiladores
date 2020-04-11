@@ -46,9 +46,47 @@ namespace og {
   protected:
     void do_binary_operation(cdk::binary_operation_node *const node, int lvl);
     void do_unary_operation(cdk::unary_operation_node *const node, int lvl);
+
+    std::string xml_escape(int val) {
+      return xml_escape(std::to_string(val));
+    }
+
+    std::string xml_escape(double val) {
+      return xml_escape(std::to_string(val));
+    }
+
+    std::string xml_escape(std::string val) {
+      std::string res = "";
+
+      for (char c : val) {
+        switch(c) {
+          case '<':
+            res += "&lt;";
+            break;
+          case '>':
+            res += "&gt;";
+            break;
+          case '\'':
+            res += "&apos;";
+            break;
+          case '"':
+            res += "&quote;";
+            break;
+          case '&':
+            res += "&amp;";
+            break;
+          default:
+            res += c;
+            break;
+        }
+      }
+
+      return res;
+    }
+
     template<typename T>
     void process_literal(cdk::literal_node<T> *const node, int lvl) {
-      os() << std::string(lvl, ' ') << "<" << node->label() << " value='" << node->value() << "' />" << std::endl;
+      os() << std::string(lvl, ' ') << "<" << node->label() << " value='" << xml_escape(node->value()) << "' />" << std::endl;
     }
 
   public:
