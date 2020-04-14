@@ -133,7 +133,7 @@ void og::xml_writer::do_function_definition_node(og::function_definition_node * 
   os() << std::string(lvl, ' ') << "<function_definition_node"
        << " qualifier='" << node->qualifier() << "'"
        << " identifier='" << node->identifier() << "'"
-       << " type='" << node->type()->name() << "'>" << std::endl;
+       << " type='" << cdk::to_string(node->type()) << "'>" << std::endl;
 
   if (node->arguments()) {
     openTag("arguments", lvl + LVL_INCR);
@@ -351,7 +351,7 @@ void og::xml_writer::do_variable_declaration_node(og::variable_declaration_node 
   ASSERT_SAFE_EXPRESSIONS;
   os() << std::string(lvl, ' ') << "<variable_declaration_node"
        << " qualifier='" << node->qualifier() << "'"
-       << " type='" << node->type()->name() << "'>" << std::endl;
+       << " type='" << cdk::to_string(node->type()) << "'>" << std::endl;
 
   openTag("identifiers", lvl + LVL_INCR);
   for (const std::string& identifier : node->identifiers()) {
