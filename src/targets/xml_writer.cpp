@@ -1,7 +1,22 @@
 #include <string>
 #include "targets/xml_writer.h"
 #include "targets/type_checker.h"
+#include "og_parser.tab.h"
 #include "ast/all.h"  // automatically generated
+
+
+static std::string qualifier_name(int qualifier) {
+  switch (qualifier) {
+    case tPUBLIC:
+      return "public";
+    case tREQUIRE:
+      return "require";
+    case tPRIVATE:
+      return "empty (private)";
+    default:
+      return "unknown qualifier";
+  }
+}
 
 //---------------------------------------------------------------------------
 
@@ -132,7 +147,7 @@ void og::xml_writer::do_assignment_node(cdk::assignment_node * const node, int l
 void og::xml_writer::do_function_definition_node(og::function_definition_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   os() << std::string(lvl, ' ') << "<function_definition_node"
-       << " qualifier='" << node->qualifier() << "'"
+       << " qualifier='" << qualifier_name(node->qualifier()) << "'"
        << " identifier='" << node->identifier() << "'"
        << " type='" << cdk::to_string(node->type()) << "'>" << std::endl;
 
@@ -165,7 +180,7 @@ void og::xml_writer::do_function_call_node(og::function_call_node *const node, i
 
 void og::xml_writer::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  os() << std::string(lvl, ' ') << "<function_declaration_node qualifier='" << node->qualifier() << "' identifier='" << node->identifier() << "'>" << std::endl;
+  os() << std::string(lvl, ' ') << "<function_declaration_node qualifier='" << qualifier_name(node->qualifier()) << "' identifier='" << node->identifier() << "'>" << std::endl;
 
   if (node->arguments()) {
     openTag("arguments", lvl + LVL_INCR);
@@ -351,7 +366,7 @@ void og::xml_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
 void og::xml_writer::do_variable_declaration_node(og::variable_declaration_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   os() << std::string(lvl, ' ') << "<variable_declaration_node"
-       << " qualifier='" << node->qualifier() << "'"
+       << " qualifier='" << qualifier_name(node->qualifier()) << "'"
        << " type='" << cdk::to_string(node->type()) << "'>" << std::endl;
 
   openTag("identifiers", lvl + LVL_INCR);
