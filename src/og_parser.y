@@ -54,8 +54,8 @@
 %nonassoc '@' '['
 
 %type <s> string
-%type <node> instr decl cond_instr elif iter_instr var toplevel_var arg func proc
-%type <sequence> instrs file decls vars exprs
+%type <node> instr fdecl bdecl cond_instr elif iter_instr var toplevel_var arg func proc
+%type <sequence> instrs file fdecls bdecls vars exprs args
 %type <expression> expr
 %type <lvalue> lval
 %type <blk> block
@@ -65,17 +65,17 @@
 
 %%
 
-file : decls        { compiler->ast($1); }
+file : fdecls        { compiler->ast($1); }
      ;
 
-decls :       decl  { $$ = new cdk::sequence_node(LINE, $1); }
-      | decls decl  { $$ = new cdk::sequence_node(LINE, $2, $1); }
+fdecls :        fdecl  { $$ = new cdk::sequence_node(LINE, $1); }
+       | fdecls fdecl  { $$ = new cdk::sequence_node(LINE, $2, $1); }
+       ;
 
-
-decl : toplevel_var ';' { $$ = $1; }
-     | func             { $$ = $1; }
-     | proc             { $$ = $1; }
-     ;
+fdecl : toplevel_var ';' { $$ = $1; }
+      | func             { $$ = $1; }
+      | proc             { $$ = $1; }
+      ;
 
 var_idents  : tIDENTIFIER                { $$ = new std::vector<std::string>(1, std::string(*$1)); delete $1; }
             | var_idents ',' tIDENTIFIER { $$ = new std::vector<std::string>(*$1); $$->push_back(*$3); delete $1; delete $3; }
@@ -159,10 +159,17 @@ vars : var                 { $$ = new cdk::sequence_node(LINE, $1); }
      | vars ',' var        { $$ = new cdk::sequence_node(LINE, $3, $1); }
      ;
 
-block : '{' decls instrs '}'   { $$ = new og::block_node(LINE, $2, $3); }
-      | '{'       instrs '}'   { $$ = new og::block_node(LINE, nullptr, $2); }
-      | '{' decls        '}'   { $$ = new og::block_node(LINE, $2, nullptr); }
-      | '{'              '}'   { $$ = new og::block_node(LINE, nullptr, nullptr); }
+block : '{' bdecls instrs '}'   { $$ = new og::block_node(LINE, $2, $3); }
+      | '{'        instrs '}'   { $$ = new og::block_node(LINE, nullptr, $2); }
+      | '{' bdecls        '}'   { $$ = new og::block_node(LINE, $2, nullptr); }
+      | '{'               '}'   { $$ = new og::block_node(LINE, nullptr, nullptr); }
+      ;
+
+bdecls :        bdecl  { $$ = new cdk::sequence_node(LINE, $1); }
+       | bdecls bdecl  { $$ = new cdk::sequence_node(LINE, $2, $1); }
+       ;
+
+bdecl : var ';' { $$ = $1; }
       ;
 
 instrs : instr                  { $$ = new cdk::sequence_node(LINE, $1); }
