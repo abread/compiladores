@@ -54,7 +54,7 @@
 %nonassoc '@' '['
 
 %type <s> string
-%type <node> instr decl cond_instr elif iter_instr var func proc
+%type <node> instr decl cond_instr elif iter_instr var toplevel_var arg func proc
 %type <sequence> instrs file decls vars exprs
 %type <expression> expr
 %type <lvalue> lval
@@ -72,9 +72,9 @@ decls :       decl  { $$ = new cdk::sequence_node(LINE, $1); }
       | decls decl  { $$ = new cdk::sequence_node(LINE, $2, $1); }
 
 
-decl : var ';' { $$ = $1; }
-     | func    { $$ = $1; }
-     | proc    { $$ = $1; }
+decl : toplevel_var ';' { $$ = $1; }
+     | func             { $$ = $1; }
+     | proc             { $$ = $1; }
      ;
 
 var_idents  : tIDENTIFIER                { $$ = new std::vector<std::string>(1, std::string(*$1)); delete $1; }
@@ -89,18 +89,18 @@ qualifier : tPUBLIC  { $$ = tPUBLIC;  }
           | tREQUIRE { $$ = tREQUIRE; }
           ;
 
-var : qualifier type   tIDENTIFIER             { $$ = new og::variable_declaration_node(LINE, $1, $2, *$3); delete $3; }
-    |           type   tIDENTIFIER             { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
-    | qualifier type   tIDENTIFIER '=' expr    { $$ = new og::variable_declaration_node(LINE, $1, $2, *$3, $5); delete $3; }
-    |           type   tIDENTIFIER '=' expr    { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
-    | qualifier auto_t var_idents  %prec tVARX { $$ = new og::variable_declaration_node(LINE, $1, $2, *$3); delete $3; }
-    |           auto_t var_idents  %prec tVARX { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
-    | qualifier auto_t var_idents  '=' exprs %prec tNOMOREEXPRS { $$ = new og::variable_declaration_node(LINE, $1, $2, *$3, new og::tuple_node(LINE, $5)); delete $3; }
-    |           auto_t var_idents  '=' exprs %prec tNOMOREEXPRS { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, new og::tuple_node(LINE, $4)); delete $2; }
-    ;
+toplevel_var : qualifier type   tIDENTIFIER             { $$ = new og::variable_declaration_node(LINE, $1, $2, *$3); delete $3; }
+             |           type   tIDENTIFIER             { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
+             | qualifier type   tIDENTIFIER '=' expr    { $$ = new og::variable_declaration_node(LINE, $1, $2, *$3, $5); delete $3; }
+             |           type   tIDENTIFIER '=' expr    { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
+             | qualifier auto_t var_idents  %prec tVARX { $$ = new og::variable_declaration_node(LINE, $1, $2, *$3); delete $3; }
+             |           auto_t var_idents  %prec tVARX { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
+             | qualifier auto_t var_idents  '=' exprs %prec tNOMOREEXPRS { $$ = new og::variable_declaration_node(LINE, $1, $2, *$3, new og::tuple_node(LINE, $5)); delete $3; }
+             |           auto_t var_idents  '=' exprs %prec tNOMOREEXPRS { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, new og::tuple_node(LINE, $4)); delete $2; }
+             ;
 
-arg : type   tIDENTIFIER { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
-    | auto_t var_idents  { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
+arg : type   tIDENTIFIER            { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
+    | auto_t var_idents %prec tVARX { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
     ;
 
 args : arg          { $$ = new cdk::sequence_node(LINE, $1); }
@@ -136,10 +136,6 @@ proc : qualifier void_t tIDENTIFIER '('      ')' %prec tNOBLOCK { $$ = new og::f
      |           void_t tIDENTIFIER '(' args ')' block          { $$ = new og::function_definition_node(LINE, tPRIVATE, $1, *$2, $4, $6); delete $2; }
      ;
 
-vars : var                 { $$ = new cdk::sequence_node(LINE, $1); }
-     | vars ',' var        { $$ = new cdk::sequence_node(LINE, $3, $1); }
-     ;
-
 type : tINTD                    { $$ = new cdk::primitive_type(4, cdk::TYPE_INT); }
      | tREALD                   { $$ = new cdk::primitive_type(8, cdk::TYPE_DOUBLE); }
      | tSTRINGD                 { $$ = new cdk::primitive_type(4, cdk::TYPE_STRING); }
@@ -153,26 +149,36 @@ type : tINTD                    { $$ = new cdk::primitive_type(4, cdk::TYPE_INT)
      | tPTR    '<' tAUTO '>'    { $$ = new cdk::reference_type(4, cdk::make_primitive_type(0, cdk::TYPE_VOID)); }
      ;
 
-block : '{' decls instrs '}'    { $$ = new og::block_node(LINE, $2, $3); }
-      | '{'       instrs '}'    { $$ = new og::block_node(LINE, nullptr, $2); }
-      | '{' decls        '}'    { $$ = new og::block_node(LINE, $2, nullptr); }
-      | '{'              '}'    { $$ = new og::block_node(LINE, nullptr, nullptr); }
+var : type   tIDENTIFIER             { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
+    | type   tIDENTIFIER '=' expr    { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
+    | auto_t var_idents  %prec tVARX { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
+    | auto_t var_idents  '=' exprs %prec tNOMOREEXPRS { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, new og::tuple_node(LINE, $4)); delete $2; }
+    ;
+
+vars : var                 { $$ = new cdk::sequence_node(LINE, $1); }
+     | vars ',' var        { $$ = new cdk::sequence_node(LINE, $3, $1); }
+     ;
+
+block : '{' decls instrs '}'   { $$ = new og::block_node(LINE, $2, $3); }
+      | '{'       instrs '}'   { $$ = new og::block_node(LINE, nullptr, $2); }
+      | '{' decls        '}'   { $$ = new og::block_node(LINE, $2, nullptr); }
+      | '{'              '}'   { $$ = new og::block_node(LINE, nullptr, nullptr); }
       ;
 
 instrs : instr                  { $$ = new cdk::sequence_node(LINE, $1); }
        | instrs instr           { $$ = new cdk::sequence_node(LINE, $2, $1); }
        ;
 
-instr : expr ';'                   { $$ = new og::evaluation_node(LINE, $1); }
-      | tWRITE   exprs ';'         { $$ = new og::write_node(LINE, new og::tuple_node(LINE, $2)); }
-      | tWRITELN exprs ';'         { $$ = new og::write_node(LINE, new og::tuple_node(LINE, $2), true); }
-      | tBREAK                     { $$ = new og::break_node(LINE); }
-      | tCONTINUE                  { $$ = new og::continue_node(LINE);}
-      | tRETURN ';'                { $$ = new og::return_node(LINE); }
-      | tRETURN exprs ';'          { $$ = new og::return_node(LINE, new og::tuple_node(LINE, $2)); }
-      | cond_instr                 { $$ = $1; }
-      | iter_instr                 { $$ = $1; }
-      | block                      { $$ = $1; }
+instr : expr ';'                { $$ = new og::evaluation_node(LINE, $1); }
+      | tWRITE   exprs ';'      { $$ = new og::write_node(LINE, new og::tuple_node(LINE, $2)); }
+      | tWRITELN exprs ';'      { $$ = new og::write_node(LINE, new og::tuple_node(LINE, $2), true); }
+      | tBREAK                  { $$ = new og::break_node(LINE); }
+      | tCONTINUE               { $$ = new og::continue_node(LINE);}
+      | tRETURN ';'             { $$ = new og::return_node(LINE); }
+      | tRETURN exprs ';'       { $$ = new og::return_node(LINE, new og::tuple_node(LINE, $2)); }
+      | cond_instr              { $$ = $1; }
+      | iter_instr              { $$ = $1; }
+      | block                   { $$ = $1; }
       ;
 
 cond_instr : tIF expr tTHEN instr %prec tIFX       { $$ = new og::if_node(LINE, $2, $4); }
