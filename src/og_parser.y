@@ -99,34 +99,41 @@ var : qualifier type   tIDENTIFIER             { $$ = new og::variable_declarati
     |           auto_t var_idents  '=' exprs %prec tNOMOREEXPRS { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, new og::tuple_node(LINE, $4)); delete $2; }
     ;
 
+arg : type   tIDENTIFIER { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
+    | auto_t var_idents  { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
+    ;
+
+args : arg          { $$ = new cdk::sequence_node(LINE, $1); }
+     | args ',' arg { $$ = new cdk::sequence_node(LINE, $3, $1); }
+     ;
 
 func : qualifier type   tIDENTIFIER '('      ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, $1, $2, *$3); delete $3; }
-     | qualifier type   tIDENTIFIER '(' vars ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, $1, $2, *$3, $5); delete $3; }
+     | qualifier type   tIDENTIFIER '(' args ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, $1, $2, *$3, $5); delete $3; }
      | qualifier type   tIDENTIFIER '('      ')' block          { $$ = new og::function_definition_node(LINE, $1, $2, *$3, $6); delete $3; }
-     | qualifier type   tIDENTIFIER '(' vars ')' block          { $$ = new og::function_definition_node(LINE, $1, $2, *$3, $5, $7); delete $3; }
+     | qualifier type   tIDENTIFIER '(' args ')' block          { $$ = new og::function_definition_node(LINE, $1, $2, *$3, $5, $7); delete $3; }
      |           type   tIDENTIFIER '('      ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
-     |           type   tIDENTIFIER '(' vars ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
+     |           type   tIDENTIFIER '(' args ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
      |           type   tIDENTIFIER '('      ')' block          { $$ = new og::function_definition_node(LINE, tPRIVATE, $1, *$2, $5); delete $2; }
-     |           type   tIDENTIFIER '(' vars ')' block          { $$ = new og::function_definition_node(LINE, tPRIVATE, $1, *$2, $4, $6); delete $2; }
+     |           type   tIDENTIFIER '(' args ')' block          { $$ = new og::function_definition_node(LINE, tPRIVATE, $1, *$2, $4, $6); delete $2; }
      | qualifier auto_t tIDENTIFIER '('      ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, $1, $2, *$3); delete $3; }
-     | qualifier auto_t tIDENTIFIER '(' vars ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, $1, $2, *$3, $5); delete $3; }
+     | qualifier auto_t tIDENTIFIER '(' args ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, $1, $2, *$3, $5); delete $3; }
      | qualifier auto_t tIDENTIFIER '('      ')' block          { $$ = new og::function_definition_node(LINE, $1, $2, *$3, $6); delete $3; }
-     | qualifier auto_t tIDENTIFIER '(' vars ')' block          { $$ = new og::function_definition_node(LINE, $1, $2, *$3, $5, $7); delete $3; }
+     | qualifier auto_t tIDENTIFIER '(' args ')' block          { $$ = new og::function_definition_node(LINE, $1, $2, *$3, $5, $7); delete $3; }
      |           auto_t tIDENTIFIER '('      ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
-     |           auto_t tIDENTIFIER '(' vars ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
+     |           auto_t tIDENTIFIER '(' args ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
      |           auto_t tIDENTIFIER '('      ')' block          { $$ = new og::function_definition_node(LINE, tPRIVATE, $1, *$2, $5); delete $2; }
-     |           auto_t tIDENTIFIER '(' vars ')' block          { $$ = new og::function_definition_node(LINE, tPRIVATE, $1, *$2, $4, $6); delete $2; }
+     |           auto_t tIDENTIFIER '(' args ')' block          { $$ = new og::function_definition_node(LINE, tPRIVATE, $1, *$2, $4, $6); delete $2; }
      ;
 
 
 proc : qualifier void_t tIDENTIFIER '('      ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, $1, $2, *$3); delete $3; }
-     | qualifier void_t tIDENTIFIER '(' vars ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, $1, $2, *$3, $5); delete $3; }
+     | qualifier void_t tIDENTIFIER '(' args ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, $1, $2, *$3, $5); delete $3; }
      | qualifier void_t tIDENTIFIER '('      ')' block          { $$ = new og::function_definition_node(LINE, $1, $2, *$3, $6); delete $3; }
-     | qualifier void_t tIDENTIFIER '(' vars ')' block          { $$ = new og::function_definition_node(LINE, $1, $2, *$3, $5, $7); delete $3; }
+     | qualifier void_t tIDENTIFIER '(' args ')' block          { $$ = new og::function_definition_node(LINE, $1, $2, *$3, $5, $7); delete $3; }
      |           void_t tIDENTIFIER '('      ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
-     |           void_t tIDENTIFIER '(' vars ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
+     |           void_t tIDENTIFIER '(' args ')' %prec tNOBLOCK { $$ = new og::function_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
      |           void_t tIDENTIFIER '('      ')' block          { $$ = new og::function_definition_node(LINE, tPRIVATE, $1, *$2, $5); delete $2; }
-     |           void_t tIDENTIFIER '(' vars ')' block          { $$ = new og::function_definition_node(LINE, tPRIVATE, $1, *$2, $4, $6); delete $2; }
+     |           void_t tIDENTIFIER '(' args ')' block          { $$ = new og::function_definition_node(LINE, tPRIVATE, $1, *$2, $4, $6); delete $2; }
      ;
 
 vars : var                 { $$ = new cdk::sequence_node(LINE, $1); }
