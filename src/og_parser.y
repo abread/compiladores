@@ -40,7 +40,7 @@
 %nonassoc tELSE
 
 %nonassoc tVARX
-%nonassoc tRTUPLE
+%nonassoc tNOMOREEXPRS
 %nonassoc ','
 
 %right '='
@@ -93,8 +93,8 @@ toplevel_var : qualifier type   tIDENTIFIER             { $$ = new og::variable_
              |           type   tIDENTIFIER '=' expr    { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
              | qualifier auto_t var_idents  %prec tVARX { $$ = new og::variable_declaration_node(LINE, $1, $2, *$3); delete $3; }
              |           auto_t var_idents  %prec tVARX { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
-             | qualifier auto_t var_idents  '=' expr    { $$ = new og::variable_declaration_node(LINE, $1, $2, *$3, $5); delete $3; }
-             |           auto_t var_idents  '=' expr    { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
+             | qualifier auto_t var_idents  '=' exprs %prec tNOMOREEXPRS { $$ = new og::variable_declaration_node(LINE, $1, $2, *$3, new og::tuple_node(LINE, $5)); delete $3; }
+             |           auto_t var_idents  '=' exprs %prec tNOMOREEXPRS { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, new og::tuple_node(LINE, $4)); delete $2; }
              ;
 
 arg : type   tIDENTIFIER            { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
@@ -150,7 +150,7 @@ type : tINTD                    { $$ = new cdk::primitive_type(4, cdk::TYPE_INT)
 var : type   tIDENTIFIER             { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
     | type   tIDENTIFIER '=' expr    { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
     | auto_t var_idents  %prec tVARX { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
-    | auto_t var_idents  '=' expr { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
+    | auto_t var_idents  '=' exprs %prec tNOMOREEXPRS { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, new og::tuple_node(LINE, $4)); delete $2; }
     ;
 
 vars : var                 { $$ = new cdk::sequence_node(LINE, $1); }
@@ -175,12 +175,12 @@ instrs : instr                  { $$ = new cdk::sequence_node(LINE, $1); }
        ;
 
 instr : expr ';'                { $$ = new og::evaluation_node(LINE, $1); }
-      | tWRITE   expr ';'       { $$ = new og::write_node(LINE, $2); }
-      | tWRITELN expr ';'       { $$ = new og::write_node(LINE, $2, true); }
+      | tWRITE   exprs ';'      { $$ = new og::write_node(LINE, new og::tuple_node(LINE, $2)); }
+      | tWRITELN exprs ';'      { $$ = new og::write_node(LINE, new og::tuple_node(LINE, $2), true); }
       | tBREAK                  { $$ = new og::break_node(LINE); }
-      | tCONTINUE               { $$ = new og::continue_node(LINE); }
+      | tCONTINUE               { $$ = new og::continue_node(LINE);}
       | tRETURN ';'             { $$ = new og::return_node(LINE); }
-      | tRETURN expr ';'        { $$ = new og::return_node(LINE, $2); }
+      | tRETURN exprs ';'       { $$ = new og::return_node(LINE, new og::tuple_node(LINE, $2)); }
       | cond_instr              { $$ = $1; }
       | iter_instr              { $$ = $1; }
       | block                   { $$ = $1; }
@@ -195,22 +195,22 @@ elif : tELSE instr                       { $$ = $2; }
      | tELIF expr tTHEN instr elif       { $$ = new og::if_else_node(LINE, $2, $4, $5); }
      ;
 
-iter_instr : tFOR vars ';' expr ';' expr tDO instr    { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
-           | tFOR vars ';' expr ';'      tDO instr    { $$ = new og::for_node(LINE, $2, $4, nullptr, $7); }
-           | tFOR vars ';'      ';' expr tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, $5, $7); }
-           | tFOR vars ';'      ';'      tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, nullptr, $6); }
-           | tFOR expr ';' expr ';' expr tDO instr    { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
-           | tFOR expr ';' expr ';'      tDO instr    { $$ = new og::for_node(LINE, $2, $4, nullptr, $7); }
-           | tFOR expr ';'      ';' expr tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, $5, $7); }
-           | tFOR expr ';'      ';'      tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, nullptr, $6); }
-           | tFOR      ';' expr ';' expr tDO instr    { $$ = new og::for_node(LINE, nullptr, $3, $5, $7); }
-           | tFOR      ';' expr ';'      tDO instr    { $$ = new og::for_node(LINE, nullptr, $3, nullptr, $6); }
-           | tFOR      ';'      ';' expr tDO instr    { $$ = new og::for_node(LINE, nullptr, nullptr, $4, $6); }
-           | tFOR      ';'      ';'      tDO instr    { $$ = new og::for_node(LINE, nullptr, nullptr, nullptr, $5); }
+iter_instr : tFOR vars  ';' exprs ';' exprs tDO instr    { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
+           | tFOR vars  ';' exprs ';'       tDO instr    { $$ = new og::for_node(LINE, $2, $4, nullptr, $7); }
+           | tFOR vars  ';'       ';' exprs tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, $5, $7); }
+           | tFOR vars  ';'       ';'       tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, nullptr, $6); }
+           | tFOR exprs ';' exprs ';' exprs tDO instr    { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
+           | tFOR exprs ';' exprs ';'       tDO instr    { $$ = new og::for_node(LINE, $2, $4, nullptr, $7); }
+           | tFOR exprs ';'       ';' exprs tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, $5, $7); }
+           | tFOR exprs ';'       ';'       tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, nullptr, $6); }
+           | tFOR       ';' exprs ';' exprs tDO instr    { $$ = new og::for_node(LINE, nullptr, $3, $5, $7); }
+           | tFOR       ';' exprs ';'       tDO instr    { $$ = new og::for_node(LINE, nullptr, $3, nullptr, $6); }
+           | tFOR       ';'       ';' exprs tDO instr    { $$ = new og::for_node(LINE, nullptr, nullptr, $4, $6); }
+           | tFOR       ';'       ';'       tDO instr    { $$ = new og::for_node(LINE, nullptr, nullptr, nullptr, $5); }
            ;
 
-exprs : expr ',' expr            { $$ = new cdk::sequence_node(LINE, $1); }
-      | exprs ',' expr           { $$ = new cdk::sequence_node(LINE, $3, $1); }
+exprs : expr                        { $$ = new cdk::sequence_node(LINE, $1); }
+      | exprs ',' expr              { $$ = new cdk::sequence_node(LINE, $3, $1); }
       ;
 
 expr : tINT                      { $$ = new cdk::integer_node(LINE, $1); }
@@ -234,15 +234,15 @@ expr : tINT                      { $$ = new cdk::integer_node(LINE, $1); }
      | expr tOR expr             { $$ = new cdk::or_node(LINE, $1, $3);  }
      | expr tAND expr            { $$ = new cdk::and_node(LINE, $1, $3); }
      | '(' expr ')'              { $$ = $2; }
-     | lval                      { $$ = new cdk::rvalue_node(LINE, $1);  }
+     | lval                      { $$ = new cdk::rvalue_node(LINE, $1); }  //FIXME
      | lval '=' expr             { $$ = new cdk::assignment_node(LINE, $1, $3); }
      | lval '?'                  { $$ = new og::address_of_node(LINE, $1); }
      | tINPUT                    { $$ = new og::input_node(LINE); }
-     | tSIZEOF '(' expr ')'      { $$ = new og::sizeof_node(LINE, $3); }
+     | tSIZEOF '(' exprs ')'     { $$ = new og::sizeof_node(LINE, new og::tuple_node(LINE, $3)); }
+     // TODO: sizeof with empty arguments should be valid? Not sure
      | '[' expr ']'              { $$ = new og::stack_alloc_node(LINE, $2); }
-     | tIDENTIFIER '(' expr ')'  { $$ = new og::function_call_node(LINE, *$1, $3); delete $1; }
-     | tIDENTIFIER '('      ')'  { $$ = new og::function_call_node(LINE, *$1); delete $1; }
-     | exprs %prec tRTUPLE       { $$ = new og::tuple_node(LINE, $1);    }
+     | tIDENTIFIER '(' exprs ')' { $$ = new og::function_call_node(LINE, *$1, new og::tuple_node(LINE, $3)); delete $1; }
+     | tIDENTIFIER '('       ')' { $$ = new og::function_call_node(LINE, *$1); delete $1; }
      ;
 
 lval : tIDENTIFIER               { $$ = new cdk::variable_node(LINE, *$1); delete $1; }

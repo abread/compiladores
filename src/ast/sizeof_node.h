@@ -4,19 +4,20 @@
 #include <string>
 #include <cdk/ast/basic_node.h>
 #include <cdk/ast/expression_node.h>
+#include "ast/tuple_node.h"
 
 namespace og {
 
   class sizeof_node: public cdk::expression_node {
-    cdk::expression_node *_arguments;
+    tuple_node *_arguments;
 
   public:
-    sizeof_node(int lineno, cdk::expression_node *arguments) :
+    sizeof_node(int lineno, tuple_node *arguments) :
         cdk::expression_node(lineno),
         _arguments(arguments) {}
 
   public:
-    cdk::expression_node *arguments() {
+    tuple_node *arguments() {
       return _arguments;
     }
 
