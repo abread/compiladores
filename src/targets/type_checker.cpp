@@ -211,12 +211,14 @@ void og::type_checker::do_pointer_index_node(og::pointer_index_node * const node
 
 void og::type_checker::do_rvalue_node(cdk::rvalue_node *const node, int lvl) {
   ASSERT_UNSPEC;
-  /*try {
+  try {
     node->lvalue()->accept(this, lvl);
     node->type(node->lvalue()->type());
   } catch (const std::string &id) {
-    throw "undeclared variable '" + id + "'";
-  }*/
+    // TODO: create symbols
+    node->type(cdk::make_primitive_type(0, cdk::TYPE_UNSPEC)); // TODO: temporary, to avoid segfault
+    //throw "undeclared variable '" + id + "'";
+  }
 }
 
 void og::type_checker::do_assignment_node(cdk::assignment_node *const node, int lvl) {
