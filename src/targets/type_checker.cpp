@@ -173,8 +173,7 @@ void og::type_checker::do_variable_node(cdk::variable_node *const node, int lvl)
   if (symbol) {
     node->type(symbol->type());
   } else {
-    // TODO: create variable symbols
-    throw std::string("undefined variable: "+id);
+    throw std::string("undefined variable: " + id);
   }
 }
 
@@ -193,20 +192,6 @@ void og::type_checker::do_pointer_index_node(og::pointer_index_node * const node
 
   auto ref = cdk::reference_type_cast(node->base()->type());
   node->type(ref->referenced());
-  // TODO
-#if 0
-  if (node->base()) {
-    node->base()->accept(this, lvl + 2);
-    if (node->base()->type()->name() != basic_type::TYPE_POINTER) throw std::string(
-        "pointer expression expected in index left-value");
-  } else {
-    if (_function->type()->name() != basic_type::TYPE_POINTER) throw std::string(
-        "return pointer expression expected in index left-value");
-  }
-  node->index()->accept(this, lvl + 2);
-  if (node->index()->type()->name() != basic_type::TYPE_INT) throw std::string("integer expression expected in left-value index");
-  node->type(new basic_type(8, basic_type::TYPE_DOUBLE));
-#endif
 }
 
 void og::type_checker::do_rvalue_node(cdk::rvalue_node *const node, int lvl) {
@@ -215,9 +200,7 @@ void og::type_checker::do_rvalue_node(cdk::rvalue_node *const node, int lvl) {
     node->lvalue()->accept(this, lvl);
     node->type(node->lvalue()->type());
   } catch (const std::string &id) {
-    // TODO: create symbols
-    node->type(cdk::make_primitive_type(0, cdk::TYPE_UNSPEC)); // TODO: temporary, to avoid segfault
-    //throw "undeclared variable '" + id + "'";
+    throw "undeclared variable '" + id + "'";
   }
 }
 
@@ -325,16 +308,6 @@ void og::type_checker::do_stack_alloc_node(og::stack_alloc_node * const node, in
   ASSERT_UNSPEC;
   node->argument()->accept(this, lvl + 2);
   node->type(cdk::make_reference_type(4, cdk::make_primitive_type(0, cdk::TYPE_UNSPEC)));
-  // TODO
-#if 0
-  node->argument()->accept(this, lvl + 2);
-  if (node->argument()->type()->name() != basic_type::TYPE_INT) throw std::string(
-      "integer expression expected in allocation expression");
-//FIXME: check the following two lines
-  auto mytype = new basic_type(4, basic_type::TYPE_POINTER);
-  mytype->_subtype = new basic_type(8, basic_type::TYPE_DOUBLE);
-  node->type(mytype);
-#endif
 }
 
 //---------------------------------------------------------------------------
