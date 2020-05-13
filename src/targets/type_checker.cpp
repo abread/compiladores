@@ -319,6 +319,15 @@ void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
 
   if (node->conditions()) {
     node->conditions()->accept(this, lvl + 2);
+    auto t = node->conditions()->type();
+
+    if (t->name() == cdk::TYPE_STRUCT) {
+      for (auto comp : cdk::structured_type_cast(t)->components())
+        if (comp->name() != cdk::TYPE_INT)
+          throw "invalid type for for-loop conditional expression: " + comp;
+    } else if (t->name() != cdk::TYPE_INT) {
+      throw "invalid type for for-loop conditions: " + t;
+    }
   }
 
   if (node->increments()) {
@@ -341,12 +350,18 @@ void og::type_checker::do_break_node(og::break_node * const node, int lvl) {
 void og::type_checker::do_if_node(og::if_node *const node, int lvl) {
   node->condition()->accept(this, lvl + 2);
   node->block()->accept(this, lvl + 2);
+
+  if (! node->condition()->is_typed(cdk::TYPE_INT))
+    throw "invalid type for condition" + node->condition()->type();
 }
 
 void og::type_checker::do_if_else_node(og::if_else_node *const node, int lvl) {
   node->condition()->accept(this, lvl + 2);
   node->thenblock()->accept(this, lvl + 2);
   node->elseblock()->accept(this, lvl + 2);
+
+  if (! node->condition()->is_typed(cdk::TYPE_INT))
+    throw "invalid type for condition" + node->condition()->type();
 }
 
 void og::type_checker::do_tuple_node(og::tuple_node *const node, int lvl) {
