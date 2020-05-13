@@ -8,19 +8,22 @@
 namespace og {
 
   class symbol {
+    int _qualifier;
     std::shared_ptr<cdk::basic_type> _type;
     std::string _name;
-    long _value; // hack!
 
   public:
-    symbol(std::shared_ptr<cdk::basic_type> type, const std::string &name, long value) :
-        _type(type), _name(name), _value(value) {
+    symbol(int qualifier, std::shared_ptr<cdk::basic_type> type, const std::string &name) :
+        _qualifier(qualifier), _type(type), _name(name) {
     }
 
     virtual ~symbol() {
       // EMPTY
     }
 
+    int qualifier() const {
+      return _qualifier;
+    }
     std::shared_ptr<cdk::basic_type> type() const {
       return _type;
     }
@@ -29,12 +32,6 @@ namespace og {
     }
     const std::string &name() const {
       return _name;
-    }
-    long value() const {
-      return _value;
-    }
-    long value(long v) {
-      return _value = v;
     }
   };
 
