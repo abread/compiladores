@@ -15,6 +15,7 @@ namespace og {
     cdk::symbol_table<og::symbol> &_symtab;
     cdk::basic_postfix_emitter &_pf;
     int _lbl;
+    bool _inFunctionBody = false;
 
   public:
     postfix_writer(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<og::symbol> &symtab,

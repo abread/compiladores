@@ -174,12 +174,12 @@ void og::postfix_writer::do_nullptr_node(og::nullptr_node * const node, int lvl)
 void og::postfix_writer::do_variable_node(cdk::variable_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   const std::string &id = node->name();
-  std::shared_ptr<gr8::symbol> symbol = _symtab.find(id);
+  auto symbol = _symtab.find(id);
 
   if (symbol->global()) {
     _pf.ADDR(node->name());
   } else {
-    _pf.LOCAL(node->offset());
+    _pf.LOCAL(symbol->offset());
   }
 }
 
