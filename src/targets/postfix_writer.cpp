@@ -13,16 +13,24 @@ void og::postfix_writer::do_data_node(cdk::data_node * const node, int lvl) {
   // EMPTY
 }
 void og::postfix_writer::do_double_node(cdk::double_node * const node, int lvl) {
-  // EMPTY
+  _pf.DOUBLE(node->value());
 }
 void og::postfix_writer::do_not_node(cdk::not_node * const node, int lvl) {
-  // EMPTY
+  ASSERT_SAFE_EXPRESSIONS;
+  node->argument()->accept(this, lvl + 2);
+  _pf.NOT();
 }
 void og::postfix_writer::do_and_node(cdk::and_node * const node, int lvl) {
-  // EMPTY
+  ASSERT_SAFE_EXPRESSIONS;
+  node->left()->accept(this, lvl + 2);
+  node->right()->accept(this, lvl + 2);
+  _pf.AND();
 }
 void og::postfix_writer::do_or_node(cdk::or_node * const node, int lvl) {
-  // EMPTY
+  ASSERT_SAFE_EXPRESSIONS;
+  node->left()->accept(this, lvl + 2);
+  node->right()->accept(this, lvl + 2);
+  _pf.OR();
 }
 
 //---------------------------------------------------------------------------
@@ -134,11 +142,9 @@ void og::postfix_writer::do_eq_node(cdk::eq_node * const node, int lvl) {
 
 void og::postfix_writer::do_address_of_node(og::address_of_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  // TODO
-#if 0
+  // TODO: HMMMMMMMMMMMMMM
   // since the argument is an lvalue, it is already an address
   node->lvalue()->accept(this, lvl + 2);
-#endif
 }
 
 void og::postfix_writer::do_stack_alloc_node(og::stack_alloc_node * const node, int lvl) {
@@ -156,21 +162,25 @@ void og::postfix_writer::do_stack_alloc_node(og::stack_alloc_node * const node, 
 void og::postfix_writer::do_nullptr_node(og::nullptr_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS; // a pointer is a 32-bit integer
   // TODO
-#if 0
   if (_inFunctionBody) {
     _pf.INT(0);
   } else {
     _pf.SINT(0);
   }
-#endif
 }
 
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_variable_node(cdk::variable_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  // simplified generation: all variables are global
-  _pf.ADDR(node->name());
+  const std::string &id = node->name();
+  std::shared_ptr<gr8::symbol> symbol = _symtab.find(id);
+
+  if (symbol->global()) {
+    _pf.ADDR(node->name());
+  } else {
+    _pf.LOCAL(node->offset());
+  }
 }
 
 void og::postfix_writer::do_pointer_index_node(og::pointer_index_node * const node, int lvl) {
@@ -278,7 +288,14 @@ void og::postfix_writer::do_evaluation_node(og::evaluation_node * const node, in
 
 void og::postfix_writer::do_block_node(og::block_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  //TODO block node
+  _symtab.push();
+  if (node->declarations()) {
+    node->declarations()->accept(this, lvl + 2);
+  }
+  if (node->instructions()) {
+    node->instructions()->accept(this, lvl + 2);
+  }
+  _symtab.pop();
 }
 
 void og::postfix_writer::do_return_node(og::return_node * const node, int lvl) {
@@ -319,7 +336,9 @@ void og::postfix_writer::do_write_node(og::write_node * const node, int lvl) {
     std::cerr << "ERROR: CANNOT HAPPEN!" << std::endl;
     exit(1);
   }
-  _pf.CALL("println"); // print a newline
+  if (node->newline()) {
+    _pf.CALL("println"); // print a newline
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -412,4 +431,5 @@ void og::postfix_writer::do_sizeof_node(og::sizeof_node *const node, int lvl) {
 
 void og::postfix_writer::do_identity_node(og::identity_node *const node, int lvl) {
   // TODO
+  node->argument()->accept(this, lvl + 2);
 }

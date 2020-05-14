@@ -1,7 +1,22 @@
 #include <string>
 #include "targets/xml_writer.h"
 #include "targets/type_checker.h"
+#include "og_parser.tab.h"
 #include "ast/all.h"  // automatically generated
+
+
+static std::string qualifier_name(int qualifier) {
+  switch (qualifier) {
+    case tPUBLIC:
+      return "public";
+    case tREQUIRE:
+      return "require";
+    case tPRIVATE:
+      return "empty (private)";
+    default:
+      return "unknown qualifier";
+  }
+}
 
 //---------------------------------------------------------------------------
 
@@ -11,9 +26,6 @@ void og::xml_writer::do_nil_node(cdk::nil_node * const node, int lvl) {
 void og::xml_writer::do_data_node(cdk::data_node * const node, int lvl) {
   // EMPTY
 }
-void og::xml_writer::do_not_node(cdk::not_node * const node, int lvl) {
-  // EMPTY
-}
 
 //---------------------------------------------------------------------------
 
@@ -21,7 +33,7 @@ void og::xml_writer::do_sequence_node(cdk::sequence_node * const node, int lvl) 
   ASSERT_SAFE_EXPRESSIONS;
   os() << std::string(lvl, ' ') << "<sequence_node size='" << node->size() << "'>" << std::endl;
   for (size_t i = 0; i < node->size(); i++)
-    node->node(i)->accept(this, lvl + LVL_INCR);
+    node->node(i)->accept(this, lvl + 2);
   closeTag(node, lvl);
 }
 
@@ -43,11 +55,15 @@ void og::xml_writer::do_double_node(cdk::double_node * const node, int lvl) {
 void og::xml_writer::do_unary_operation(cdk::unary_operation_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
-  node->argument()->accept(this, lvl + LVL_INCR);
+  node->argument()->accept(this, lvl + 2);
   closeTag(node, lvl);
 }
 
 void og::xml_writer::do_neg_node(cdk::neg_node * const node, int lvl) {
+  do_unary_operation(node, lvl);
+}
+
+void og::xml_writer::do_not_node(cdk::not_node * const node, int lvl) {
   do_unary_operation(node, lvl);
 }
 
@@ -56,8 +72,8 @@ void og::xml_writer::do_neg_node(cdk::neg_node * const node, int lvl) {
 void og::xml_writer::do_binary_operation(cdk::binary_operation_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
-  node->left()->accept(this, lvl + LVL_INCR);
-  node->right()->accept(this, lvl + LVL_INCR);
+  node->left()->accept(this, lvl + 2);
+  node->right()->accept(this, lvl + 2);
   closeTag(node, lvl);
 }
 
@@ -111,7 +127,7 @@ void og::xml_writer::do_variable_node(cdk::variable_node * const node, int lvl) 
 void og::xml_writer::do_rvalue_node(cdk::rvalue_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
-  node->lvalue()->accept(this, lvl + LVL_INCR);
+  node->lvalue()->accept(this, lvl + 2);
   closeTag(node, lvl);
 }
 
@@ -119,10 +135,10 @@ void og::xml_writer::do_assignment_node(cdk::assignment_node * const node, int l
   ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
 
-  node->lvalue()->accept(this, lvl + LVL_INCR);
+  node->lvalue()->accept(this, lvl + 2);
   reset_new_symbol();
 
-  node->rvalue()->accept(this, lvl + LVL_INCR);
+  node->rvalue()->accept(this, lvl + 2);
   closeTag(node, lvl);
 }
 
@@ -131,17 +147,17 @@ void og::xml_writer::do_assignment_node(cdk::assignment_node * const node, int l
 void og::xml_writer::do_function_definition_node(og::function_definition_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   os() << std::string(lvl, ' ') << "<function_definition_node"
-       << " qualifier='" << node->qualifier() << "'"
+       << " qualifier='" << qualifier_name(node->qualifier()) << "'"
        << " identifier='" << node->identifier() << "'"
-       << " type='" << node->type()->name() << "'>" << std::endl;
+       << " type='" << cdk::to_string(node->type()) << "'>" << std::endl;
 
   if (node->arguments()) {
-    openTag("arguments", lvl + LVL_INCR);
-    node->arguments()->accept(this, lvl + 2*LVL_INCR);
-    closeTag("arguments", lvl + LVL_INCR);
+    openTag("arguments", lvl + 2);
+    node->arguments()->accept(this, lvl + 2*2);
+    closeTag("arguments", lvl + 2);
   }
 
-  node->block()->accept(this, lvl + LVL_INCR);
+  node->block()->accept(this, lvl + 2);
   closeTag(node, lvl);
 }
 
@@ -152,9 +168,9 @@ void og::xml_writer::do_function_call_node(og::function_call_node *const node, i
   os() << std::string(lvl, ' ') << "<function_call_node identifier='" << node->identifier() << "'>" << std::endl;
 
   if (node->arguments()) {
-    openTag("arguments", lvl + LVL_INCR);
-    node->arguments()->accept(this, lvl + 2*LVL_INCR);
-    closeTag("arguments", lvl + LVL_INCR);
+    openTag("arguments", lvl + 2);
+    node->arguments()->accept(this, lvl + 2*2);
+    closeTag("arguments", lvl + 2);
   }
 
   closeTag(node, lvl);
@@ -164,12 +180,12 @@ void og::xml_writer::do_function_call_node(og::function_call_node *const node, i
 
 void og::xml_writer::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  os() << std::string(lvl, ' ') << "<function_declaration_node qualifier='" << node->qualifier() << "' identifier='" << node->identifier() << "'>" << std::endl;
+  os() << std::string(lvl, ' ') << "<function_declaration_node qualifier='" << qualifier_name(node->qualifier()) << "' identifier='" << node->identifier() << "'>" << std::endl;
 
   if (node->arguments()) {
-    openTag("arguments", lvl + LVL_INCR);
-    node->arguments()->accept(this, lvl + 2*LVL_INCR);
-    closeTag("arguments", lvl + LVL_INCR);
+    openTag("arguments", lvl + 2);
+    node->arguments()->accept(this, lvl + 2*2);
+    closeTag("arguments", lvl + 2);
   }
 
   closeTag(node, lvl);
@@ -180,7 +196,7 @@ void og::xml_writer::do_function_declaration_node(og::function_declaration_node 
 void og::xml_writer::do_evaluation_node(og::evaluation_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
-  node->argument()->accept(this, lvl + LVL_INCR);
+  node->argument()->accept(this, lvl + 2);
   closeTag(node, lvl);
 }
 
@@ -189,15 +205,15 @@ void og::xml_writer::do_block_node(og::block_node * const node, int lvl) {
   openTag(node, lvl);
 
   if (node->declarations()) {
-    openTag("declarations", lvl + LVL_INCR);
-    node->declarations()->accept(this, lvl + 2*LVL_INCR);
-    closeTag("declarations", lvl + LVL_INCR);
+    openTag("declarations", lvl + 2);
+    node->declarations()->accept(this, lvl + 2*2);
+    closeTag("declarations", lvl + 2);
   }
 
   if (node->instructions()) {
-    openTag("instructions", lvl + LVL_INCR);
-    node->instructions()->accept(this, lvl + 2*LVL_INCR);
-    closeTag("instructions", lvl + LVL_INCR);
+    openTag("instructions", lvl + 2);
+    node->instructions()->accept(this, lvl + 2*2);
+    closeTag("instructions", lvl + 2);
   }
 
   closeTag(node, lvl);
@@ -208,13 +224,13 @@ void og::xml_writer::do_pointer_index_node(og::pointer_index_node * const node, 
   ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
 
-  openTag("base", lvl + LVL_INCR);
-  node->base()->accept(this, lvl + 2*LVL_INCR);
+  openTag("base", lvl + 2);
+  node->base()->accept(this, lvl + 2*2);
   closeTag("base", lvl);
 
-  openTag("index", lvl + LVL_INCR);
-  node->index()->accept(this, lvl + 2*LVL_INCR);
-  closeTag("index", lvl + LVL_INCR);
+  openTag("index", lvl + 2);
+  node->index()->accept(this, lvl + 2*2);
+  closeTag("index", lvl + 2);
 
   closeTag(node, lvl);
 }
@@ -222,14 +238,14 @@ void og::xml_writer::do_pointer_index_node(og::pointer_index_node * const node, 
 void og::xml_writer::do_address_of_node(og::address_of_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
-  node->lvalue()->accept(this, lvl + LVL_INCR);
+  node->lvalue()->accept(this, lvl + 2);
   closeTag(node, lvl);
 }
 
 void og::xml_writer::do_stack_alloc_node(og::stack_alloc_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
-  node->argument()->accept(this, lvl + LVL_INCR);
+  node->argument()->accept(this, lvl + 2);
   closeTag(node, lvl);
 }
 
@@ -241,7 +257,7 @@ void og::xml_writer::do_nullptr_node(og::nullptr_node * const node, int lvl) {
 void og::xml_writer::do_write_node(og::write_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   os() << std::string(lvl, ' ') << "<write_node newline='" << ((node->newline()) ? "true" : "false") << "'>" << std::endl;
-  node->argument()->accept(this, lvl + LVL_INCR);
+  node->argument()->accept(this, lvl + 2);
   closeTag(node, lvl);
 }
 
@@ -259,26 +275,26 @@ void og::xml_writer::do_for_node(og::for_node * const node, int lvl) {
   openTag(node, lvl);
 
   if (node->initializers()) {
-    openTag("initializers", lvl + LVL_INCR);
-    node->initializers()->accept(this, lvl + 2*LVL_INCR);
-    closeTag("initializers", lvl + LVL_INCR);
+    openTag("initializers", lvl + 2);
+    node->initializers()->accept(this, lvl + 2*2);
+    closeTag("initializers", lvl + 2);
   }
 
   if (node->conditions()) {
-    openTag("conditions", lvl + LVL_INCR);
-    node->conditions()->accept(this, lvl + 2*LVL_INCR);
-    closeTag("conditions", lvl + LVL_INCR);
+    openTag("conditions", lvl + 2);
+    node->conditions()->accept(this, lvl + 2*2);
+    closeTag("conditions", lvl + 2);
   }
 
   if (node->increments()) {
-    openTag("increments", lvl + LVL_INCR);
-    node->increments()->accept(this, lvl + 2*LVL_INCR);
-    closeTag("increments", lvl + LVL_INCR);
+    openTag("increments", lvl + 2);
+    node->increments()->accept(this, lvl + 2*2);
+    closeTag("increments", lvl + 2);
   }
 
-  openTag("block", lvl + LVL_INCR);
-  node->block()->accept(this, lvl + 2*LVL_INCR);
-  closeTag("block", lvl + LVL_INCR);
+  openTag("block", lvl + 2);
+  node->block()->accept(this, lvl + 2*2);
+  closeTag("block", lvl + 2);
 
   closeTag(node, lvl);
 }
@@ -298,7 +314,7 @@ void og::xml_writer::do_return_node(og::return_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
   if (node->retval())
-    node->retval()->accept(this, lvl + LVL_INCR);
+    node->retval()->accept(this, lvl + 2);
   closeTag(node, lvl);
 }
 
@@ -308,13 +324,13 @@ void og::xml_writer::do_if_node(og::if_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
 
-  openTag("condition", lvl + LVL_INCR);
-  node->condition()->accept(this, lvl + 2*LVL_INCR);
-  closeTag("condition", lvl + LVL_INCR);
+  openTag("condition", lvl + 2);
+  node->condition()->accept(this, lvl + 2*2);
+  closeTag("condition", lvl + 2);
 
-  openTag("then", lvl + LVL_INCR);
-  node->block()->accept(this, lvl + 2*LVL_INCR);
-  closeTag("then", lvl + LVL_INCR);
+  openTag("then", lvl + 2);
+  node->block()->accept(this, lvl + 2*2);
+  closeTag("then", lvl + 2);
 
   closeTag(node, lvl);
 }
@@ -323,17 +339,17 @@ void og::xml_writer::do_if_else_node(og::if_else_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
 
-  openTag("condition", lvl + LVL_INCR);
-  node->condition()->accept(this, lvl + 2*LVL_INCR);
-  closeTag("condition", lvl + LVL_INCR);
+  openTag("condition", lvl + 2);
+  node->condition()->accept(this, lvl + 2*2);
+  closeTag("condition", lvl + 2);
 
-  openTag("then", lvl + LVL_INCR);
-  node->thenblock()->accept(this, lvl + 2*LVL_INCR);
-  closeTag("then", lvl + LVL_INCR);
+  openTag("then", lvl + 2);
+  node->thenblock()->accept(this, lvl + 2*2);
+  closeTag("then", lvl + 2);
 
-  openTag("else", lvl + LVL_INCR);
-  node->elseblock()->accept(this, lvl + 2*LVL_INCR);
-  closeTag("else", lvl + LVL_INCR);
+  openTag("else", lvl + 2);
+  node->elseblock()->accept(this, lvl + 2*2);
+  closeTag("else", lvl + 2);
 
   closeTag(node, lvl);
 }
@@ -341,28 +357,28 @@ void og::xml_writer::do_if_else_node(og::if_else_node * const node, int lvl) {
 void og::xml_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
-  openTag("elements", lvl + LVL_INCR);
-  node->seq()->accept(this, lvl + 2*LVL_INCR);
-  closeTag("elements", lvl + LVL_INCR);
+  openTag("elements", lvl + 2);
+  node->seq()->accept(this, lvl + 2*2);
+  closeTag("elements", lvl + 2);
   closeTag(node, lvl);
 }
 
 void og::xml_writer::do_variable_declaration_node(og::variable_declaration_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   os() << std::string(lvl, ' ') << "<variable_declaration_node"
-       << " qualifier='" << node->qualifier() << "'"
-       << " type='" << node->type()->name() << "'>" << std::endl;
+       << " qualifier='" << qualifier_name(node->qualifier()) << "'"
+       << " type='" << cdk::to_string(node->type()) << "'>" << std::endl;
 
-  openTag("identifiers", lvl + LVL_INCR);
+  openTag("identifiers", lvl + 2);
   for (const std::string& identifier : node->identifiers()) {
-    os() << std::string(lvl + 2*LVL_INCR, ' ') << "<identifier>" << identifier << "</identifier>" << std::endl;
+    os() << std::string(lvl + 2*2, ' ') << "<identifier>" << identifier << "</identifier>" << std::endl;
   }
-  closeTag("identifiers", lvl + LVL_INCR);
+  closeTag("identifiers", lvl + 2);
 
   if (node->initializer()) {
-    openTag("initializer", lvl + LVL_INCR);
-    node->initializer()->accept(this, lvl + 2*LVL_INCR);
-    closeTag("initializer", lvl + LVL_INCR);
+    openTag("initializer", lvl + 2);
+    node->initializer()->accept(this, lvl + 2*2);
+    closeTag("initializer", lvl + 2);
   }
 
   closeTag(node, lvl);
@@ -371,18 +387,18 @@ void og::xml_writer::do_variable_declaration_node(og::variable_declaration_node 
 void og::xml_writer::do_tuple_index_node(og::tuple_index_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   os() << std::string(lvl, ' ') << "<tuple_index_node index='" << node->index() << "'>" << std::endl;
-  openTag("base", lvl + LVL_INCR);
-  node->base()->accept(this, lvl + 2*LVL_INCR);
-  closeTag("base", lvl + LVL_INCR);
+  openTag("base", lvl + 2);
+  node->base()->accept(this, lvl + 2*2);
+  closeTag("base", lvl + 2);
   closeTag(node, lvl);
 }
 
 void og::xml_writer::do_sizeof_node(og::sizeof_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
-  openTag("arguments", lvl + LVL_INCR);
-  node->arguments()->accept(this, lvl + 2*LVL_INCR);
-  closeTag("arguments", lvl + LVL_INCR);
+  openTag("arguments", lvl + 2);
+  node->arguments()->accept(this, lvl + 2*2);
+  closeTag("arguments", lvl + 2);
   closeTag(node, lvl);
 }
 

@@ -2,7 +2,7 @@
 #define __OG_AST_FOR_NODE_H__
 
 #include <cdk/ast/basic_node.h>
-#include <cdk/ast/sequence_node.h>
+#include <cdk/ast/expression_node.h>
 
 namespace og {
 
@@ -10,24 +10,24 @@ namespace og {
    * Class for describing for-cycle nodes.
    */
   class for_node: public cdk::basic_node {
-    cdk::sequence_node *_initializers;
-    cdk::sequence_node *_conditions;
-    cdk::sequence_node *_increments;
+    cdk::basic_node *_initializers;
+    cdk::expression_node *_conditions;
+    cdk::expression_node *_increments;
     cdk::basic_node *_block;
 
   public:
-    inline for_node(int lineno, cdk::sequence_node *initializers, cdk::sequence_node *conditions, cdk::sequence_node *increments, cdk::basic_node *block) :
+    inline for_node(int lineno, cdk::basic_node *initializers, cdk::expression_node *conditions, cdk::expression_node *increments, cdk::basic_node *block) :
         basic_node(lineno), _initializers(initializers), _conditions(conditions), _increments(increments), _block(block) {
     }
 
   public:
-    inline cdk::sequence_node *initializers() {
+    inline cdk::basic_node *initializers() {
       return _initializers;
     }
-    inline cdk::sequence_node *conditions() {
+    inline cdk::expression_node *conditions() {
       return _conditions;
     }
-    inline cdk::sequence_node *increments() {
+    inline cdk::expression_node *increments() {
       return _increments;
     }
     inline cdk::basic_node *block() {

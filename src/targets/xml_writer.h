@@ -23,7 +23,6 @@ namespace og {
     }
 
   private:
-    const int LVL_INCR = 2;
     void openTag(const std::string &tag, int lvl) {
       os() << std::string(lvl, ' ') + "<" + tag + ">" << std::endl;
     }

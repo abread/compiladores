@@ -46,7 +46,7 @@ build-cdk: libcdk .PHONY
 	$(MAKE) -C libcdk $(MAKEOPTS) all
 	$(MAKE) -C libcdk $(MAKEOPTS) install
 libcdk:
-	wget -O libcdk.tar.bz2 "https://web.tecnico.ulisboa.pt/~david.matos/w/pt/images/f/fc/Libcdk15-202002022020.tar.bz2"
+	wget -O libcdk.tar.bz2 "https://web.tecnico.ulisboa.pt/~david.matos/w/pt/images/1/12/Libcdk15-202004101316.tar.bz2"
 	tar xf libcdk.tar.bz2
 	rm libcdk.tar.bz2
-	mv libcdk15-202002022020 libcdk
+	mv libcdk15-202004101316 libcdk
