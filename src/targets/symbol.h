@@ -14,6 +14,7 @@ namespace og {
     std::shared_ptr<cdk::basic_type> _argsType; // nullptr for variables
 
     int _offset = 0; // 0 means global
+    bool _definedOrInitialized = false;
 
   public:
     symbol(int qualifier, std::shared_ptr<cdk::basic_type> type, const std::string &name, std::shared_ptr<cdk::basic_type> argsType = nullptr) :
@@ -52,6 +53,12 @@ namespace og {
     }
     std::shared_ptr<cdk::basic_type> argsType() const {
       return _argsType;
+    }
+    bool definedOrInitialized() const {
+      return _definedOrInitialized;
+    }
+    bool &definedOrInitialized() {
+      return _definedOrInitialized;
     }
   };
 

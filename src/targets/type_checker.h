@@ -32,7 +32,7 @@ namespace og {
     void process_literal(cdk::literal_node<T> *const node, int lvl) {
     }
     template <typename T>
-    void og::type_checker::declare_function(T *const node, int lvl);
+    std::shared_ptr<og::symbol> declare_function(T *const node, int lvl);
 
   public:
     // do not edit these lines

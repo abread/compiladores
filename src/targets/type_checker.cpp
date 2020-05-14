@@ -336,7 +336,7 @@ void og::type_checker::do_assignment_node(cdk::assignment_node *const node, int 
 //---------------------------------------------------------------------------
 
 template <typename T>
-void og::type_checker::declare_function(T *const node, int lvl) {
+std::shared_ptr<og::symbol> og::type_checker::declare_function(T *const node, int lvl) {
   static_assert(std::is_same<T, og::function_declaration_node>::value || std::is_same<T, og::function_definition_node>::value, "trying to declare functions from a weird kind of node");
 
   std::vector<std::shared_ptr<cdk::basic_type>> arg_types;
@@ -361,9 +361,12 @@ void og::type_checker::declare_function(T *const node, int lvl) {
     if (false /* TODO: check conflicts properly */) {
       throw "conflicting declarations for " + id;
     }
+
+    return old_sym;
   } else {
     _symtab.insert(id, sym);
     _parent->set_new_symbol(sym);
+    return sym;
   }
 }
 
@@ -372,7 +375,13 @@ void og::type_checker::do_function_definition_node(og::function_definition_node 
   if (node->qualifier() == tREQUIRE)
     throw std::string("can't require a function definition");
 
-  declare_function(node, lvl);
+  auto sym = declare_function(node, lvl);
+
+  // Mark function as defined (throw if redefinition)
+  if (sym && sym->definedOrInitialized()) {
+    throw std::string("function redefinition: " + sym->name());
+  }
+  sym->definedOrInitialized() = true;
 
   node->block()->accept(this, lvl + 2);
 }
