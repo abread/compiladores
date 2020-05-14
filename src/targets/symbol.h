@@ -10,11 +10,14 @@ namespace og {
   class symbol {
     int _qualifier;
     std::shared_ptr<cdk::basic_type> _type;
+    std::shared_ptr<cdk::basic_type> _argsType; // nullptr for variables
     std::string _name;
 
+    int _offset = 0; // 0 means global
+
   public:
-    symbol(int qualifier, std::shared_ptr<cdk::basic_type> type, const std::string &name) :
-        _qualifier(qualifier), _type(type), _name(name) {
+    symbol(int qualifier, std::shared_ptr<cdk::basic_type> type, const std::string &name, std::shared_ptr<cdk::basic_type> argsType = nullptr) :
+        _qualifier(qualifier), _type(type), _name(name), _argsType(argsType) {
     }
 
     virtual ~symbol() {
@@ -32,6 +35,21 @@ namespace og {
     }
     const std::string &name() const {
       return _name;
+    }
+    const int offset() const {
+      return _offset;
+    }
+    int &offset() {
+      return _offset;
+    }
+    bool isFunction() const {
+      return _argsType != nullptr;
+    }
+    bool isVariable() const {
+      return _argsType == nullptr;
+    }
+    std::shared_ptr<cdk::basic_type> argsType() const {
+      return _argsType;
     }
   };
 
