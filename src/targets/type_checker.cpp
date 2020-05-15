@@ -313,12 +313,8 @@ void og::type_checker::do_pointer_index_node(og::pointer_index_node * const node
 
 void og::type_checker::do_rvalue_node(cdk::rvalue_node *const node, int lvl) {
   ASSERT_UNSPEC;
-  try {
-    node->lvalue()->accept(this, lvl);
-    node->type(node->lvalue()->type());
-  } catch (const std::string &id) {
-    throw std::string("undeclared variable '" + id + "'");
-  }
+  node->lvalue()->accept(this, lvl);
+  node->type(node->lvalue()->type());
 }
 
 void og::type_checker::do_assignment_node(cdk::assignment_node *const node, int lvl) {
