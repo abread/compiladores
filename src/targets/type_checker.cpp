@@ -152,7 +152,7 @@ void og::type_checker::do_neg_node(cdk::neg_node *const node, int lvl) {
   processUnaryExpression(node, lvl);
 
   if (!is_ID(node)) {
-    throw "invalid type";
+    throw std::string("invalid type");
   }
 }
 
@@ -160,7 +160,7 @@ void og::type_checker::do_not_node(cdk::not_node *const node, int lvl) {
   processUnaryExpression(node, lvl);
 
   if (!node->is_typed(cdk::TYPE_INT)) {
-    throw "invalid type";
+    throw std::string("invalid type");
   }
 }
 
@@ -168,7 +168,7 @@ void og::type_checker::do_identity_node(og::identity_node *const node, int lvl) 
   processUnaryExpression(node, lvl);
 
   if (!is_ID(node)) {
-    throw "invalid type";
+    throw std::string("invalid type");
   }
 }
 
@@ -183,7 +183,7 @@ void og::type_checker::processPIDBinaryExpression(cdk::binary_operation_node *co
     } else if(node->left()->is_typed(cdk::TYPE_POINTER)) {
       node->type(node->left()->type());
     } else {
-      throw "invalid type for int/double/ptr binary expr";
+      throw std::string("invalid type for int/double/ptr binary expr");
     }
   } else {
     if (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_INT)) {
@@ -195,7 +195,7 @@ void og::type_checker::processPIDBinaryExpression(cdk::binary_operation_node *co
     } else if (node->left()->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT)) {
       node->type(node->left()->type());
     } else {
-      throw "invalid type for int/double/ptr binary expr";
+      throw std::string("invalid type for int/double/ptr binary expr");
     }
   }
 }
@@ -210,7 +210,7 @@ void og::type_checker::processIDBinaryExpression(cdk::binary_operation_node *con
     if (is_ID(node->left())) {
       node->type(node->left()->type());
     } else {
-      throw "invalid type for int/double binary expr";
+      throw std::string("invalid type for int/double binary expr");
     }
   } else {
     if (node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_DOUBLE)) {
@@ -218,7 +218,7 @@ void og::type_checker::processIDBinaryExpression(cdk::binary_operation_node *con
     } else if (node->left()->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT)) {
       node->type(node->left()->type());
     } else {
-      throw "invalid type for int/double binary expr";
+      throw std::string("invalid type for int/double binary expr");
     }
   }
 }
@@ -229,7 +229,7 @@ void og::type_checker::processIBinaryExpression(cdk::binary_operation_node *cons
   node->right()->accept(this, lvl + 2);
 
   if (!node->left()->is_typed(cdk::TYPE_INT) && !node->right()->is_typed(cdk::TYPE_INT))
-    throw "invalid type for int binary expr";
+    throw std::string("invalid type for int binary expr");
 
   node->type(node->left()->type());
 }
@@ -327,7 +327,7 @@ void og::type_checker::do_assignment_node(cdk::assignment_node *const node, int 
   node->rvalue()->accept(this, lvl + 2);
 
   if (!compatibleTypes(node->lvalue(), node->rvalue()) && !(node->lvalue()->is_typed(cdk::TYPE_DOUBLE) && node->rvalue()->is_typed(cdk::TYPE_INT))) {
-    throw "incompatible types in assignment";
+    throw std::string("incompatible types in assignment");
   }
 
   node->type(node->lvalue()->type());
@@ -359,7 +359,7 @@ std::shared_ptr<og::symbol> og::type_checker::declare_function(T *const node, in
   auto old_sym = _symtab.find(id);
   if (old_sym) {
     if (false /* TODO: check conflicts properly */) {
-      throw "conflicting declarations for " + id;
+      throw std::string("conflicting declarations for " + id);
     }
 
     return old_sym;
