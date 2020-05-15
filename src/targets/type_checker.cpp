@@ -519,6 +519,38 @@ void og::type_checker::do_tuple_node(og::tuple_node *const node, int lvl) {
   node->type(cdk::make_structured_type(el_types));
 }
 
+void og::type_checker::declare_var(int qualifier, std::shared_ptr<cdk::basic_type> typeHint, const std::string &id, std::shared_ptr<cdk::basic_type> initializerType = nullptr) {
+  auto type = typeHint;
+  if (initializerType != nullptr) {
+    if (typeHint->name() == cdk::TYPE_UNSPEC) {
+      type = initializerType;
+    } else if ((initializerType->name() == cdk::TYPE_INT && typeHint->name() == cdk::TYPE_DOUBLE) || compatibleTypes(typeHint, initializerType)) {
+      type = typeHint;
+    } else {
+      throw std::string("incorrect type in declaration of " + id);
+    }
+  }
+
+  auto sym = std::make_shared<og::symbol>(qualifier, type, id);
+  auto old_sym = _symtab.find_local(id);
+  if (old_sym) {
+    if (!compatibleTypes(sym->type(), old_sym->type()) || (initializerType != nullptr && old_sym->definedOrInitialized())) {
+      throw std::string("conflicting declarations for " + id);
+    }
+
+    if (initializerType != nullptr) {
+      old_sym->definedOrInitialized() = true;
+    }
+  } else {
+    if (initializerType != nullptr) {
+      sym->definedOrInitialized() = true;
+    }
+
+    _symtab.insert(id, sym);
+    _parent->set_new_symbol(sym);
+  }
+}
+
 void og::type_checker::do_variable_declaration_node(og::variable_declaration_node *const node, int lvl) {
   ASSERT_UNSPEC;
   node->type(node->typeHint());
@@ -528,7 +560,43 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
 
   if (node->is_typed(cdk::TYPE_UNSPEC) && node->qualifier() == tREQUIRE)
     throw std::string("external(required) variables must have a concrete type");
-  // TODO
+
+  if (node->initializer()) {
+    node->initializer()->accept(this, lvl);
+
+    if (node->is_typed(cdk::TYPE_UNSPEC) &&
+        !(node->identifiers().size() == 1 ||
+          (node->initializer()->is_typed(cdk::TYPE_STRUCT) && cdk::structured_type_cast(node->initializer()->type())->length() == node->identifiers().size())
+          )
+        ) {
+        throw std::string("number of identifiers does not match number of expressions");
+      }
+  }
+
+  int qualifier = node->qualifier();
+  auto typeHint = node->typeHint();
+  std::shared_ptr<cdk::basic_type> initType = nullptr;
+
+  if (node->identifiers().size() == 1) {
+    auto id = node->identifiers()[0];
+    if (node->initializer()) {
+      initType = node->initializer()->type();
+    }
+
+    declare_var(qualifier, typeHint, id, initType);
+  } else {
+    for (size_t i = 0; i < node->identifiers().size(); i++) {
+      auto id = node->identifiers()[i];
+
+      std::shared_ptr<cdk::basic_type> compInitType = nullptr;
+      if (node->initializer()) {
+        auto initializerType = cdk::structured_type_cast(node->initializer()->type());
+        compInitType = initializerType->component(i);
+      }
+
+      declare_var(qualifier, typeHint, id, compInitType);
+    }
+  }
 }
 
 void og::type_checker::do_tuple_index_node(og::tuple_index_node *const node, int lvl) {

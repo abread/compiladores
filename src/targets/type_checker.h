@@ -33,6 +33,7 @@ namespace og {
     }
     template <typename T>
     std::shared_ptr<og::symbol> declare_function(T *const node, int lvl);
+    void declare_var(int qualifier, std::shared_ptr<cdk::basic_type> typeHint, const std::string &id, std::shared_ptr<cdk::basic_type> initializerType);
 
   public:
     // do not edit these lines
