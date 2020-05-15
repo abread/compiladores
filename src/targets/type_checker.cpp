@@ -14,7 +14,7 @@ static bool is_ID(cdk::typed_node *node) {
   return node->is_typed(cdk::TYPE_INT) || node->is_typed(cdk::TYPE_DOUBLE);
 }
 
-static bool compatibleTypes(std::shared_ptr<cdk::basic_type> a, std::shared_ptr<cdk::basic_type> b, bool topLevel = true) {
+static bool compatibleTypes(std::shared_ptr<cdk::basic_type> a, std::shared_ptr<cdk::basic_type> b, bool strictCompare = false) {
   if (a != b) {
     return false;
   }
@@ -28,7 +28,7 @@ static bool compatibleTypes(std::shared_ptr<cdk::basic_type> a, std::shared_ptr<
     }
 
     for (size_t i = 0; i < aa->length(); i++) {
-      if (!compatibleTypes(aa->component(i), bb->component(i), false)) {
+      if (!compatibleTypes(aa->component(i), bb->component(i), true)) {
         return false;
       }
     }
@@ -38,11 +38,11 @@ static bool compatibleTypes(std::shared_ptr<cdk::basic_type> a, std::shared_ptr<
     auto aa = cdk::reference_type_cast(a);
     auto bb = cdk::reference_type_cast(b);
 
-    if (topLevel && (aa->referenced()->name() == cdk::TYPE_UNSPEC || bb->referenced()->name() == cdk::TYPE_UNSPEC)) {
+    if (!strictCompare && (aa->referenced()->name() == cdk::TYPE_UNSPEC || bb->referenced()->name() == cdk::TYPE_UNSPEC)) {
       return true;
     }
 
-    if (!compatibleTypes(aa->referenced(), bb->referenced(), false)) {
+    if (!compatibleTypes(aa->referenced(), bb->referenced(), true)) {
       return false;
     }
 
