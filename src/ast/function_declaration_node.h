@@ -13,19 +13,19 @@ namespace og {
    */
   class function_declaration_node: public cdk::typed_node {
     int _qualifier;
+    std::shared_ptr<cdk::basic_type> _typeHint;
     std::string _identifier;
     cdk::sequence_node *_arguments;
 
   public:
-    function_declaration_node(int lineno, int qualifier, cdk::basic_type *type, const std::string &identifier) :
-        function_declaration_node(lineno, qualifier, type, identifier, nullptr) {}
-    function_declaration_node(int lineno, int qualifier, cdk::basic_type *type, const std::string &identifier, cdk::sequence_node *arguments) :
+    function_declaration_node(int lineno, int qualifier, cdk::basic_type *typeHint, const std::string &identifier) :
+        function_declaration_node(lineno, qualifier, typeHint, identifier, nullptr) {}
+    function_declaration_node(int lineno, int qualifier, cdk::basic_type *typeHint, const std::string &identifier, cdk::sequence_node *arguments) :
         cdk::typed_node(lineno),
         _qualifier(qualifier),
+        _typeHint(std::shared_ptr<cdk::basic_type>(typeHint)),
         _identifier(identifier),
-        _arguments(arguments) {
-          this->type(std::shared_ptr<cdk::basic_type>(type));
-        }
+        _arguments(arguments) {}
 
   public:
     int qualifier() {
@@ -36,6 +36,9 @@ namespace og {
     }
     cdk::sequence_node *arguments() {
       return _arguments;
+    }
+    std::shared_ptr<cdk::basic_type> typeHint() {
+      return _typeHint;
     }
 
     void accept(basic_ast_visitor *sp, int level) {

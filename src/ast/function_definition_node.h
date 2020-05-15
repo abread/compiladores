@@ -14,21 +14,21 @@ namespace og {
    */
   class function_definition_node: public cdk::typed_node {
     int _qualifier;
+    std::shared_ptr<cdk::basic_type> _typeHint;
     std::string _identifier;
     cdk::sequence_node *_arguments;
     block_node *_block;
 
   public:
-    function_definition_node(int lineno, int qualifier, cdk::basic_type *type, const std::string &identifier, block_node *block) :
-        function_definition_node(lineno, qualifier, type, identifier, nullptr, block) {}
-    function_definition_node(int lineno, int qualifier, cdk::basic_type *type, const std::string &identifier, cdk::sequence_node *arguments, block_node *block) :
+    function_definition_node(int lineno, int qualifier, cdk::basic_type *typeHint, const std::string &identifier, block_node *block) :
+        function_definition_node(lineno, qualifier, typeHint, identifier, nullptr, block) {}
+    function_definition_node(int lineno, int qualifier, cdk::basic_type *typeHint, const std::string &identifier, cdk::sequence_node *arguments, block_node *block) :
         cdk::typed_node(lineno),
         _qualifier(qualifier),
+        _typeHint(std::shared_ptr<cdk::basic_type>(typeHint)),
         _identifier(identifier),
         _arguments(arguments),
-        _block(block) {
-          this->type(std::shared_ptr<cdk::basic_type>(type));
-        }
+        _block(block) {}
 
   public:
     int qualifier() {
@@ -42,6 +42,9 @@ namespace og {
     }
     block_node *block() {
       return _block;
+    }
+    std::shared_ptr<cdk::basic_type> typeHint() {
+      return _typeHint;
     }
 
     void accept(basic_ast_visitor *sp, int level) {

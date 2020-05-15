@@ -371,7 +371,9 @@ std::shared_ptr<og::symbol> og::type_checker::declare_function(T *const node, in
 }
 
 void og::type_checker::do_function_definition_node(og::function_definition_node *const node, int lvl) {
-  // TODO
+  ASSERT_UNSPEC;
+  node->type(node->typeHint());
+
   if (node->qualifier() == tREQUIRE)
     throw std::string("can't require a function definition");
 
@@ -383,7 +385,9 @@ void og::type_checker::do_function_definition_node(og::function_definition_node 
   }
   sym->definedOrInitialized() = true;
 
+  _symtab.push();
   node->block()->accept(this, lvl + 2);
+  _symtab.pop();
 }
 
 void og::type_checker::do_function_call_node(og::function_call_node *const node, int lvl) {
@@ -398,6 +402,8 @@ void og::type_checker::do_function_call_node(og::function_call_node *const node,
 }
 
 void og::type_checker::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
+  ASSERT_UNSPEC;
+  node->type(node->typeHint());
   declare_function(node, lvl);
 }
 
@@ -519,6 +525,8 @@ void og::type_checker::do_tuple_node(og::tuple_node *const node, int lvl) {
 
 void og::type_checker::do_variable_declaration_node(og::variable_declaration_node *const node, int lvl) {
   ASSERT_UNSPEC;
+  node->type(node->typeHint());
+
   if (node->initializer() && node->qualifier() == tREQUIRE)
     throw std::string("external(required) variables cannot be initialized");
 
