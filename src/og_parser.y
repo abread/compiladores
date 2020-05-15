@@ -39,21 +39,17 @@
 %nonassoc tELIF
 %nonassoc tELSE
 
-%nonassoc tNOCOMMA
-%nonassoc ','
-
 %right '='
 %left tAND tOR
 %left tGE tLE tEQ tNE '>' '<'
 %left '+' '-'
 %left '*' '/' '%'
 %nonassoc tUNARY
-%nonassoc '@' '['
-
+%nonassoc '[' '@'
 %type <s> string
-%type <node> instr fdecl bdecl cond_instr elif iter_instr var toplevel_var arg func proc
-%type <sequence> instrs file fdecls bdecls vars exprs args
-%type <expression> expr cexpr
+%type <node> instr fdecl bdecl cond_instr elif iter_instr bvar svar fvars toplevel_var arg func proc
+%type <sequence> instrs file fdecls bdecls svars exprs args
+%type <expression> expr
 %type <lvalue> lval
 %type <blk> block
 %type <t> type auto_t void_t
@@ -90,14 +86,11 @@ toplevel_var : qualifier type   tIDENTIFIER           { $$ = new og::variable_de
              |           type   tIDENTIFIER           { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
              | qualifier type   tIDENTIFIER '=' expr  { $$ = new og::variable_declaration_node(LINE, $1, $2, *$3, $5); delete $3; }
              |           type   tIDENTIFIER '=' expr  { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
-             | qualifier auto_t var_idents            { $$ = new og::variable_declaration_node(LINE, $1, $2, *$3); delete $3; }
-             |           auto_t var_idents            { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
-             | qualifier auto_t var_idents  '=' cexpr { $$ = new og::variable_declaration_node(LINE, $1, $2, *$3, $5); delete $3; }
-             |           auto_t var_idents  '=' cexpr { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
+             | qualifier auto_t var_idents  '=' exprs { $$ = new og::variable_declaration_node(LINE, $1, $2, *$3, new og::tuple_node(LINE, $5)); delete $3; }
+             |           auto_t var_idents  '=' exprs { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, new og::tuple_node(LINE, $4)); delete $2; }
              ;
 
 arg : type   tIDENTIFIER                { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
-    | auto_t var_idents  %prec tNOCOMMA { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
     ;
 
 args : arg          { $$ = new cdk::sequence_node(LINE, $1); }
@@ -146,15 +139,6 @@ type : tINTD                    { $$ = new cdk::primitive_type(4, cdk::TYPE_INT)
      | tPTR    '<' tAUTO '>'    { $$ = new cdk::reference_type(4, cdk::make_primitive_type(0, cdk::TYPE_VOID)); }
      ;
 
-var : type   tIDENTIFIER                { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
-    | type   tIDENTIFIER '=' expr       { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
-    | auto_t var_idents  %prec tNOCOMMA { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
-    | auto_t var_idents  '=' cexpr      { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
-    ;
-
-vars : var                 { $$ = new cdk::sequence_node(LINE, $1); }
-     | vars ',' var        { $$ = new cdk::sequence_node(LINE, $3, $1); }
-     ;
 
 block : '{' bdecls instrs '}'   { $$ = new og::block_node(LINE, $2, $3); }
       | '{'        instrs '}'   { $$ = new og::block_node(LINE, nullptr, $2); }
@@ -166,20 +150,25 @@ bdecls :        bdecl  { $$ = new cdk::sequence_node(LINE, $1); }
        | bdecls bdecl  { $$ = new cdk::sequence_node(LINE, $2, $1); }
        ;
 
-bdecl : var ';' { $$ = $1; }
+bvar : type   tIDENTIFIER          { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
+    | type   tIDENTIFIER '=' expr  { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
+    | auto_t var_idents  '=' exprs { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, new og::tuple_node(LINE, $4)); delete $2; }
+    ;
+
+bdecl : bvar ';' { $$ = $1; }
       ;
 
 instrs : instr                  { $$ = new cdk::sequence_node(LINE, $1); }
        | instrs instr           { $$ = new cdk::sequence_node(LINE, $2, $1); }
        ;
 
-instr : cexpr ';'               { $$ = new og::evaluation_node(LINE, $1); }
-      | tWRITE   cexpr ';'      { $$ = new og::write_node(LINE, $2); }
-      | tWRITELN cexpr ';'      { $$ = new og::write_node(LINE, $2, true); }
+instr : exprs ';'               { $$ = new og::evaluation_node(LINE, new og::tuple_node(LINE, $1)); }
+      | tWRITE   exprs ';'      { $$ = new og::write_node(LINE, new og::tuple_node(LINE, $2)); }
+      | tWRITELN exprs ';'      { $$ = new og::write_node(LINE, new og::tuple_node(LINE, $2), true); }
       | tBREAK                  { $$ = new og::break_node(LINE); }
       | tCONTINUE               { $$ = new og::continue_node(LINE);}
       | tRETURN ';'             { $$ = new og::return_node(LINE); }
-      | tRETURN cexpr ';'       { $$ = new og::return_node(LINE, $2); }
+      | tRETURN exprs ';'       { $$ = new og::return_node(LINE, new og::tuple_node(LINE, $2)); }
       | cond_instr              { $$ = $1; }
       | iter_instr              { $$ = $1; }
       | block                   { $$ = $1; }
@@ -194,22 +183,35 @@ elif : tELSE instr                       { $$ = $2; }
      | tELIF expr tTHEN instr elif       { $$ = new og::if_else_node(LINE, $2, $4, $5); }
      ;
 
-iter_instr : tFOR vars  ';' cexpr ';' cexpr tDO instr    { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
-           | tFOR vars  ';' cexpr ';'       tDO instr    { $$ = new og::for_node(LINE, $2, $4, nullptr, $7); }
-           | tFOR vars  ';'       ';' cexpr tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, $5, $7); }
-           | tFOR vars  ';'       ';'       tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, nullptr, $6); }
-           | tFOR cexpr ';' cexpr ';' cexpr tDO instr    { $$ = new og::for_node(LINE, $2, $4, $6, $8); }
-           | tFOR cexpr ';' cexpr ';'       tDO instr    { $$ = new og::for_node(LINE, $2, $4, nullptr, $7); }
-           | tFOR cexpr ';'       ';' cexpr tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, $5, $7); }
-           | tFOR cexpr ';'       ';'       tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, nullptr, $6); }
-           | tFOR       ';' cexpr ';' cexpr tDO instr    { $$ = new og::for_node(LINE, nullptr, $3, $5, $7); }
-           | tFOR       ';' cexpr ';'       tDO instr    { $$ = new og::for_node(LINE, nullptr, $3, nullptr, $6); }
-           | tFOR       ';'       ';' cexpr tDO instr    { $$ = new og::for_node(LINE, nullptr, nullptr, $4, $6); }
+
+svar : type   tIDENTIFIER          { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
+     | type   tIDENTIFIER '=' expr { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
+     ;
+
+svars : svar                 { $$ = new cdk::sequence_node(LINE, $1); }
+      | svars ',' svar        { $$ = new cdk::sequence_node(LINE, $3, $1); }
+      ;
+
+fvars : svars { $$ = $1; }
+      | auto_t var_idents '=' exprs { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, new og::tuple_node(LINE, $4)); delete $2; }
+      ;
+
+iter_instr : tFOR fvars ';' exprs ';' exprs tDO instr    { $$ = new og::for_node(LINE, $2, new og::tuple_node(LINE, $4), $6, $8); }
+           | tFOR fvars ';' exprs ';'       tDO instr    { $$ = new og::for_node(LINE, $2, new og::tuple_node(LINE, $4), nullptr, $7); }
+           | tFOR fvars ';'       ';' exprs tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, $5, $7); }
+           | tFOR fvars ';'       ';'       tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, nullptr, $6); }
+           | tFOR exprs ';' exprs ';' exprs tDO instr    { $$ = new og::for_node(LINE, $2, new og::tuple_node(LINE, $4), $6, $8); }
+           | tFOR exprs ';' exprs ';'       tDO instr    { $$ = new og::for_node(LINE, $2, new og::tuple_node(LINE, $4), nullptr, $7); }
+           | tFOR exprs ';'       ';' exprs tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, $5, $7); }
+           | tFOR exprs ';'       ';'       tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, nullptr, $6); }
+           | tFOR       ';' exprs ';' exprs tDO instr    { $$ = new og::for_node(LINE, nullptr, new og::tuple_node(LINE, $3), $5, $7); }
+           | tFOR       ';' exprs ';'       tDO instr    { $$ = new og::for_node(LINE, nullptr, new og::tuple_node(LINE, $3), nullptr, $6); }
+           | tFOR       ';'       ';' exprs tDO instr    { $$ = new og::for_node(LINE, nullptr, nullptr, $4, $6); }
            | tFOR       ';'       ';'       tDO instr    { $$ = new og::for_node(LINE, nullptr, nullptr, nullptr, $5); }
            ;
 
-exprs : expr ',' expr             { $$ = new cdk::sequence_node(LINE, $3, new cdk::sequence_node(LINE, $1)); }
-      | exprs ',' expr            { $$ = new cdk::sequence_node(LINE, $3, $1); }
+exprs : expr           { $$ = new cdk::sequence_node(LINE, $1); }
+      | exprs ',' expr { $$ = new cdk::sequence_node(LINE, $3, $1); }
       ;
 
 expr  : tINT                      { $$ = new cdk::integer_node(LINE, $1); }
@@ -232,22 +234,23 @@ expr  : tINT                      { $$ = new cdk::integer_node(LINE, $1); }
       | expr tEQ expr             { $$ = new cdk::eq_node(LINE, $1, $3);  }
       | expr tOR expr             { $$ = new cdk::or_node(LINE, $1, $3);  }
       | expr tAND expr            { $$ = new cdk::and_node(LINE, $1, $3); }
-      | '(' cexpr ')'             { $$ = $2; }
       | lval                      { $$ = new cdk::rvalue_node(LINE, $1);  }
       | lval '=' expr             { $$ = new cdk::assignment_node(LINE, $1, $3); }
       | lval '?'                  { $$ = new og::address_of_node(LINE, $1); }
       | tINPUT                    { $$ = new og::input_node(LINE); }
-      | tSIZEOF '(' cexpr ')'     { $$ = new og::sizeof_node(LINE, $3); }
+      | tSIZEOF '(' exprs ')'     { $$ = new og::sizeof_node(LINE, new og::tuple_node(LINE, $3)); }
       | '[' expr ']'              { $$ = new og::stack_alloc_node(LINE, $2); }
-      | tIDENTIFIER '(' cexpr ')' { $$ = new og::function_call_node(LINE, *$1, $3); delete $1; }
+      | tIDENTIFIER '(' exprs ')' { $$ = new og::function_call_node(LINE, *$1, new og::tuple_node(LINE, $3)); delete $1; }
       | tIDENTIFIER '('       ')' { $$ = new og::function_call_node(LINE, *$1); delete $1; }
+      | '(' exprs ')'
+        {
+          if ($2->size() == 1) {
+            $$ = (cdk::expression_node*) $2->node(0);
+          } else {
+            $$ = new og::tuple_node(LINE, $2);
+          }
+        }
       ;
-
-/* "complicated" expression - can have tuples not surrounded by () */
-cexpr : exprs %prec tNOCOMMA      { $$ = new og::tuple_node(LINE, $1); }
-      | expr %prec tNOCOMMA       { $$ = $1; }
-      ;
-
 
 lval : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, *$1); delete $1; }
      | expr '[' expr ']'       { $$ = new og::pointer_index_node(LINE, $1, $3); }
