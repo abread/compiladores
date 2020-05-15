@@ -352,7 +352,7 @@ std::shared_ptr<og::symbol> og::type_checker::declare_function(T *const node, in
   auto args_type = cdk::make_structured_type(arg_types);
   auto sym = std::make_shared<og::symbol>(qualifier, ret_type, id, args_type);
 
-  auto old_sym = _symtab.find(id);
+  auto old_sym = _symtab.find_local(id);
   if (old_sym) {
     if (false /* TODO: check conflicts properly */) {
       throw std::string("conflicting declarations for " + id);
