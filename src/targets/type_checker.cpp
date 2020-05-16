@@ -50,6 +50,11 @@ static std::shared_ptr<cdk::basic_type> compatible_types_struct(std::shared_ptr<
     components.push_back(comp);
   }
 
+  if (components.size() == 1) {
+    // tuple with 1 element is the same as that element
+    return components[0];
+  }
+
   return cdk::make_structured_type(components);
 }
 
@@ -562,7 +567,12 @@ void og::type_checker::do_tuple_node(og::tuple_node *const node, int lvl) {
     el_types.push_back(el->type());
   }
 
-  node->type(cdk::make_structured_type(el_types));
+  if (el_types.size() == 1) {
+    // tuple with 1 element is the same as that element
+    node->type(el_types[0]);
+  } else {
+    node->type(cdk::make_structured_type(el_types));
+  }
 }
 
 void og::type_checker::declare_var(int qualifier, std::shared_ptr<cdk::basic_type> typeHint, const std::string &id, std::shared_ptr<cdk::basic_type> initializerType = nullptr) {

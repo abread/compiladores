@@ -86,10 +86,8 @@ toplevel_var : qualifier type   tIDENTIFIER           { $$ = new og::variable_de
              |           type   tIDENTIFIER           { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
              | qualifier type   tIDENTIFIER '=' expr  { $$ = new og::variable_declaration_node(LINE, $1, $2, *$3, $5); delete $3; }
              |           type   tIDENTIFIER '=' expr  { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
-             | qualifier auto_t var_idents  '=' expr  { $$ = new og::variable_declaration_node(LINE, $1, $2, *$3, $5); delete $3; }
-             | qualifier auto_t var_idents  '=' expr ',' exprs { $$ = new og::variable_declaration_node(LINE, $1, $2, *$3, new og::tuple_node(LINE, new cdk::sequence_node(LINE, $5, $7))); delete $3; }
-             |           auto_t var_idents  '=' expr  { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
-             |           auto_t var_idents  '=' expr ',' exprs { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, new og::tuple_node(LINE, new cdk::sequence_node(LINE, $4, $6))); delete $2; }
+             | qualifier auto_t var_idents  '=' exprs  { $$ = new og::variable_declaration_node(LINE, $1, $2, *$3, new og::tuple_node(LINE, $5)); delete $3; }
+             |           auto_t var_idents  '=' exprs  { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, new og::tuple_node(LINE, $4)); delete $2; }
              ;
 
 arg : type   tIDENTIFIER                { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
@@ -154,8 +152,7 @@ bdecls :        bdecl  { $$ = new cdk::sequence_node(LINE, $1); }
 
 bvar : type   tIDENTIFIER          { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2); delete $2; }
     | type   tIDENTIFIER '=' expr  { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
-    | auto_t var_idents  '=' expr { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
-    | auto_t var_idents  '=' expr ',' exprs { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, new og::tuple_node(LINE, new cdk::sequence_node(LINE, $4, $6))); delete $2; }
+    | auto_t var_idents  '=' exprs { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, new og::tuple_node(LINE, $4)); delete $2; }
     ;
 
 bdecl : bvar ';' { $$ = $1; }
@@ -196,9 +193,8 @@ svars : svar                 { $$ = new cdk::sequence_node(LINE, $1); }
       ;
 
 fvars : svars { $$ = $1; }
-    | auto_t var_idents  '=' expr { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, $4); delete $2; }
-    | auto_t var_idents  '=' expr ',' exprs { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, new og::tuple_node(LINE, new cdk::sequence_node(LINE, $4, $6))); delete $2; }
-      ;
+    | auto_t var_idents  '=' exprs { $$ = new og::variable_declaration_node(LINE, tPRIVATE, $1, *$2, new og::tuple_node(LINE, $4)); delete $2; }
+    ;
 
 iter_instr : tFOR fvars ';' exprs ';' exprs tDO instr    { $$ = new og::for_node(LINE, $2, new og::tuple_node(LINE, $4), $6, $8); }
            | tFOR fvars ';' exprs ';'       tDO instr    { $$ = new og::for_node(LINE, $2, new og::tuple_node(LINE, $4), nullptr, $7); }
