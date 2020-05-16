@@ -395,7 +395,12 @@ std::shared_ptr<og::symbol> og::type_checker::declare_function(T *const node, in
       each_arg_type.push_back(decl->type());
     }
   }
-  args_type = cdk::make_structured_type(each_arg_type);
+
+  if (each_arg_type.size() == 1) {
+    args_type = each_arg_type[0];
+  } else {
+    args_type = cdk::make_structured_type(each_arg_type);
+  }
 
   auto sym = std::make_shared<og::symbol>(qualifier, ret_type, id, args_type);
 
@@ -411,6 +416,10 @@ std::shared_ptr<og::symbol> og::type_checker::declare_function(T *const node, in
     _parent->set_new_symbol(sym);
     return sym;
   }
+}
+
+void og::type_checker::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
+  declare_function(node, lvl);
 }
 
 void og::type_checker::do_function_definition_node(og::function_definition_node *const node, int lvl) {
@@ -443,21 +452,24 @@ void og::type_checker::do_function_call_node(og::function_call_node *const node,
     throw std::string("tried to use undeclared function: " + id);
   }
 
+  std::shared_ptr<cdk::basic_type> argsType;
   if (node->arguments()) {
     node->arguments()->accept(this, lvl + 2);
+    argsType = node->arguments()->type();
+  } else {
+    std::vector<std::shared_ptr<cdk::basic_type>> empty;
+    argsType = cdk::make_structured_type(empty);
   }
 
-  // TODO check arguments
+  if (compatible_types(sym->argsType(), argsType, ASSIGNMENT_TYPE_COMPAT) == nullptr) {
+    throw std::string("incorrect argument type in call to " + id);
+  }
 
   if (sym->is_typed(cdk::TYPE_UNSPEC)) {
     throw std::string("called function does not have a known return type: " + id);
   }
 
   node->type(sym->type());
-}
-
-void og::type_checker::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
-  declare_function(node, lvl);
 }
 
 void og::type_checker::do_evaluation_node(og::evaluation_node *const node, int lvl) {
