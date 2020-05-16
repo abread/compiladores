@@ -66,7 +66,11 @@ void og::postfix_writer::do_string_node(cdk::string_node * const node, int lvl) 
 void og::postfix_writer::do_neg_node(cdk::neg_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->argument()->accept(this, lvl); // determine the value
-  _pf.NEG(); // 2-complement
+  if (node->is_typed(cdk::TYPE_INT)) {
+    _pf.NEG();
+  } else if (node->argument()->is_typed(cdk::TYPE_DOUBLE)) {
+    _pf.DNEG();
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -230,18 +234,13 @@ void og::postfix_writer::do_assignment_node(cdk::assignment_node * const node, i
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_function_definition_node(og::function_definition_node * const node, int lvl) {
-  // TODO: adapt into definition
-  // Note that Simple doesn't have functions. Thus, it doesn't need
-  // a function node. However, it must start in the main function.
-  // The ProgramNode (representing the whole program) doubles as a
-  // main function node.
-#if 0
+  //TODO: adapt for all functions
   // generate the main function (RTS mandates that its name be "_main")
   _pf.TEXT();
   _pf.ALIGN();
   _pf.GLOBAL("_main", _pf.FUNC());
   _pf.LABEL("_main");
-  _pf.ENTER(0);  // Simple doesn't implement local variables
+  _pf.ENTER(0);
 
   node->block()->accept(this, lvl);
 
@@ -256,13 +255,39 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
   _pf.EXTERN("printi");
   _pf.EXTERN("prints");
   _pf.EXTERN("println");
-#endif
 }
 
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_function_call_node(og::function_call_node *const node, int lvl) {
-  // TODO
+  ASSERT_SAFE_EXPRESSIONS;
+
+  size_t argsSize = 0;
+  if (node->arguments()) {
+    for (int ax = node->arguments()->size(); ax > 0; ax--) {
+      cdk::expression_node *arg = dynamic_cast<cdk::expression_node*>(node->arguments()->node(ax - 1));
+      arg->accept(this, lvl + 2);
+      argsSize += arg->type()->size();
+    }
+  }
+  _pf.CALL(node->identifier());
+  if (argsSize != 0) {
+    _pf.TRASH(argsSize);
+  }
+
+  std::shared_ptr<og::symbol> symbol = _symtab.find(node->identifier());
+
+  basic_type *type = symbol->type();
+  // TODO: tuples
+  if (type->name() == basic_type::TYPE_INT || type->name() == basic_type::TYPE_POINTER || type->name() == basic_type::TYPE_STRING) {
+    _pf.LDFVAL32();
+  }
+  else if (type->name() == basic_type::TYPE_DOUBLE) {
+    _pf.LDFVAL64();
+  }
+  else {
+    // cannot happen!
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -275,11 +300,14 @@ void og::postfix_writer::do_function_declaration_node(og::function_declaration_n
 
 void og::postfix_writer::do_evaluation_node(og::evaluation_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
+  // TODO: tuples
   node->argument()->accept(this, lvl); // determine the value
-  if (node->argument()->is_typed(cdk::TYPE_INT)) {
+  if (node->argument()->is_typed(cdk::TYPE_INT) || node->argument()->is_typed(cdk::TYPE_POINTER)) {
     _pf.TRASH(4); // delete the evaluated value
   } else if (node->argument()->is_typed(cdk::TYPE_STRING)) {
     _pf.TRASH(4); // delete the evaluated value's address
+  } else if (node->argument()->is_typed(cdk::TYPE_DOUBLE) {
+    _pf.TRASH(8);
   } else {
     std::cerr << "ERROR: CANNOT HAPPEN!" << std::endl;
     exit(1);
@@ -430,6 +458,6 @@ void og::postfix_writer::do_sizeof_node(og::sizeof_node *const node, int lvl) {
 }
 
 void og::postfix_writer::do_identity_node(og::identity_node *const node, int lvl) {
-  // TODO
+  ASSERT_SAFE_EXPRESSIONS;
   node->argument()->accept(this, lvl + 2);
 }
