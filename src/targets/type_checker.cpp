@@ -494,14 +494,6 @@ void og::type_checker::do_address_of_node(og::address_of_node * const node, int 
   ASSERT_UNSPEC;
   node->lvalue()->accept(this, lvl + 2);
   node->type(cdk::make_reference_type(4, node->lvalue()->type()));
-  // TODO: confirm
-#if 0
-  if (node->lvalue()->type()->name() == basic_type::TYPE_DOUBLE) {
-    node->type(new basic_type(4, basic_type::TYPE_POINTER));
-  } else {
-    throw std::string("wrong type in unary logical expression");
-  }
-#endif
 }
 
 void og::type_checker::do_stack_alloc_node(og::stack_alloc_node * const node, int lvl) {
