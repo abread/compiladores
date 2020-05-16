@@ -39,13 +39,16 @@ void og::xml_writer::do_sequence_node(cdk::sequence_node * const node, int lvl) 
 //---------------------------------------------------------------------------
 
 void og::xml_writer::do_integer_node(cdk::integer_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
   process_literal(node, lvl);
 }
 
 void og::xml_writer::do_string_node(cdk::string_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
   process_literal(node, lvl);
 }
 void og::xml_writer::do_double_node(cdk::double_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
   process_literal(node, lvl);
 }
 

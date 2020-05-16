@@ -13,6 +13,7 @@ void og::postfix_writer::do_data_node(cdk::data_node * const node, int lvl) {
   // EMPTY
 }
 void og::postfix_writer::do_double_node(cdk::double_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
   _pf.DOUBLE(node->value());
 }
 void og::postfix_writer::do_not_node(cdk::not_node * const node, int lvl) {
@@ -44,10 +45,12 @@ void og::postfix_writer::do_sequence_node(cdk::sequence_node * const node, int l
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_integer_node(cdk::integer_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
   _pf.INT(node->value()); // push an integer
 }
 
 void og::postfix_writer::do_string_node(cdk::string_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
   int lbl1;
 
   /* generate the string */
@@ -234,6 +237,8 @@ void og::postfix_writer::do_assignment_node(cdk::assignment_node * const node, i
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_function_definition_node(og::function_definition_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+
   //TODO: adapt for all functions
   // generate the main function (RTS mandates that its name be "_main")
   _pf.TEXT();
@@ -293,6 +298,7 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS; // typechecker takes care of declaring functions
   // TODO
 }
 
@@ -442,18 +448,22 @@ void og::postfix_writer::do_if_else_node(og::if_else_node * const node, int lvl)
 }
 
 void og::postfix_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
   // TODO
 }
 
 void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_node *const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS; // declare variable with typechecker
   // TODO
 }
 
 void og::postfix_writer::do_tuple_index_node(og::tuple_index_node *const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
   // TODO
 }
 
 void og::postfix_writer::do_sizeof_node(og::sizeof_node *const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
   // TODO
 }
 
