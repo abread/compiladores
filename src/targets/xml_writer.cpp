@@ -30,7 +30,6 @@ void og::xml_writer::do_data_node(cdk::data_node * const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::xml_writer::do_sequence_node(cdk::sequence_node * const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
   os() << std::string(lvl, ' ') << "<sequence_node size='" << node->size() << "'>" << std::endl;
   for (size_t i = 0; i < node->size(); i++)
     node->node(i)->accept(this, lvl + 2);
