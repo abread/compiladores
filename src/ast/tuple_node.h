@@ -25,7 +25,11 @@ namespace og {
     }
 
     cdk::expression_node* element(size_t i) {
-      return (cdk::expression_node*) _elements->node(i);
+      return static_cast<cdk::expression_node*>(_elements->node(i));
+    }
+
+    size_t size() {
+      return _elements->size();
     }
 
     /**

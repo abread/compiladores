@@ -265,7 +265,7 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
   size_t argsSize = 0;
   if (node->arguments()) {
     for (int ax = node->arguments()->size(); ax > 0; ax--) {
-      cdk::expression_node *arg = dynamic_cast<cdk::expression_node*>(node->arguments()->node(ax - 1));
+      cdk::expression_node *arg = dynamic_cast<cdk::expression_node*>(node->arguments()->element(ax - 1));
       arg->accept(this, lvl + 2);
       argsSize += arg->type()->size();
     }
@@ -306,7 +306,7 @@ void og::postfix_writer::do_evaluation_node(og::evaluation_node * const node, in
     _pf.TRASH(4); // delete the evaluated value
   } else if (node->argument()->is_typed(cdk::TYPE_STRING)) {
     _pf.TRASH(4); // delete the evaluated value's address
-  } else if (node->argument()->is_typed(cdk::TYPE_DOUBLE) {
+  } else if (node->argument()->is_typed(cdk::TYPE_DOUBLE)) {
     _pf.TRASH(8);
   } else {
     std::cerr << "ERROR: CANNOT HAPPEN!" << std::endl;
