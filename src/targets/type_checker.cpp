@@ -382,23 +382,17 @@ std::shared_ptr<og::symbol> og::type_checker::declare_function(T *const node, in
     id = "._main";
   }
 
+  // compute arguments type
+  std::vector<std::shared_ptr<cdk::basic_type>> each_arg_type;
   if (node->arguments()) {
     // arguments need no visit, they already have a type (auto args are forbidden)
 
-    std::vector<std::shared_ptr<cdk::basic_type>> each_arg_type;
     for (auto n : node->arguments()->nodes()) {
-      auto decl = (og::variable_declaration_node*) n;
+      auto decl = static_cast<og::variable_declaration_node*>(n);
       each_arg_type.push_back(decl->type());
     }
-
-    if (each_arg_type.size() == 1 && each_arg_type[0]->name() == cdk::TYPE_STRUCT) {
-      args_type = each_arg_type[0];
-    } else {
-      args_type = cdk::make_structured_type(each_arg_type);
-    }
-  } else {
-    args_type = cdk::make_primitive_type(0, cdk::TYPE_VOID);
   }
+  args_type = cdk::make_structured_type(each_arg_type);
 
   auto sym = std::make_shared<og::symbol>(qualifier, ret_type, id, args_type);
 
