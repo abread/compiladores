@@ -357,7 +357,7 @@ void og::type_checker::do_assignment_node(cdk::assignment_node *const node, int 
   node->lvalue()->accept(this, lvl + 2);
   node->rvalue()->accept(this, lvl + 2);
 
-  if (auto type = compatible_types(node->lvalue(), node->rvalue(), ASSIGNMENT_TYPE_COMPAT)) {
+  if (compatible_types(node->lvalue(), node->rvalue(), ASSIGNMENT_TYPE_COMPAT) == nullptr) {
     throw std::string("incompatible types in assignment");
   }
 
