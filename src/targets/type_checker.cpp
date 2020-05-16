@@ -427,13 +427,24 @@ void og::type_checker::do_function_definition_node(og::function_definition_node 
 
 void og::type_checker::do_function_call_node(og::function_call_node *const node, int lvl) {
   ASSERT_UNSPEC;
-  // TODO
+
+  auto id = node->identifier();
+  auto sym = _symtab.find(id);
+  if (!sym) {
+    throw std::string("tried to use undeclared function: " + id);
+  }
+
   if (node->arguments()) {
     node->arguments()->accept(this, lvl + 2);
   }
 
-  // temporary until we properly use the function symbol table
-  node->type(cdk::make_primitive_type(0, cdk::TYPE_UNSPEC));
+  // TODO check arguments
+
+  if (sym->is_typed(cdk::TYPE_UNSPEC)) {
+    throw std::string("called function does not have a known return type: " + id);
+  }
+
+  node->type(sym->type());
 }
 
 void og::type_checker::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
