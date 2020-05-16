@@ -21,7 +21,7 @@ static bool is_PID(cdk::typed_node *const node) {
 // Different operations have different notions of allowed types
 class TypeCompatOptions {
 public:
-  TypeCompatOptions(bool id = true, bool di = true, bool unspec = true, bool ptrassign = false)
+  TypeCompatOptions(bool id = true, bool di = true, bool unspec = false, bool ptrassign = false)
     : acceptID(id), acceptDI(di), acceptUnspec(unspec), ptrAssignment(ptrassign) {}
   bool acceptID; // accept (TYPE_INT, TYPE_DOUBLE), return TYPE_DOUBLE
   bool acceptDI; // accept (TYPE_DOUBLE, TYPE_INT), return TYPE_DOUBLE
@@ -30,7 +30,8 @@ public:
 };
 
 const TypeCompatOptions DEFAULT_TYPE_COMPAT = TypeCompatOptions();
-const TypeCompatOptions ASSIGNMENT_TYPE_COMPAT = TypeCompatOptions(false, true, true, true);
+const TypeCompatOptions ASSIGNMENT_TYPE_COMPAT = TypeCompatOptions(false, true, false, true);
+const TypeCompatOptions INITIALIZER_TYPE_COMPAT = TypeCompatOptions(false, true, true, true);
 
 static std::shared_ptr<cdk::basic_type> compatible_types(std::shared_ptr<cdk::basic_type> a, std::shared_ptr<cdk::basic_type> b, TypeCompatOptions opts);
 
@@ -570,7 +571,7 @@ void og::type_checker::do_tuple_node(og::tuple_node *const node, int lvl) {
 void og::type_checker::declare_var(int qualifier, std::shared_ptr<cdk::basic_type> typeHint, const std::string &id, std::shared_ptr<cdk::basic_type> initializerType = nullptr) {
   auto type = typeHint;
   if (initializerType != nullptr) {
-    type = compatible_types(typeHint, initializerType, ASSIGNMENT_TYPE_COMPAT);
+    type = compatible_types(typeHint, initializerType, INITIALIZER_TYPE_COMPAT);
     if (type == nullptr) {
       throw std::string("mismatch between declared type and initializer type in variable: " + id);
     }
