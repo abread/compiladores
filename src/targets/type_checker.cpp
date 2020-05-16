@@ -48,7 +48,7 @@ static std::shared_ptr<cdk::basic_type> compatible_types_struct(std::shared_ptr<
       return nullptr;
     }
 
-    components.push_back(comp);
+    components[i] = comp;
   }
 
   if (components.size() == 1) {
