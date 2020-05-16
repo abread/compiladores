@@ -242,14 +242,7 @@ expr  : tINT                      { $$ = new cdk::integer_node(LINE, $1); }
       | '[' expr ']'              { $$ = new og::stack_alloc_node(LINE, $2); }
       | tIDENTIFIER '(' exprs ')' { $$ = new og::function_call_node(LINE, *$1, new og::tuple_node(LINE, $3)); delete $1; }
       | tIDENTIFIER '('       ')' { $$ = new og::function_call_node(LINE, *$1); delete $1; }
-      | '(' exprs ')'
-        {
-          if ($2->size() == 1) {
-            $$ = (cdk::expression_node*) $2->node(0);
-          } else {
-            $$ = new og::tuple_node(LINE, $2);
-          }
-        }
+      | '(' exprs ')'             { $$ = new og::tuple_node(LINE, $2); }
       ;
 
 lval : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, *$1); delete $1; }
