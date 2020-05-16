@@ -10,50 +10,115 @@
 
 #define ASSERT_UNSPEC { if (node->type() != nullptr && !node->is_typed(cdk::TYPE_UNSPEC)) return; }
 
-static bool is_ID(cdk::typed_node *node) {
+static bool is_ID(cdk::typed_node *const node) {
   return node->is_typed(cdk::TYPE_INT) || node->is_typed(cdk::TYPE_DOUBLE);
 }
 
-static bool compatibleTypes(std::shared_ptr<cdk::basic_type> a, std::shared_ptr<cdk::basic_type> b, bool strictCompare = false) {
-  if (a != b) {
-    return false;
+static bool is_PID(cdk::typed_node *const node) {
+  return is_ID(node) || node->is_typed(cdk::TYPE_POINTER);
+}
+
+// Different operations have different notions of allowed types
+class TypeCompatOptions {
+public:
+  TypeCompatOptions(bool id = true, bool di = true, bool unspec = true, bool ptrassign = false)
+    : acceptID(id), acceptDI(di), acceptUnspec(unspec), ptrAssignment(ptrassign) {}
+  bool acceptID; // accept (TYPE_INT, TYPE_DOUBLE), return TYPE_DOUBLE
+  bool acceptDI; // accept (TYPE_DOUBLE, TYPE_INT), return TYPE_DOUBLE
+  bool acceptUnspec; // accept TYPE_UNSPEC in one or more arguments, return the one that isn't TYPE_UNSPEC if it exists
+  bool ptrAssignment; // (ptr<auto>, ptr<anything>) returns ptr<auto>
+};
+
+const TypeCompatOptions DEFAULT_TYPE_COMPAT = TypeCompatOptions();
+const TypeCompatOptions ASSIGNMENT_TYPE_COMPAT = TypeCompatOptions(false, true, true, true);
+
+static std::shared_ptr<cdk::basic_type> compatible_types(std::shared_ptr<cdk::basic_type> a, std::shared_ptr<cdk::basic_type> b, TypeCompatOptions opts);
+
+static std::shared_ptr<cdk::basic_type> compatible_types_struct(std::shared_ptr<cdk::structured_type> a, std::shared_ptr<cdk::structured_type> b, TypeCompatOptions opts) {
+  if (a->length() != b->length()) {
+    return nullptr;
   }
 
-  if (a->name() == cdk::TYPE_STRUCT) {
-    auto aa = cdk::structured_type_cast(a);
-    auto bb = cdk::structured_type_cast(a);
+  std::vector<std::shared_ptr<cdk::basic_type>> components(a->length());
+  for (size_t i = 0; i < a->length(); i++) {
+    auto comp = compatible_types(a->component(i), b->component(i), opts);
 
-    if (aa->length() != bb->length()) {
-      return false;
+    if (comp == nullptr) {
+      return nullptr;
     }
 
-    for (size_t i = 0; i < aa->length(); i++) {
-      if (!compatibleTypes(aa->component(i), bb->component(i), true)) {
-        return false;
-      }
+    components.push_back(comp);
+  }
+
+  return cdk::make_structured_type(components);
+}
+
+static std::shared_ptr<cdk::basic_type> compatible_types_ptr(std::shared_ptr<cdk::reference_type> a, std::shared_ptr<cdk::reference_type> b, TypeCompatOptions opts) {
+  if (b->referenced()->name() == cdk::TYPE_UNSPEC) {
+    return a;
+  } else if (a->referenced()->name() == cdk::TYPE_UNSPEC) {
+    if (opts.ptrAssignment) {
+      return a;
+    } else {
+      return b;
     }
-
-    return true;
-  } else if (a->name() == cdk::TYPE_POINTER) {
-    auto aa = cdk::reference_type_cast(a);
-    auto bb = cdk::reference_type_cast(b);
-
-    if (!strictCompare && (aa->referenced()->name() == cdk::TYPE_UNSPEC || bb->referenced()->name() == cdk::TYPE_UNSPEC)) {
-      return true;
-    }
-
-    if (!compatibleTypes(aa->referenced(), bb->referenced(), true)) {
-      return false;
-    }
-
-    return true;
   } else {
-    return true;
+    // ptr<int> != ptr<double> always
+    opts.acceptID = false;
+    opts.acceptDI = false;
+
+    auto referenced = compatible_types(a->referenced(), b->referenced(), opts);
+    if (referenced == nullptr) {
+      return nullptr;
+    }
+
+    return cdk::make_reference_type(4, referenced);
   }
 }
 
-static bool compatibleTypes(cdk::typed_node *const aNode, cdk::typed_node *const bNode) {
-  return compatibleTypes(aNode->type(), bNode->type());
+static std::shared_ptr<cdk::basic_type> compatible_types(std::shared_ptr<cdk::basic_type> a, std::shared_ptr<cdk::basic_type> b, TypeCompatOptions opts = DEFAULT_TYPE_COMPAT) {
+  if (opts.acceptUnspec && a->name() == cdk::TYPE_UNSPEC) {
+    return b;
+  } else if (opts.acceptUnspec && b->name() == cdk::TYPE_UNSPEC) {
+    return a;
+  } else if (opts.acceptDI && a->name() == cdk::TYPE_DOUBLE && b->name() == cdk::TYPE_INT) {
+    return a;
+  } else if (opts.acceptID && a->name() == cdk::TYPE_INT && b->name() == cdk::TYPE_DOUBLE) {
+    return b;
+  } else if (a != b) {
+    return nullptr;
+  }
+
+  // a == b
+  // <=> a->name() == b->name() && a->size() == b->size()
+
+  if (a->name() == cdk::TYPE_STRUCT) {
+    return compatible_types_struct(cdk::structured_type_cast(a), cdk::structured_type_cast(a), opts);
+  } else if (a->name() == cdk::TYPE_POINTER) {
+    return compatible_types_ptr(cdk::reference_type_cast(a), cdk::reference_type_cast(b), opts);
+  } else {
+    return a;
+  }
+}
+
+static std::shared_ptr<cdk::basic_type> compatible_types(cdk::typed_node *const aNode, cdk::typed_node *const bNode, TypeCompatOptions opts = DEFAULT_TYPE_COMPAT) {
+  return compatible_types(aNode->type(), bNode->type(), opts);
+}
+
+
+//---------------------------------------------------------------------------
+
+void og::type_checker::do_nil_node(cdk::nil_node *const node, int lvl) {
+  // EMPTY
+}
+void og::type_checker::do_data_node(cdk::data_node *const node, int lvl) {
+  // EMPTY
+}
+void og::type_checker::do_continue_node(og::continue_node * const node, int lvl) {
+  // EMPTY
+}
+void og::type_checker::do_break_node(og::break_node * const node, int lvl) {
+  // EMPTY
 }
 
 //---------------------------------------------------------------------------
@@ -110,14 +175,6 @@ void og::type_checker::do_return_node(og::return_node *const node, int lvl) {
 #endif
 }
 
-//---------------------------------------------------------------------------
-
-void og::type_checker::do_nil_node(cdk::nil_node *const node, int lvl) {
-  // EMPTY
-}
-void og::type_checker::do_data_node(cdk::data_node *const node, int lvl) {
-  // EMPTY
-}
 void og::type_checker::do_double_node(cdk::double_node *const node, int lvl) {
   ASSERT_UNSPEC;
   node->type(cdk::make_primitive_type(8, cdk::TYPE_DOUBLE));
@@ -177,26 +234,14 @@ void og::type_checker::processPIDBinaryExpression(cdk::binary_operation_node *co
   node->left()->accept(this, lvl + 2);
   node->right()->accept(this, lvl + 2);
 
-  if (compatibleTypes(node->left(), node->right())) {
-    if (is_ID(node->left())) {
-      node->type(node->left()->type());
-    } else if(node->left()->is_typed(cdk::TYPE_POINTER)) {
-      node->type(node->left()->type());
-    } else {
-      throw std::string("invalid type for int/double/ptr binary expr");
-    }
+  if (auto type = compatible_types(node->left(), node->right()); type != nullptr && is_PID(node->left()) && is_PID(node->right())) {
+    node->type(type);
+  } else if (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_INT)) {
+    node->type(node->left()->type());
+  } else if (node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_POINTER)) {
+    node->type(node->right()->type());
   } else {
-    if (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_INT)) {
-      node->type(node->left()->type());
-    } else if (node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_POINTER)) {
-      node->type(node->right()->type());
-    } else if (node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_DOUBLE)) {
-      node->type(node->right()->type());
-    } else if (node->left()->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT)) {
-      node->type(node->left()->type());
-    } else {
-      throw std::string("invalid type for int/double/ptr binary expr");
-    }
+    throw std::string("invalid types in binary expr");
   }
 }
 
@@ -205,21 +250,10 @@ void og::type_checker::processIDBinaryExpression(cdk::binary_operation_node *con
   node->left()->accept(this, lvl + 2);
   node->right()->accept(this, lvl + 2);
 
-
-  if (compatibleTypes(node->left(), node->right())) {
-    if (is_ID(node->left())) {
-      node->type(node->left()->type());
-    } else {
-      throw std::string("invalid type for int/double binary expr");
-    }
+  if (auto type = compatible_types(node->left(), node->right()); type != nullptr && is_ID(node->left()) && is_ID(node->right())) {
+    node->type(type);
   } else {
-    if (node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_DOUBLE)) {
-      node->type(node->right()->type());
-    } else if (node->left()->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT)) {
-      node->type(node->left()->type());
-    } else {
-      throw std::string("invalid type for int/double binary expr");
-    }
+    throw std::string("invalid type for int/double binary expr");
   }
 }
 
@@ -228,8 +262,9 @@ void og::type_checker::processIBinaryExpression(cdk::binary_operation_node *cons
   node->left()->accept(this, lvl + 2);
   node->right()->accept(this, lvl + 2);
 
-  if (!node->left()->is_typed(cdk::TYPE_INT) && !node->right()->is_typed(cdk::TYPE_INT))
+  if (!(node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_INT))) {
     throw std::string("invalid type for int binary expr");
+  }
 
   node->type(node->left()->type());
 }
@@ -322,7 +357,7 @@ void og::type_checker::do_assignment_node(cdk::assignment_node *const node, int 
   node->lvalue()->accept(this, lvl + 2);
   node->rvalue()->accept(this, lvl + 2);
 
-  if (!compatibleTypes(node->lvalue(), node->rvalue()) && !(node->lvalue()->is_typed(cdk::TYPE_DOUBLE) && node->rvalue()->is_typed(cdk::TYPE_INT))) {
+  if (auto type = compatible_types(node->lvalue(), node->rvalue(), ASSIGNMENT_TYPE_COMPAT)) {
     throw std::string("incompatible types in assignment");
   }
 
@@ -335,21 +370,29 @@ template <typename T>
 std::shared_ptr<og::symbol> og::type_checker::declare_function(T *const node, int lvl) {
   static_assert(std::is_same<T, og::function_declaration_node>::value || std::is_same<T, og::function_definition_node>::value, "trying to declare functions from a weird kind of node");
 
-  std::vector<std::shared_ptr<cdk::basic_type>> arg_types;
+  int qualifier = node->qualifier();
+  auto ret_type = node->type();
+  auto id = node->identifier();
+  std::shared_ptr<cdk::basic_type> args_type;
 
   if (node->arguments()) {
     node->arguments()->accept(this, lvl + 2);
 
+    std::vector<std::shared_ptr<cdk::basic_type>> each_arg_type;
     for (auto n : node->arguments()->nodes()) {
       auto decl = (og::variable_declaration_node*) n;
-      arg_types.push_back(decl->type());
+      each_arg_type.push_back(decl->type());
     }
+
+    if (each_arg_type.size() == 1 && each_arg_type[0]->name() == cdk::TYPE_STRUCT) {
+      args_type = each_arg_type[0];
+    } else {
+      args_type = cdk::make_structured_type(each_arg_type);
+    }
+  } else {
+    args_type = cdk::make_primitive_type(0, cdk::TYPE_VOID);
   }
 
-  int qualifier = node->qualifier();
-  auto ret_type = node->type();
-  auto id = node->identifier();
-  auto args_type = cdk::make_structured_type(arg_types);
   auto sym = std::make_shared<og::symbol>(qualifier, ret_type, id, args_type);
 
   auto old_sym = _symtab.find_local(id);
@@ -425,7 +468,6 @@ void og::type_checker::do_input_node(og::input_node *const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
-
 void og::type_checker::do_address_of_node(og::address_of_node * const node, int lvl) {
   ASSERT_UNSPEC;
   node->lvalue()->accept(this, lvl + 2);
@@ -473,13 +515,6 @@ void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
   node->block()->accept(this, lvl + 2);
 }
 
-void og::type_checker::do_continue_node(og::continue_node * const node, int lvl) {
-  // EMPTY
-}
-
-void og::type_checker::do_break_node(og::break_node * const node, int lvl) {
-  // EMPTY
-}
 
 //---------------------------------------------------------------------------
 
@@ -516,37 +551,25 @@ void og::type_checker::do_tuple_node(og::tuple_node *const node, int lvl) {
 void og::type_checker::declare_var(int qualifier, std::shared_ptr<cdk::basic_type> typeHint, const std::string &id, std::shared_ptr<cdk::basic_type> initializerType = nullptr) {
   auto type = typeHint;
   if (initializerType != nullptr) {
-    if (typeHint->name() == cdk::TYPE_UNSPEC) {
-      type = initializerType;
-    } else if ((initializerType->name() == cdk::TYPE_INT && typeHint->name() == cdk::TYPE_DOUBLE) || compatibleTypes(typeHint, initializerType)) {
-      type = typeHint;
-    } else {
-      throw std::string("incorrect type in declaration of " + id);
+    type = compatible_types(typeHint, initializerType, ASSIGNMENT_TYPE_COMPAT);
+    if (type == nullptr) {
+      throw std::string("mismatch between declared type and initializer type in variable: " + id);
     }
   }
 
   auto sym = std::make_shared<og::symbol>(qualifier, type, id);
-  auto old_sym = _symtab.find_local(id);
-  if (old_sym) {
-    if (!compatibleTypes(sym->type(), old_sym->type()) || (initializerType != nullptr && old_sym->definedOrInitialized())) {
-      throw std::string("conflicting declarations for " + id);
-    }
+  if (initializerType != nullptr) {
+    sym->definedOrInitialized() = true;
+  }
 
-    if (initializerType != nullptr) {
-      old_sym->definedOrInitialized() = true;
-    }
-  } else {
-    if (initializerType != nullptr) {
-      sym->definedOrInitialized() = true;
-    }
-
-    _symtab.insert(id, sym);
+  if (_symtab.insert(id, sym)) {
     _parent->set_new_symbol(sym);
+  } else {
+    throw std::string("variable redeclaration: " + id);
   }
 }
 
 void og::type_checker::do_variable_declaration_node(og::variable_declaration_node *const node, int lvl) {
-  ASSERT_UNSPEC;
   if (node->initializer() && node->qualifier() == tREQUIRE)
     throw std::string("external(required) variables cannot be initialized");
 
@@ -566,7 +589,7 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
   }
 
   int qualifier = node->qualifier();
-  auto typeHint = node->typeHint();
+  auto typeHint = node->type();
   std::shared_ptr<cdk::basic_type> initType = nullptr;
 
   if (node->identifiers().size() == 1) {
