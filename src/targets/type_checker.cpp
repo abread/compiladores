@@ -375,6 +375,13 @@ std::shared_ptr<og::symbol> og::type_checker::declare_function(T *const node, in
   auto id = node->identifier();
   std::shared_ptr<cdk::basic_type> args_type;
 
+  // "fix" naming issues
+  if (id == "og") {
+    id = "_main";
+  } else if (id == "_main") {
+    id = "._main";
+  }
+
   if (node->arguments()) {
     // arguments need no visit, they already have a type (auto args are forbidden)
 
@@ -420,14 +427,20 @@ void og::type_checker::do_function_definition_node(og::function_definition_node 
     throw std::string("function redefinition: " + sym->name());
   }
   sym->definedOrInitialized() = true;
-
-  node->block()->accept(this, lvl + 2);
 }
 
 void og::type_checker::do_function_call_node(og::function_call_node *const node, int lvl) {
   ASSERT_UNSPEC;
 
   auto id = node->identifier();
+
+  // "fix" naming issues
+  if (id == "og") {
+    id = "_main";
+  } else if (id == "_main") {
+    id = "._main";
+  }
+
   auto sym = _symtab.find(id);
   if (!sym) {
     throw std::string("tried to use undeclared function: " + id);
