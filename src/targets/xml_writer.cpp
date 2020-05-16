@@ -153,6 +153,7 @@ void og::xml_writer::do_function_definition_node(og::function_definition_node * 
        << " identifier='" << node->identifier() << "'"
        << " type='" << cdk::to_string(node->type()) << "'>" << std::endl;
 
+  _symtab.push();
   if (node->arguments()) {
     openTag("arguments", lvl + 2);
     node->arguments()->accept(this, lvl + 2*2);
@@ -160,6 +161,8 @@ void og::xml_writer::do_function_definition_node(og::function_definition_node * 
   }
 
   node->block()->accept(this, lvl + 2);
+  _symtab.pop();
+
   closeTag(node, lvl);
 }
 
@@ -206,6 +209,7 @@ void og::xml_writer::do_block_node(og::block_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   openTag(node, lvl);
 
+  _symtab.push();
   if (node->declarations()) {
     openTag("declarations", lvl + 2);
     node->declarations()->accept(this, lvl + 2*2);
@@ -217,6 +221,7 @@ void og::xml_writer::do_block_node(og::block_node * const node, int lvl) {
     node->instructions()->accept(this, lvl + 2*2);
     closeTag("instructions", lvl + 2);
   }
+  _symtab.pop();
 
   closeTag(node, lvl);
 }
@@ -273,9 +278,14 @@ void og::xml_writer::do_input_node(og::input_node * const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::xml_writer::do_for_node(og::for_node * const node, int lvl) {
+  // HACK: typechecker declares initializer variables prematurely
+  _symtab.push();
   ASSERT_SAFE_EXPRESSIONS;
+  _symtab.pop();
+
   openTag(node, lvl);
 
+  _symtab.push();
   if (node->initializers()) {
     openTag("initializers", lvl + 2);
     node->initializers()->accept(this, lvl + 2*2);
@@ -297,6 +307,7 @@ void og::xml_writer::do_for_node(og::for_node * const node, int lvl) {
   openTag("block", lvl + 2);
   node->block()->accept(this, lvl + 2*2);
   closeTag("block", lvl + 2);
+  _symtab.pop();
 
   closeTag(node, lvl);
 }

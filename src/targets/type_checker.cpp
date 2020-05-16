@@ -376,7 +376,7 @@ std::shared_ptr<og::symbol> og::type_checker::declare_function(T *const node, in
   std::shared_ptr<cdk::basic_type> args_type;
 
   if (node->arguments()) {
-    node->arguments()->accept(this, lvl + 2);
+    // arguments need no visit, they already have a type (auto args are forbidden)
 
     std::vector<std::shared_ptr<cdk::basic_type>> each_arg_type;
     for (auto n : node->arguments()->nodes()) {
@@ -410,7 +410,6 @@ std::shared_ptr<og::symbol> og::type_checker::declare_function(T *const node, in
 }
 
 void og::type_checker::do_function_definition_node(og::function_definition_node *const node, int lvl) {
-  // TODO
   if (node->qualifier() == tREQUIRE)
     throw std::string("can't require a function definition");
 

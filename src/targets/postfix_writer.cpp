@@ -239,6 +239,14 @@ void og::postfix_writer::do_assignment_node(cdk::assignment_node * const node, i
 void og::postfix_writer::do_function_definition_node(og::function_definition_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
 
+  auto sym = _symtab.find(node->identifier());
+
+  _symtab.push();
+  // TODO: save current function symbol somewhere (?)
+
+  // declare args
+  node->arguments()->accept(this, lvl);
+
   //TODO: adapt for all functions
   // generate the main function (RTS mandates that its name be "_main")
   _pf.TEXT();
@@ -260,6 +268,8 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
   _pf.EXTERN("printi");
   _pf.EXTERN("prints");
   _pf.EXTERN("println");
+
+  _symtab.pop();
 }
 
 //---------------------------------------------------------------------------
@@ -389,6 +399,11 @@ void og::postfix_writer::do_input_node(og::input_node * const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
+  // HACK: typechecker declares initializer variables prematurely
+  _symtab.push();
+  ASSERT_SAFE_EXPRESSIONS;
+  _symtab.pop();
+
   // TODO: this is a while loop, make it a for loop
 #if 0
   ASSERT_SAFE_EXPRESSIONS;
