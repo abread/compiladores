@@ -277,16 +277,16 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
 
   std::shared_ptr<og::symbol> symbol = _symtab.find(node->identifier());
 
-  basic_type *type = symbol->type();
-  // TODO: tuples
-  if (type->name() == basic_type::TYPE_INT || type->name() == basic_type::TYPE_POINTER || type->name() == basic_type::TYPE_STRING) {
+  if (symbol->is_typed(cdk::TYPE_INT) || symbol->is_typed(cdk::TYPE_POINTER) || symbol->is_typed(cdk::TYPE_STRING)) {
     _pf.LDFVAL32();
-  }
-  else if (type->name() == basic_type::TYPE_DOUBLE) {
+  } else if (symbol->is_typed(cdk::TYPE_DOUBLE)) {
     _pf.LDFVAL64();
-  }
-  else {
+  } else if (symbol->is_typed(cdk::TYPE_STRUCT)) {
+    // TODO
+    throw std::string("ICE(postfix_writer): functions that return tuples not yet supported");
+  } else {
     // cannot happen!
+    throw std::string("ICE(postfix_writer): unsupported function return type");
   }
 }
 
