@@ -441,7 +441,7 @@ std::shared_ptr<og::symbol> og::type_checker::declare_function(T *const node, in
 
   auto old_sym = _symtab.find_local(id);
   if (old_sym) {
-    if (false /* TODO: check conflicts properly */) {
+    if (old_sym->type() != sym->type() || old_sym->argsType() != sym->argsType() || old_sym->qualifier() != sym->qualifier()) {
       throw std::string("conflicting declarations for " + id);
     }
 
