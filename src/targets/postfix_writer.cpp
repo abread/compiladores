@@ -1,6 +1,7 @@
 #include <string>
 #include <sstream>
 #include "targets/type_checker.h"
+#include "targets/frame_size_calculator.h"
 #include "targets/postfix_writer.h"
 #include "ast/all.h"  // all.h is automatically generated
 
@@ -340,37 +341,55 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
 
   auto name = fix_function_name(node->identifier());
 
-  // declare args
+  _offset = 8;
+  // declare args, and their respective scope
+  _symtab.push();
   if (node->arguments()) {
-    node->arguments()->accept(this, lvl);
+    _inFunctionArgs = true; //FIXME really needed?
+    for (size_t ix = 0; ix < node->arguments()->size(); ix++) {
+        cdk::basic_node *arg = node->arguments()->node(ix);
+        if (arg == nullptr) break; //TODO: needed? The grammar probably won't allow this case
+        arg->accept(this, 0);
+    }
+    _inFunctionArgs = false; //FIXME really needed?
   }
 
-  //TODO: adapt for all functions
+  //TODO: adapt for all functions, watch out for qualifiers
   // generate the main function (RTS mandates that its name be "_main")
   _pf.TEXT();
   _pf.ALIGN();
-  _pf.GLOBAL("_main", _pf.FUNC());
-  _pf.LABEL("_main");
-  _pf.ENTER(0);
+  if (node->qualifier() == tPUBLIC) {
+    _pf.GLOBAL(name, _pf.FUNC());
+  }
+  _pf.LABEL(name);
+
+  frame_size_calculator lsc(_compiler, _symtab);
+  node->accept(&lsc, lvl);
+  _pf.ENTER(lsc.localsize());
 
   _inFunctionBody = true;
+
+  _offset = -_function->type()->size();
+  os() << "        ;; before body " << std::endl;
   node->block()->accept(this, lvl);
+  os() << "        ;; after body " << std::endl;
+  _inFunctionBody = false;
+  _symtab.pop(); //arguments
+  _function == nullptr;
 
   // end the main function
   _pf.INT(0);
   _pf.STFVAL32();
   _pf.LEAVE();
   _pf.RET();
-  _inFunctionBody = false;
 
   // these are just a few library function imports
-  _pf.EXTERN("readi");
-  _pf.EXTERN("printi");
-  _pf.EXTERN("prints");
-  _pf.EXTERN("println");
-
-  _symtab.pop();
-  _function = nullptr;
+    if (name == "_main")  {
+    _pf.EXTERN("readi");
+    _pf.EXTERN("printi");
+    _pf.EXTERN("prints");
+    _pf.EXTERN("println");
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -602,9 +621,37 @@ void og::postfix_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
 void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS; // declare variable with typechecker
 
-  auto id = node->identifiers()[0];
-  if (_inFunctionBody) {
+  auto id = node->identifiers()[0]; //TODO: tuples :(
+  int offset = 0, typesize = node->type()->size();
 
+  if (_inFunctionBody) {
+    _offset -= typesize;
+    offset = _offset;
+  } else if (_inFunctionArgs) {
+    offset = _offset;
+    _offset += typesize;
+  } else {
+    offset = 0;
+  }
+
+  std::shared_ptr<og::symbol> symbol = new_symbol();
+  if (symbol) {
+    symbol->set_offset(offset);
+    reset_new_symbol();
+  }
+
+  if (_inFunctionBody) {
+    node->initializer()->accept(this, lvl);
+    if (node->is_typed(cdk::TYPE_INT) || node->is_typed(cdk::TYPE_STRING)
+        || node->is_typed(cdk::TYPE_POINTER)) {
+      _pf.LOCAL(symbol->offset());
+      _pf.STINT();
+    } else if (node->is_typed(cdk::TYPE_DOUBLE)) {
+      _pf.LOCAL(symbol->offset());
+      _pf.STDOUBLE();
+    } else {
+      throw "cannot initialize";
+    }
   } else {
     if (node->qualifier() == tREQUIRE) {
       _pf.EXTERN(id);
@@ -623,7 +670,20 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
     }
     _pf.LABEL(id);
     if (node->initializer()) {
-      node->initializer()->accept(this, lvl);
+      if (node->is_typed(cdk::TYPE_DOUBLE)) {
+        if (node->initializer()->is_typed(cdk::TYPE_DOUBLE)) {
+          node->initializer()->accept(this, lvl);
+        } else if (node->initializer()->is_typed(cdk::TYPE_INT)) {
+          // allocate a double if the type is double
+          cdk::integer_node *dclini = dynamic_cast<cdk::integer_node *>(node->initializer());
+          cdk::double_node ddi(dclini->lineno(), dclini->value());
+          ddi.accept(this, lvl);
+        } else {
+          throw "bad initializer for real value";
+        }
+      } else {
+        node->initializer()->accept(this, lvl); //TODO: compare with gr8 because of string alloc
+      }
     }
   }
 }

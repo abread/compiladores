@@ -20,6 +20,8 @@ namespace og {
 
     std::shared_ptr<og::symbol> _function = nullptr;
     bool _inFunctionBody = false;
+    bool _inFunctionArgs = false;
+    int _offset = 0;
 
   public:
     postfix_writer(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<og::symbol> &symtab,
