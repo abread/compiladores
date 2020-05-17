@@ -566,23 +566,19 @@ void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
 }
 
 void og::postfix_writer::do_continue_node(og::continue_node * const node, int lvl) {
-  //TODO continue node
-#if 0
   if (_forIni.size() != 0) {
-    _pf.JMP(mklbl(_forStep.top())); // jump to next cycle
-  } else
-    error(node->lineno(), "'restart' outside 'for'");
-#endif
+    _pf.JMP(mklbl(_forIncr.top())); // jump to next cycle
+  } else {
+    throw "continue outside 'for' loop";
+  }
 }
 
 void og::postfix_writer::do_break_node(og::break_node * const node, int lvl) {
-  //TODO break node
-#if 0
   if (_forIni.size() != 0) {
     _pf.JMP(mklbl(_forEnd.top())); // jump to for end
-  } else
-    error(node->lineno(), "'break' outside 'for'");
-#endif
+  } else {
+    throw "break outside 'for' loop";
+  }
 }
 
 //---------------------------------------------------------------------------
