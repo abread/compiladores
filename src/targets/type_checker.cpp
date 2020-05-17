@@ -360,6 +360,12 @@ void og::type_checker::do_assignment_node(cdk::assignment_node *const node, int 
   }
 
   node->type(node->lvalue()->type());
+
+  // HACK: a = input must work with doubles
+  // if this isn't here, input will return an int which will be converted to a double (when a is a double)
+  if (auto input = dynamic_cast<og::input_node*>(node->rvalue())) {
+    input->type(node->type());
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -493,8 +499,8 @@ void og::type_checker::do_write_node(og::write_node *const node, int lvl) {
 
 void og::type_checker::do_input_node(og::input_node *const node, int lvl) {
   ASSERT_UNSPEC;
-  // TODO
-  node->type(cdk::make_primitive_type(0, cdk::TYPE_UNSPEC));
+  // HACK: assignment node may override type to be a double
+  node->type(cdk::make_primitive_type(4, cdk::TYPE_INT));
 }
 
 //---------------------------------------------------------------------------
