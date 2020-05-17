@@ -4,6 +4,10 @@
 #include "targets/postfix_writer.h"
 #include "ast/all.h"  // all.h is automatically generated
 
+#ifndef tREQUIRE
+#include "og_parser.tab.h"
+#endif
+
 static std::string fix_function_name(std::string name) {
   if (name == "og") {
     return "_main"; // entry point
@@ -22,10 +26,6 @@ void og::postfix_writer::do_nil_node(cdk::nil_node * const node, int lvl) {
 void og::postfix_writer::do_data_node(cdk::data_node * const node, int lvl) {
   // EMPTY
 }
-void og::postfix_writer::do_double_node(cdk::double_node * const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
-  _pf.DOUBLE(node->value());
-}
 void og::postfix_writer::do_not_node(cdk::not_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->argument()->accept(this, lvl + 2);
@@ -33,15 +33,23 @@ void og::postfix_writer::do_not_node(cdk::not_node * const node, int lvl) {
 }
 void og::postfix_writer::do_and_node(cdk::and_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
+  int lbl = ++_lbl;
   node->left()->accept(this, lvl + 2);
+  _pf.DUP32();
+  _pf.JZ(mklbl(lbl));
   node->right()->accept(this, lvl + 2);
   _pf.AND();
+  _pf.LABEL(mklbl(lbl));
 }
 void og::postfix_writer::do_or_node(cdk::or_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
+  int lbl = ++_lbl;
   node->left()->accept(this, lvl + 2);
+  _pf.DUP32();
+  _pf.JNZ(mklbl(lbl));
   node->right()->accept(this, lvl + 2);
   _pf.OR();
+  _pf.LABEL(mklbl(lbl));
 }
 
 //---------------------------------------------------------------------------
@@ -56,7 +64,20 @@ void og::postfix_writer::do_sequence_node(cdk::sequence_node * const node, int l
 
 void og::postfix_writer::do_integer_node(cdk::integer_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  _pf.INT(node->value()); // push an integer
+  if (_inFunctionBody) {
+    _pf.INT(node->value());
+  } else {
+    _pf.SINT(node->value());
+  }
+}
+
+void og::postfix_writer::do_double_node(cdk::double_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+  if (_inFunctionBody) {
+    _pf.DOUBLE(node->value());
+  } else {
+    _pf.SDOUBLE(node->value());
+  }
 }
 
 void og::postfix_writer::do_string_node(cdk::string_node * const node, int lvl) {
@@ -70,8 +91,13 @@ void og::postfix_writer::do_string_node(cdk::string_node * const node, int lvl) 
   _pf.SSTRING(node->value()); // output string characters
 
   /* leave the address on the stack */
-  _pf.TEXT(); // return to the TEXT segment
-  _pf.ADDR(mklbl(lbl1)); // the string to be printed
+  if (_inFunctionBody) {
+    _pf.TEXT(); // return to the TEXT segment
+    _pf.ADDR(mklbl(lbl1)); // the string to be printed
+  } else {
+    _pf.DATA();
+    _pf.SADDR(mklbl(lbl1));
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -108,13 +134,11 @@ void og::postfix_writer::processIDComparison(cdk::binary_operation_node *const n
   if (node->left()->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT)) {
     _pf.I2D();
   }
-  os() << "; 2" << std::endl;
   node->right()->accept(this, lvl);
   if (node->right()->is_typed(cdk::TYPE_DOUBLE) && node->left()->is_typed(cdk::TYPE_INT)) {
     _pf.I2D();
   }
 
-  os() << "; 3" << std::endl;
   if (has_doubles) {
     _pf.DCMP();
     _pf.INT(0);
@@ -140,7 +164,7 @@ void og::postfix_writer::do_add_node(cdk::add_node * const node, int lvl) {
     _pf.SHTL();
   }
 
-  if (node->is_typed(cdk::TYPE_DOUBLE) {
+  if (node->is_typed(cdk::TYPE_DOUBLE)) {
     _pf.DADD();
   } else {
     _pf.ADD();
@@ -161,7 +185,7 @@ void og::postfix_writer::do_sub_node(cdk::sub_node * const node, int lvl) {
     _pf.SHTL();
   }
 
-  if (node->is_typed(cdk::TYPE_DOUBLE) {
+  if (node->is_typed(cdk::TYPE_DOUBLE)) {
     _pf.DSUB();
   } else {
     _pf.SUB();
@@ -288,19 +312,21 @@ void og::postfix_writer::do_rvalue_node(cdk::rvalue_node * const node, int lvl) 
 void og::postfix_writer::do_assignment_node(cdk::assignment_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->rvalue()->accept(this, lvl); // determine the new value
-  _pf.DUP32();
-  if (new_symbol() == nullptr) {
-    node->lvalue()->accept(this, lvl); // where to store the value
+  if (node->is_typed(cdk::TYPE_DOUBLE)) {
+    if (node->rvalue()->is_typed(cdk::TYPE_INT)) {
+      _pf.I2D();
+    }
+    _pf.DUP64();
   } else {
-    _pf.DATA(); // variables are all global and live in DATA
-    _pf.ALIGN(); // make sure we are aligned
-    _pf.LABEL(new_symbol()->name()); // name variable location
-    reset_new_symbol();
-    _pf.SINT(0); // initialize it to 0 (zero)
-    _pf.TEXT(); // return to the TEXT segment
-    node->lvalue()->accept(this, lvl);  //DAVID: bah!
+    _pf.DUP32();
   }
-  _pf.STINT(); // store the value at address
+
+  node->lvalue()->accept(this, lvl);
+  if (node->is_typed(cdk::TYPE_DOUBLE)) {
+    _pf.STDOUBLE();
+  } else {
+    _pf.STINT();
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -327,6 +353,7 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
   _pf.LABEL("_main");
   _pf.ENTER(0);
 
+  _inFunctionBody = true;
   node->block()->accept(this, lvl);
 
   // end the main function
@@ -334,6 +361,7 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
   _pf.STFVAL32();
   _pf.LEAVE();
   _pf.RET();
+  _inFunctionBody = false;
 
   // these are just a few library function imports
   _pf.EXTERN("readi");
@@ -480,18 +508,41 @@ void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
   _symtab.push();
   ASSERT_SAFE_EXPRESSIONS;
   _symtab.pop();
+  
+  int lblini, lblincr, lblend;
+  _forIni.push(lblini = ++_lbl);
+  _forIncr.push(lblincr = ++_lbl);
+  _forEnd.push(lblend = ++_lbl);
 
-  // TODO: this is a while loop, make it a for loop
-#if 0
-  ASSERT_SAFE_EXPRESSIONS;
-  int lbl1, lbl2;
-  _pf.LABEL(mklbl(lbl1 = ++_lbl));
-  node->condition()->accept(this, lvl);
-  _pf.JZ(mklbl(lbl2 = ++_lbl));
-  node->block()->accept(this, lvl + 2);
-  _pf.JMP(mklbl(lbl1));
-  _pf.LABEL(mklbl(lbl2));
-#endif
+  if (node->initializers()) {
+    node->initializers()->accept(this, lvl);
+  }
+
+  _pf.LABEL(mklbl(lblini));
+
+  os() << "        ;; FOR conditions" << std::endl; //TODO: there might be multiple conditions
+  if (node->conditions()) {
+    node->conditions()->accept(this, lvl);
+  }
+  _pf.JZ(mklbl(lblend));
+
+  os() << "        ;; FOR block" << std::endl;
+  if (node->block()) {
+    node->block()->accept(this, lvl + 2);
+  }
+
+  os() << "        ;; FOR increments" << std::endl;
+  _pf.LABEL(mklbl(lblincr));
+  if (node->increments()) {
+    node->increments()->accept(this, lvl);
+  }
+
+  _pf.JMP(mklbl(lblini));
+  _pf.LABEL(mklbl(lblend));
+
+  _forIni.pop();
+  _forIncr.pop();
+  _forEnd.pop();
 }
 
 void og::postfix_writer::do_continue_node(og::continue_node * const node, int lvl) {
@@ -517,7 +568,7 @@ void og::postfix_writer::do_break_node(og::break_node * const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_if_node(og::if_node * const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
+  ASSERT_SAFE_EXPRESSIONS
   int lbl1;
   node->condition()->accept(this, lvl);
   _pf.JZ(mklbl(lbl1 = ++_lbl));
@@ -549,7 +600,31 @@ void og::postfix_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
 
 void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS; // declare variable with typechecker
-  // TODO
+
+  auto id = node->identifiers()[0];
+  if (_inFunctionBody) {
+
+  } else {
+    if (node->qualifier() == tREQUIRE) {
+      _pf.EXTERN(id);
+      return;
+    }
+
+    if (node->initializer()) {
+      _pf.DATA();
+    } else {
+      _pf.BSS();
+    }
+
+    _pf.ALIGN();
+    if (node->qualifier() == tPUBLIC) {
+      _pf.GLOBAL(id, _pf.OBJ());
+    }
+    _pf.LABEL(id);
+    if (node->initializer()) {
+      node->initializer()->accept(this, lvl);
+    }
+  }
 }
 
 void og::postfix_writer::do_tuple_index_node(og::tuple_index_node *const node, int lvl) {

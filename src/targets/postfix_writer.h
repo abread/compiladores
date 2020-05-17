@@ -4,6 +4,7 @@
 #include "targets/basic_ast_visitor.h"
 
 #include <sstream>
+#include <stack>
 #include <cdk/emitters/basic_postfix_emitter.h>
 
 namespace og {
@@ -15,6 +16,7 @@ namespace og {
     cdk::symbol_table<og::symbol> &_symtab;
     cdk::basic_postfix_emitter &_pf;
     int _lbl;
+    std::stack<int> _forIni, _forIncr, _forEnd;
 
     std::shared_ptr<og::symbol> _function = nullptr;
     bool _inFunctionBody = false;
