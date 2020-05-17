@@ -41,6 +41,9 @@ namespace og {
       return oss.str();
     }
 
+    void processIDBinaryExpression(cdk::binary_operation_node *const node, int lvl);
+    void processIDComparison(cdk::binary_operation_node *const node, int lvl);
+
   public:
   // do not edit these lines
 #define __IN_VISITOR_HEADER__

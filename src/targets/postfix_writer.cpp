@@ -88,29 +88,100 @@ void og::postfix_writer::do_neg_node(cdk::neg_node * const node, int lvl) {
 
 //---------------------------------------------------------------------------
 
+void og::postfix_writer::processIDBinaryExpression(cdk::binary_operation_node *const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+  node->left()->accept(this, lvl);
+  if (node->is_typed(cdk::TYPE_DOUBLE) && node->left()->is_typed(cdk::TYPE_INT)) {
+    _pf.I2D();
+  }
+  node->right()->accept(this, lvl);
+  if (node->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT)) {
+    _pf.I2D();
+  }
+}
+
+void og::postfix_writer::processIDComparison(cdk::binary_operation_node *const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+  bool has_doubles = (node->left()->is_typed(cdk::TYPE_DOUBLE) || node->right()->is_typed(cdk::TYPE_DOUBLE));
+
+  node->left()->accept(this, lvl);
+  if (node->left()->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT)) {
+    _pf.I2D();
+  }
+  os() << "; 2" << std::endl;
+  node->right()->accept(this, lvl);
+  if (node->right()->is_typed(cdk::TYPE_DOUBLE) && node->left()->is_typed(cdk::TYPE_INT)) {
+    _pf.I2D();
+  }
+
+  os() << "; 3" << std::endl;
+  if (has_doubles) {
+    _pf.DCMP();
+    _pf.INT(0);
+  }
+}
+
+
 void og::postfix_writer::do_add_node(cdk::add_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->left()->accept(this, lvl);
+  if (node->is_typed(cdk::TYPE_DOUBLE) && node->left()->is_typed(cdk::TYPE_INT)) {
+    _pf.I2D();
+  } else if (node->is_typed(cdk::TYPE_POINTER) && node->left()->is_typed(cdk::TYPE_INT)) {
+    _pf.INT(3); //TODO: depends on sizeof referenced type
+    _pf.SHTL();
+  }
+
   node->right()->accept(this, lvl);
-  _pf.ADD();
+  if (node->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT)) {
+    _pf.I2D();
+  } else if (node->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_INT)) {
+    _pf.INT(3); //TODO: depends on sizeof referenced type
+    _pf.SHTL();
+  }
+
+  if (node->is_typed(cdk::TYPE_DOUBLE) {
+    _pf.DADD();
+  } else {
+    _pf.ADD();
+  }
 }
 void og::postfix_writer::do_sub_node(cdk::sub_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->left()->accept(this, lvl);
+  if (node->is_typed(cdk::TYPE_DOUBLE) && node->left()->is_typed(cdk::TYPE_INT)) {
+    _pf.I2D();
+  }
+
   node->right()->accept(this, lvl);
-  _pf.SUB();
+  if (node->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT)) {
+    _pf.I2D();
+  } else if (node->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_INT)) {
+    _pf.INT(3); //TODO: depends on sizeof referenced type
+    _pf.SHTL();
+  }
+
+  if (node->is_typed(cdk::TYPE_DOUBLE) {
+    _pf.DSUB();
+  } else {
+    _pf.SUB();
+  }
 }
 void og::postfix_writer::do_mul_node(cdk::mul_node * const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
-  node->left()->accept(this, lvl);
-  node->right()->accept(this, lvl);
-  _pf.MUL();
+  processIDBinaryExpression(node, lvl);
+  if (node->is_typed(cdk::TYPE_INT)) {
+    _pf.MUL();
+  } else {
+    _pf.DMUL();
+  }
 }
 void og::postfix_writer::do_div_node(cdk::div_node * const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
-  node->left()->accept(this, lvl);
-  node->right()->accept(this, lvl);
-  _pf.DIV();
+  processIDBinaryExpression(node, lvl);
+  if (node->is_typed(cdk::TYPE_INT)) {
+    _pf.DIV();
+  } else {
+    _pf.DDIV();
+  }
 }
 void og::postfix_writer::do_mod_node(cdk::mod_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
@@ -119,39 +190,27 @@ void og::postfix_writer::do_mod_node(cdk::mod_node * const node, int lvl) {
   _pf.MOD();
 }
 void og::postfix_writer::do_lt_node(cdk::lt_node * const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
-  node->left()->accept(this, lvl);
-  node->right()->accept(this, lvl);
+  processIDComparison(node, lvl);
   _pf.LT();
 }
 void og::postfix_writer::do_le_node(cdk::le_node * const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
-  node->left()->accept(this, lvl);
-  node->right()->accept(this, lvl);
+  processIDComparison(node, lvl);
   _pf.LE();
 }
 void og::postfix_writer::do_ge_node(cdk::ge_node * const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
-  node->left()->accept(this, lvl);
-  node->right()->accept(this, lvl);
+  processIDComparison(node, lvl);
   _pf.GE();
 }
 void og::postfix_writer::do_gt_node(cdk::gt_node * const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
-  node->left()->accept(this, lvl);
-  node->right()->accept(this, lvl);
+  processIDComparison(node, lvl);
   _pf.GT();
 }
 void og::postfix_writer::do_ne_node(cdk::ne_node * const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
-  node->left()->accept(this, lvl);
-  node->right()->accept(this, lvl);
+  processIDComparison(node, lvl);
   _pf.NE();
 }
 void og::postfix_writer::do_eq_node(cdk::eq_node * const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
-  node->left()->accept(this, lvl);
-  node->right()->accept(this, lvl);
+  processIDComparison(node, lvl);
   _pf.EQ();
 }
 
@@ -256,7 +315,9 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
   auto name = fix_function_name(node->identifier());
 
   // declare args
-  node->arguments()->accept(this, lvl);
+  if (node->arguments()) {
+    node->arguments()->accept(this, lvl);
+  }
 
   //TODO: adapt for all functions
   // generate the main function (RTS mandates that its name be "_main")
@@ -400,6 +461,7 @@ void og::postfix_writer::do_write_node(og::write_node * const node, int lvl) {
   }
 }
 
+
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_input_node(og::input_node * const node, int lvl) {
@@ -479,7 +541,10 @@ void og::postfix_writer::do_if_else_node(og::if_else_node * const node, int lvl)
 
 void og::postfix_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  // TODO
+  auto elements = node->elements();
+  for (size_t i = 0; i < elements.size(); i++) {
+    elements[i]->accept(this, lvl);
+  }
 }
 
 void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_node *const node, int lvl) {
