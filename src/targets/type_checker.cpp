@@ -155,6 +155,7 @@ void og::type_checker::do_return_node(og::return_node *const node, int lvl) {
     if (_function->autoType()) {
       // infering return type, relax rules (allow ints to become doubles in the ret type, generalize pointers, etc.)
       opts = DEFAULT_TYPE_COMPAT;
+      opts.acceptUnspec = true;
     }
 
     auto type = compatible_types(_function->type(), node->retval()->type(), opts);
