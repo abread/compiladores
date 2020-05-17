@@ -5,6 +5,7 @@
 
 #include <sstream>
 #include <stack>
+#include <set>
 #include <cdk/emitters/basic_postfix_emitter.h>
 
 namespace og {
@@ -19,6 +20,7 @@ namespace og {
     std::stack<int> _forIni, _forIncr, _forEnd;
 
     std::shared_ptr<og::symbol> _function = nullptr;
+    std::set<std::string> _functions_to_declare;
     bool _inFunctionBody = false;
     bool _inFunctionArgs = false;
     int _offset = 0;

@@ -332,6 +332,19 @@ void og::postfix_writer::do_assignment_node(cdk::assignment_node * const node, i
 
 //---------------------------------------------------------------------------
 
+void og::postfix_writer::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS; // typechecker takes care of declaring functions
+  auto name = fix_function_name(node->identifier());
+
+  // if (_inFunctionBody || _inFunctionArgs) { TODO: don't think this is even needed
+  //   error(node->lineno(), "cannot declare function in body or in args");
+  //   return;
+  // }
+  //DAVID: FIXME: should be at the beginning
+  // _functions_to_declare.insert(name); //TODO: this
+}
+
+
 void og::postfix_writer::do_function_definition_node(og::function_definition_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
 
@@ -340,6 +353,7 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
   _symtab.push();
 
   auto name = fix_function_name(node->identifier());
+  // _functions_to_declare.erase(name); //TODO: this
 
   _offset = 8;
   // declare args, and their respective scope
@@ -386,10 +400,19 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
   // these are just a few library function imports
   if (name == "_main")  {
     _pf.EXTERN("readi");
+    _pf.EXTERN("readd");
     _pf.EXTERN("printi");
+    _pf.EXTERN("printd");
     _pf.EXTERN("prints");
     _pf.EXTERN("println");
+    _pf.EXTERN("argc");
+    _pf.EXTERN("argv");
+    _pf.EXTERN("envp");
   }
+
+    // TODO: use extern on undefined functions
+    // for (std::string& s : _functions_to_declare)
+    //   _pf.EXTERN(s);
 }
 
 //---------------------------------------------------------------------------
@@ -400,7 +423,7 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
   auto name = fix_function_name(node->identifier());
 
   size_t argsSize = 0;
-  if (node->arguments()) {
+  if (node->arguments()) { //TODO: convert doubles to integers in arguments....
     for (int ax = node->arguments()->size(); ax > 0; ax--) {
       cdk::expression_node *arg = dynamic_cast<cdk::expression_node*>(node->arguments()->element(ax - 1));
       arg->accept(this, lvl + 2);
@@ -428,14 +451,6 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
     std::cerr << "ICE(postfix_writer): unsupported function return type\n";
     exit(1);
   }
-}
-
-//---------------------------------------------------------------------------
-
-void og::postfix_writer::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS; // typechecker takes care of declaring functions
-  auto name = fix_function_name(node->identifier());
-  // TODO
 }
 
 //---------------------------------------------------------------------------
@@ -638,19 +653,24 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
     reset_new_symbol();
   }
 
+  // do nothing with function arguments
+  if (_inFunctionArgs) {
+    return;
+  }
+
   if (_inFunctionBody) {
     if (node->initializer()) {
       node->initializer()->accept(this, lvl);
-    }
-    if (node->is_typed(cdk::TYPE_INT) || node->is_typed(cdk::TYPE_STRING)
-        || node->is_typed(cdk::TYPE_POINTER)) {
-      _pf.LOCAL(symbol->offset());
-      _pf.STINT();
-    } else if (node->is_typed(cdk::TYPE_DOUBLE)) {
-      _pf.LOCAL(symbol->offset());
-      _pf.STDOUBLE();
-    } else {
-      throw "cannot initialize";
+      if (node->is_typed(cdk::TYPE_INT) || node->is_typed(cdk::TYPE_STRING)
+          || node->is_typed(cdk::TYPE_POINTER)) {
+        _pf.LOCAL(symbol->offset());
+        _pf.STINT();
+      } else if (node->is_typed(cdk::TYPE_DOUBLE)) {
+        _pf.LOCAL(symbol->offset());
+        _pf.STDOUBLE();
+      } else {
+        throw "cannot initialize";
+      }
     }
   } else {
     if (node->qualifier() == tREQUIRE) {
@@ -697,7 +717,7 @@ void og::postfix_writer::do_tuple_index_node(og::tuple_index_node *const node, i
 
 void og::postfix_writer::do_sizeof_node(og::sizeof_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  // TODO
+  _pf.INT(node->arguments()->type()->size());
 }
 
 void og::postfix_writer::do_identity_node(og::identity_node *const node, int lvl) {
