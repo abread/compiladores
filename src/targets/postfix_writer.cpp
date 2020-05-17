@@ -4,6 +4,16 @@
 #include "targets/postfix_writer.h"
 #include "ast/all.h"  // all.h is automatically generated
 
+static std::string fix_function_name(std::string name) {
+  if (name == "og") {
+    return "_main"; // entry point
+  } else if (name == "_main") {
+    return "._main"; // avoid naming conflict
+  } else {
+    return name;
+  }
+}
+
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_nil_node(cdk::nil_node * const node, int lvl) {
@@ -240,9 +250,10 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
   ASSERT_SAFE_EXPRESSIONS;
 
   auto sym = _symtab.find(node->identifier());
-
+  _function = sym;
   _symtab.push();
-  // TODO: save current function symbol somewhere (?)
+
+  auto name = fix_function_name(node->identifier());
 
   // declare args
   node->arguments()->accept(this, lvl);
@@ -270,12 +281,15 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
   _pf.EXTERN("println");
 
   _symtab.pop();
+  _function = nullptr;
 }
 
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_function_call_node(og::function_call_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
+
+  auto name = fix_function_name(node->identifier());
 
   size_t argsSize = 0;
   if (node->arguments()) {
@@ -285,7 +299,7 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
       argsSize += arg->type()->size();
     }
   }
-  _pf.CALL(node->identifier());
+  _pf.CALL(name);
   if (argsSize != 0) {
     _pf.TRASH(argsSize);
   }
@@ -309,6 +323,7 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
 
 void og::postfix_writer::do_function_declaration_node(og::function_declaration_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS; // typechecker takes care of declaring functions
+  auto name = fix_function_name(node->identifier());
   // TODO
 }
 

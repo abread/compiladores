@@ -15,10 +15,13 @@ namespace og {
 
     int _offset = 0; // 0 means global
     bool _definedOrInitialized = false;
+    bool _autoType; // tracks if function/variable was originally auto
 
   public:
     symbol(int qualifier, std::shared_ptr<cdk::basic_type> type, const std::string &name, std::shared_ptr<cdk::basic_type> argsType = nullptr) :
-        _qualifier(qualifier), _type(type), _name(name), _argsType(argsType) {}
+        _qualifier(qualifier), _type(type), _name(name), _argsType(argsType) {
+          _autoType = type->name() == cdk::TYPE_UNSPEC;
+        }
 
     virtual ~symbol() {
       // EMPTY
@@ -26,6 +29,9 @@ namespace og {
 
     int qualifier() const {
       return _qualifier;
+    }
+    void type(std::shared_ptr<cdk::basic_type> type) {
+      _type = type;
     }
     std::shared_ptr<cdk::basic_type> type() const {
       return _type;
@@ -59,6 +65,9 @@ namespace og {
     }
     bool &definedOrInitialized() {
       return _definedOrInitialized;
+    }
+    bool autoType() const {
+      return _autoType;
     }
   };
 

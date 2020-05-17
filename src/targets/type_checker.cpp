@@ -21,17 +21,18 @@ static bool is_PID(cdk::typed_node *const node) {
 // Different operations have different notions of allowed types
 class TypeCompatOptions {
 public:
-  TypeCompatOptions(bool id = true, bool di = true, bool unspec = false, bool ptrassign = false)
+  TypeCompatOptions(bool id = true, bool di = true, bool unspec = false, bool ptrassign = true, bool generalizeptr = true)
     : acceptID(id), acceptDI(di), acceptUnspec(unspec), ptrAssignment(ptrassign) {}
   bool acceptID; // accept (TYPE_INT, TYPE_DOUBLE), return TYPE_DOUBLE
   bool acceptDI; // accept (TYPE_DOUBLE, TYPE_INT), return TYPE_DOUBLE
   bool acceptUnspec; // accept TYPE_UNSPEC in one or more arguments, return the one that isn't TYPE_UNSPEC if it exists
-  bool ptrAssignment; // (ptr<auto>, ptr<anything>) returns ptr<auto>
+  bool ptrAssignment; // (ptr<auto>, ptr<anything>) returns ptr<auto> (accept conversions to ptr<auto>)
+  bool generalizePtr; // (ptr<X>, ptr<Y>) returns ptr<auto> (implies ptrAssignment)
 };
 
 const TypeCompatOptions DEFAULT_TYPE_COMPAT = TypeCompatOptions();
-const TypeCompatOptions ASSIGNMENT_TYPE_COMPAT = TypeCompatOptions(false, true, false, true);
-const TypeCompatOptions INITIALIZER_TYPE_COMPAT = TypeCompatOptions(false, true, true, true);
+const TypeCompatOptions ASSIGNMENT_TYPE_COMPAT = TypeCompatOptions(false, true, false, true, false);
+const TypeCompatOptions INITIALIZER_TYPE_COMPAT = TypeCompatOptions(false, true, true, true, false);
 
 static std::shared_ptr<cdk::basic_type> compatible_types(std::shared_ptr<cdk::basic_type> a, std::shared_ptr<cdk::basic_type> b, TypeCompatOptions opts);
 
@@ -63,7 +64,7 @@ static std::shared_ptr<cdk::basic_type> compatible_types_ptr(std::shared_ptr<cdk
   if (b->referenced()->name() == cdk::TYPE_UNSPEC) {
     return a;
   } else if (a->referenced()->name() == cdk::TYPE_UNSPEC) {
-    if (opts.ptrAssignment) {
+    if (opts.ptrAssignment || opts.generalizePtr) {
       return a;
     } else {
       return b;
@@ -75,7 +76,11 @@ static std::shared_ptr<cdk::basic_type> compatible_types_ptr(std::shared_ptr<cdk
 
     auto referenced = compatible_types(a->referenced(), b->referenced(), opts);
     if (referenced == nullptr) {
-      return nullptr;
+      if (opts.generalizePtr) {
+        referenced = cdk::make_primitive_type(0, cdk::TYPE_UNSPEC);
+      } else {
+        return nullptr;
+      }
     }
 
     return cdk::make_reference_type(4, referenced);
@@ -135,47 +140,36 @@ void og::type_checker::do_sequence_node(cdk::sequence_node *const node, int lvl)
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_return_node(og::return_node *const node, int lvl) {
-  // TODO
-  if (node->retval())
-    node->retval()->accept(this, lvl + 2);
-#if 0
-  if (node->retval()) {
-    if (_function->type()->name() == basic_type::TYPE_VOID) throw std::string("initializer specified for void function.");
-
-    node->retval()->accept(this, lvl + 2);
-
-    std::cout << "FUNCT TYPE" << _function->type()->name()  << std::endl;
-    std::cout << "RETVAL TYPE" << node->retval()->type()->name() << std::endl;
-
-    if (_function->type()->name() == basic_type::TYPE_INT) {
-      if (node->retval()->type()->name() != basic_type::TYPE_INT) throw std::string(
-          "wrong type for initializer (integer expected).");
-    } else if (_function->type()->name() == basic_type::TYPE_DOUBLE) {
-      if (node->retval()->type()->name() != basic_type::TYPE_INT
-          && node->retval()->type()->name() != basic_type::TYPE_DOUBLE) throw std::string(
-          "wrong type for initializer (integer or double expected).");
-    } else if (_function->type()->name() == basic_type::TYPE_STRING) {
-      if (node->retval()->type()->name() != basic_type::TYPE_STRING) throw std::string(
-          "wrong type for initializer (string expected).");
-    } else if (_function->type()->name() == basic_type::TYPE_POINTER) {
-      //DAVID: FIXME: trouble!!!
-      int ft = 0, rt = 0;
-      basic_type *ftype = _function->type();
-      for (; ftype->name() == basic_type::TYPE_POINTER; ft++, ftype = ftype->_subtype);
-      basic_type *rtype = node->retval()->type();
-      for (; rtype && rtype->name() == basic_type::TYPE_POINTER; rt++, rtype = rtype->_subtype);
-
-    std::cout << "FUNCT TYPE"  << _function->type()->name()      << " --- " << ft << " -- " << ftype->name() << std::endl;
-    std::cout << "RETVAL TYPE" << node->retval()->type()->name() << " --- " << rt << " -- " << rtype << std::endl;
-
-      bool compatible = (ft == rt) && (rtype == 0 || (rtype != 0 && ftype->name() == rtype->name()));
-      if (!compatible) throw std::string("wrong type for return expression (pointer expected).");
-
-    } else {
-      throw std::string("unknown type for initializer.");
-    }
+  if (_function == nullptr) {
+    throw std::string("ICE: return outside function body");
   }
-#endif
+
+  if (node->retval()) {
+    if (_function->is_typed(cdk::TYPE_VOID)) {
+      throw std::string("non-empty return in void function.");
+    }
+
+    node->retval()->accept(this, lvl + 2);
+
+    TypeCompatOptions opts = ASSIGNMENT_TYPE_COMPAT;
+    if (_function->autoType()) {
+      // infering return type, relax rules (allow ints to become doubles in the ret type, generalize pointers, etc.)
+      opts = DEFAULT_TYPE_COMPAT;
+    }
+
+    auto type = compatible_types(_function->type(), node->retval()->type(), opts);
+
+    if (type == nullptr) {
+      throw std::string("return expression incompatible with function return type");
+    }
+
+    if (_function->autoType()) {
+      // we've inferred a better return type (or stayed the same)
+      _function->type(type);
+    }
+  } else if (! _function->is_typed(cdk::TYPE_VOID)) {
+    throw std::string("empty return in non-void function");
+  }
 }
 
 void og::type_checker::do_double_node(cdk::double_node *const node, int lvl) {
@@ -378,13 +372,6 @@ std::shared_ptr<og::symbol> og::type_checker::declare_function(T *const node, in
   auto id = node->identifier();
   std::shared_ptr<cdk::basic_type> args_type;
 
-  // "fix" naming issues
-  if (id == "og") {
-    id = "_main";
-  } else if (id == "_main") {
-    id = "._main";
-  }
-
   // compute arguments type
   std::vector<std::shared_ptr<cdk::basic_type>> each_arg_type;
   if (node->arguments()) {
@@ -433,19 +420,30 @@ void og::type_checker::do_function_definition_node(og::function_definition_node 
     throw std::string("function redefinition: " + sym->name());
   }
   sym->definedOrInitialized() = true;
+
+  // ensure return type is known
+  _function = sym;
+  _symtab.push();
+
+  if (node->arguments()) {
+    node->arguments()->accept(this, lvl);
+  }
+
+  node->block()->accept(this, lvl+2);
+
+  _symtab.pop();
+  _function = nullptr;
+
+  // TODO: what if there's still nothing returned? void? confirm
+  if (sym->is_typed(cdk::TYPE_UNSPEC)) {
+    sym->type(cdk::make_primitive_type(0, cdk::TYPE_VOID));
+  }
 }
 
 void og::type_checker::do_function_call_node(og::function_call_node *const node, int lvl) {
   ASSERT_UNSPEC;
 
   auto id = node->identifier();
-
-  // "fix" naming issues
-  if (id == "og") {
-    id = "_main";
-  } else if (id == "_main") {
-    id = "._main";
-  }
 
   auto sym = _symtab.find(id);
   if (!sym) {

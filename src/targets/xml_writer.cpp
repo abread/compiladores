@@ -153,7 +153,9 @@ void og::xml_writer::do_function_definition_node(og::function_definition_node * 
        << " identifier='" << node->identifier() << "'"
        << " type='" << cdk::to_string(node->type()) << "'>" << std::endl;
 
+  _function = _symtab.find(node->identifier());
   _symtab.push();
+
   if (node->arguments()) {
     openTag("arguments", lvl + 2);
     node->arguments()->accept(this, lvl + 2*2);
@@ -161,7 +163,9 @@ void og::xml_writer::do_function_definition_node(og::function_definition_node * 
   }
 
   node->block()->accept(this, lvl + 2);
+
   _symtab.pop();
+  _function = nullptr;
 
   closeTag(node, lvl);
 }

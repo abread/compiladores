@@ -15,6 +15,8 @@ namespace og {
     cdk::symbol_table<og::symbol> &_symtab;
     cdk::basic_postfix_emitter &_pf;
     int _lbl;
+
+    std::shared_ptr<og::symbol> _function = nullptr;
     bool _inFunctionBody = false;
 
   public:
