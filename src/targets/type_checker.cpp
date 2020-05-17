@@ -448,7 +448,7 @@ std::shared_ptr<og::symbol> og::type_checker::declare_function(T *const node, in
     return old_sym;
   } else {
     _symtab.insert(id, sym);
-    _parent->set_new_symbol(sym);
+    if (!_typecheckingFunctionBody) _parent->set_new_symbol(sym);
     return sym;
   }
 }
@@ -471,6 +471,7 @@ void og::type_checker::do_function_definition_node(og::function_definition_node 
 
   // ensure return type is known
   _function = sym;
+  _typecheckingFunctionBody = true;
   _symtab.push();
 
   if (node->arguments()) {
@@ -480,6 +481,7 @@ void og::type_checker::do_function_definition_node(og::function_definition_node 
   node->block()->accept(this, lvl+2);
 
   _symtab.pop();
+  _typecheckingFunctionBody = false;
   _function = nullptr;
 
   // TODO: what if there's still nothing returned? void? confirm
@@ -523,6 +525,9 @@ void og::type_checker::do_evaluation_node(og::evaluation_node *const node, int l
 }
 
 void og::type_checker::do_block_node(og::block_node * const node, int lvl) {
+  // HACK: run typechecker for function definition ahead of code generation
+  if (_typecheckingFunctionBody) _symtab.push();
+
   if (node->declarations()) {
     node->declarations()->accept(this, lvl + 2);
   }
@@ -530,6 +535,8 @@ void og::type_checker::do_block_node(og::block_node * const node, int lvl) {
   if (node->instructions()) {
     node->instructions()->accept(this, lvl + 2);
   }
+
+  if (_typecheckingFunctionBody) _symtab.pop();
 }
 
 void og::type_checker::do_write_node(og::write_node *const node, int lvl) {
@@ -561,6 +568,9 @@ void og::type_checker::do_stack_alloc_node(og::stack_alloc_node * const node, in
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
+  // HACK: run typechecker for function definition ahead of code generation
+  if (_typecheckingFunctionBody) _symtab.push();
+
   if (node->initializers()) {
     node->initializers()->accept(this, lvl + 2);
   }
@@ -583,6 +593,8 @@ void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
   }
 
   node->block()->accept(this, lvl + 2);
+
+  if (_typecheckingFunctionBody) _symtab.pop();
 }
 
 
@@ -638,7 +650,7 @@ void og::type_checker::declare_var(int qualifier, std::shared_ptr<cdk::basic_typ
   }
 
   if (_symtab.insert(id, sym)) {
-    _parent->set_new_symbol(sym);
+    if (!_typecheckingFunctionBody) _parent->set_new_symbol(sym);
   } else {
     throw std::string("variable redeclaration: " + id);
   }
