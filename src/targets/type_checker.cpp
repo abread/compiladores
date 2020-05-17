@@ -141,7 +141,7 @@ void og::type_checker::do_sequence_node(cdk::sequence_node *const node, int lvl)
 
 void og::type_checker::do_return_node(og::return_node *const node, int lvl) {
   if (_function == nullptr) {
-    throw std::string("ICE: return outside function body");
+    throw std::string("return outside function body");
   }
 
   if (node->retval()) {

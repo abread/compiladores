@@ -401,10 +401,11 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
     _pf.LDFVAL64();
   } else if (symbol->is_typed(cdk::TYPE_STRUCT)) {
     // TODO
-    throw std::string("ICE(postfix_writer): functions that return tuples not yet supported");
+    throw std::string("functions that return tuples not yet supported");
   } else {
     // cannot happen!
-    throw std::string("ICE(postfix_writer): unsupported function return type");
+    std::cerr << "ICE(postfix_writer): unsupported function return type\n";
+    exit(1);
   }
 }
 
