@@ -375,16 +375,16 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
   os() << "        ;; after body " << std::endl;
   _inFunctionBody = false;
   _symtab.pop(); //arguments
+  // make sure that voids are returned from
+  if (_function->is_typed(cdk::TYPE_VOID)) {
+    _pf.LEAVE();
+    _pf.RET();
+  }
   _function == nullptr;
 
-  // end the main function
-  _pf.INT(0);
-  _pf.STFVAL32();
-  _pf.LEAVE();
-  _pf.RET();
 
   // these are just a few library function imports
-    if (name == "_main")  {
+  if (name == "_main")  {
     _pf.EXTERN("readi");
     _pf.EXTERN("printi");
     _pf.EXTERN("prints");
@@ -421,6 +421,8 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
   } else if (symbol->is_typed(cdk::TYPE_STRUCT)) {
     // TODO
     throw std::string("functions that return tuples not yet supported");
+  } else if (symbol->is_typed(cdk::TYPE_VOID)) {
+    // EMPTY
   } else {
     // cannot happen!
     std::cerr << "ICE(postfix_writer): unsupported function return type\n";
@@ -448,6 +450,8 @@ void og::postfix_writer::do_evaluation_node(og::evaluation_node * const node, in
     _pf.TRASH(4); // delete the evaluated value's address
   } else if (node->argument()->is_typed(cdk::TYPE_DOUBLE)) {
     _pf.TRASH(8);
+  } else if (node->argument()->is_typed(cdk::TYPE_VOID)) {
+    // EMPTY 
   } else {
     std::cerr << "ERROR: CANNOT HAPPEN!" << std::endl;
     exit(1);
@@ -637,7 +641,9 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
   }
 
   if (_inFunctionBody) {
-    node->initializer()->accept(this, lvl);
+    if (node->initializer()) {
+      node->initializer()->accept(this, lvl);
+    }
     if (node->is_typed(cdk::TYPE_INT) || node->is_typed(cdk::TYPE_STRING)
         || node->is_typed(cdk::TYPE_POINTER)) {
       _pf.LOCAL(symbol->offset());
@@ -680,6 +686,8 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
       } else {
         node->initializer()->accept(this, lvl); //TODO: compare with gr8 because of string alloc
       }
+    } else {
+      _pf.SALLOC(node->type()->size());
     }
   }
 }
