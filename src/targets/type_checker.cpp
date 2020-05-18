@@ -101,6 +101,12 @@ static std::shared_ptr<cdk::basic_type> compatible_types(std::shared_ptr<cdk::ba
     return a;
   } else if (opts.acceptID && a->name() == cdk::TYPE_INT && b->name() == cdk::TYPE_DOUBLE) {
     return b;
+  } else if (a->name() == cdk::TYPE_STRUCT && cdk::structured_type_cast(a)->length() == 1) {
+    auto aa = cdk::structured_type_cast(a);
+    return compatible_types(aa->component(0), b);
+  } else if (b->name() == cdk::TYPE_STRUCT && cdk::structured_type_cast(b)->length() == 1) {
+    auto bb = cdk::structured_type_cast(b);
+    return compatible_types(a, bb->component(0));
   } else if (a->name() != b->name()) { // structs with different sizes may be alright, pointers are all 4 bytes
     return nullptr;
   }
