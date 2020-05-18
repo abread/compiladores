@@ -396,6 +396,10 @@ void og::type_checker::do_assignment_node(cdk::assignment_node *const node, int 
   node->lvalue()->accept(this, lvl + 2);
   node->rvalue()->accept(this, lvl + 2);
 
+  if (node->lvalue()->is_typed(cdk::TYPE_STRUCT) || node->rvalue()->is_typed(cdk::TYPE_STRUCT)) {
+    throw std::string("tuple assignment not supported");
+  }
+
   if (compatible_types(node->lvalue(), node->rvalue(), ASSIGNMENT_TYPE_COMPAT) == nullptr) {
     throw std::string("incompatible types in assignment");
   }
@@ -404,7 +408,7 @@ void og::type_checker::do_assignment_node(cdk::assignment_node *const node, int 
 
   // HACK: a = input must work with doubles
   // if this isn't here, input will return an int which will be converted to a double (when a is a double)
-  if (auto input = dynamic_cast<og::input_node*>(node->rvalue())) {
+  if (auto input = dynamic_cast<og::input_node*>(node->rvalue()); input && node->lvalue()->is_typed(cdk::TYPE_DOUBLE)) {
     input->type(node->type());
   }
 }
@@ -431,11 +435,7 @@ std::shared_ptr<og::symbol> og::type_checker::declare_function(T *const node, in
     }
   }
 
-  if (each_arg_type.size() == 1) {
-    args_type = each_arg_type[0];
-  } else {
-    args_type = cdk::make_structured_type(each_arg_type);
-  }
+  args_type = cdk::make_structured_type(each_arg_type);
 
   auto sym = std::make_shared<og::symbol>(qualifier, ret_type, id, args_type);
 
@@ -504,6 +504,11 @@ void og::type_checker::do_function_call_node(og::function_call_node *const node,
   if (node->arguments()) {
     node->arguments()->accept(this, lvl + 2);
     argsType = node->arguments()->type();
+
+    // make sure argsType is a structured type
+    if (argsType->name() != cdk::TYPE_STRUCT) {
+      argsType = cdk::make_structured_type(std::vector<std::shared_ptr<cdk::basic_type>>(1, argsType));
+    }
   } else {
     std::vector<std::shared_ptr<cdk::basic_type>> empty;
     argsType = cdk::make_structured_type(empty);
