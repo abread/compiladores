@@ -500,7 +500,9 @@ void og::postfix_writer::do_return_node(og::return_node * const node, int lvl) {
       }
       _pf.STFVAL64();
     } else {
-      throw "ICE: unknown return type";
+      // cannot happen!
+      std::cerr << "ICE: unknown return type\n";
+      exit(1);
     }
   }
   _pf.LEAVE();
@@ -586,7 +588,7 @@ void og::postfix_writer::do_continue_node(og::continue_node * const node, int lv
   if (_forIni.size() != 0) {
     _pf.JMP(mklbl(_forIncr.top())); // jump to next cycle
   } else {
-    throw "continue outside 'for' loop";
+    throw std::string("continue outside 'for' loop");
   }
 }
 
@@ -594,7 +596,7 @@ void og::postfix_writer::do_break_node(og::break_node * const node, int lvl) {
   if (_forIni.size() != 0) {
     _pf.JMP(mklbl(_forEnd.top())); // jump to for end
   } else {
-    throw "break outside 'for' loop";
+    throw std::string("break outside 'for' loop");
   }
 }
 
@@ -669,7 +671,7 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
         _pf.LOCAL(symbol->offset());
         _pf.STDOUBLE();
       } else {
-        throw "cannot initialize";
+        throw std::string("cannot initialize");
       }
     }
   } else {
@@ -699,7 +701,7 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
           cdk::double_node ddi(dclini->lineno(), dclini->value());
           ddi.accept(this, lvl);
         } else {
-          throw "bad initializer for real value";
+          throw std::string("bad initializer for real value");
         }
       } else {
         node->initializer()->accept(this, lvl); //TODO: compare with gr8 because of string alloc
