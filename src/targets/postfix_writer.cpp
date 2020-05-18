@@ -394,7 +394,7 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
     _pf.LEAVE();
     _pf.RET();
   }
-  _function == nullptr;
+  _function = nullptr;
 
 
   // these are just a few library function imports
@@ -466,7 +466,7 @@ void og::postfix_writer::do_evaluation_node(og::evaluation_node * const node, in
   } else if (node->argument()->is_typed(cdk::TYPE_DOUBLE)) {
     _pf.TRASH(8);
   } else if (node->argument()->is_typed(cdk::TYPE_VOID)) {
-    // EMPTY 
+    // EMPTY
   } else {
     std::cerr << "ERROR: CANNOT HAPPEN!" << std::endl;
     exit(1);
@@ -545,7 +545,7 @@ void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
   _symtab.push();
   ASSERT_SAFE_EXPRESSIONS;
   _symtab.pop();
-  
+
   int lblini, lblincr, lblend;
   _forIni.push(lblini = ++_lbl);
   _forIncr.push(lblincr = ++_lbl);

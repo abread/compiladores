@@ -129,7 +129,7 @@ proc : qualifier void_t tIDENTIFIER '('      ')'       { $$ = new og::function_d
 type : tINTD                    { $$ = new cdk::primitive_type(4, cdk::TYPE_INT); }
      | tREALD                   { $$ = new cdk::primitive_type(8, cdk::TYPE_DOUBLE); }
      | tSTRINGD                 { $$ = new cdk::primitive_type(4, cdk::TYPE_STRING); }
-     | tPTR    '<' type  '>'    { $$ = $3;
+     | tPTR    '<' type  '>'    {
           if ($3->name() == cdk::TYPE_POINTER && ((cdk::reference_type*)$3)->referenced()->name() == cdk::TYPE_VOID) {
                $$ = $3;
           } else {
