@@ -34,6 +34,7 @@ const TypeCompatOptions DEFAULT_TYPE_COMPAT = TypeCompatOptions();
 const TypeCompatOptions GENERALIZE_TYPE_COMPAT = TypeCompatOptions(true, true, true, true, true);
 const TypeCompatOptions ASSIGNMENT_TYPE_COMPAT = TypeCompatOptions(false, true, false, true, false);
 const TypeCompatOptions INITIALIZER_TYPE_COMPAT = TypeCompatOptions(false, true, true, true, false);
+const TypeCompatOptions DECL_TYPE_COMPAT = TypeCompatOptions(false, false, true, false, false);
 
 static std::shared_ptr<cdk::basic_type> compatible_types(std::shared_ptr<cdk::basic_type> a, std::shared_ptr<cdk::basic_type> b, TypeCompatOptions opts);
 
@@ -441,7 +442,10 @@ std::shared_ptr<og::symbol> og::type_checker::declare_function(T *const node, in
 
   auto old_sym = _symtab.find_local(id);
   if (old_sym) {
-    if (old_sym->type() != sym->type() || old_sym->argsType() != sym->argsType() || old_sym->qualifier() != sym->qualifier()) {
+    if (!compatible_types(old_sym->type(), sym->type(), DECL_TYPE_COMPAT)
+        || !compatible_types(old_sym->argsType(), sym->argsType(), DECL_TYPE_COMPAT)
+        || !old_sym->qualifier() != sym->qualifier()
+        || old_sym->autoType() != sym->autoType()) {
       throw std::string("conflicting declarations for " + id);
     }
 
