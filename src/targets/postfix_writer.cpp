@@ -250,14 +250,11 @@ void og::postfix_writer::do_address_of_node(og::address_of_node * const node, in
 
 void og::postfix_writer::do_stack_alloc_node(og::stack_alloc_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  //TODO
-#if 0
   node->argument()->accept(this, lvl);
-  _pf.INT(3);
+  _pf.INT(3); // TODO: depends on size of the type
   _pf.SHTL();
   _pf.ALLOC(); // allocate
   _pf.SP();// put base pointer in stack
-#endif
 }
 
 void og::postfix_writer::do_nullptr_node(og::nullptr_node * const node, int lvl) {
@@ -286,28 +283,29 @@ void og::postfix_writer::do_variable_node(cdk::variable_node * const node, int l
 
 void og::postfix_writer::do_pointer_index_node(og::pointer_index_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  // TODO
-#if 0
   if (node->base()) {
     node->base()->accept(this, lvl);
   } else {
-    if (_function) {
+    if (_function) { //TODO what is this??
       _pf.LOCV(-_function->type()->size());
     } else {
       std::cerr << "FATAL: " << node->lineno() << ": trying to use return value outside function" << std::endl;
     }
   }
   node->index()->accept(this, lvl);
-  _pf.INT(3);
+  _pf.INT(3); //TODO: depends on size of the referenced type
   _pf.SHTL();
   _pf.ADD(); // add pointer and index
-#endif
 }
 
 void og::postfix_writer::do_rvalue_node(cdk::rvalue_node * const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS;
+  ASSERT_SAFE_EXPRESSIONS; //TODO: tuples
   node->lvalue()->accept(this, lvl);
-  _pf.LDINT(); // depends on type size
+  if (node->is_typed(cdk::TYPE_DOUBLE)) {
+    _pf.LDDOUBLE();
+  } else {
+    _pf.LDINT();
+  }
 }
 
 void og::postfix_writer::do_assignment_node(cdk::assignment_node * const node, int lvl) {
@@ -341,7 +339,7 @@ void og::postfix_writer::do_function_declaration_node(og::function_declaration_n
   //   return;
   // }
   //DAVID: FIXME: should be at the beginning
-  // _functions_to_declare.insert(name); //TODO: this
+  _functions_to_declare.insert(name); //TODO: this
 }
 
 
@@ -353,7 +351,7 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
   _symtab.push();
 
   auto name = fix_function_name(node->identifier());
-  // _functions_to_declare.erase(name); //TODO: this
+  _functions_to_declare.erase(name); //TODO: this
 
   _offset = 8;
   // declare args, and their respective scope
@@ -421,13 +419,23 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
   ASSERT_SAFE_EXPRESSIONS;
 
   auto name = fix_function_name(node->identifier());
+  std::shared_ptr<og::symbol> symbol = _symtab.find(node->identifier()); //TODO: new_symbol()?
 
   size_t argsSize = 0;
-  if (node->arguments()) { //TODO: convert doubles to integers in arguments....
+  auto argTypes = symbol->argsType()->components();
+  if (node->arguments()) {
     for (int ax = node->arguments()->size(); ax > 0; ax--) {
       cdk::expression_node *arg = dynamic_cast<cdk::expression_node*>(node->arguments()->element(ax - 1));
-      arg->accept(this, lvl + 2);
-      argsSize += arg->type()->size();
+      // convert ints to doubles in arguments
+      if (arg->is_typed(cdk::TYPE_INT) && argTypes[ax - 1]->name() == cdk::TYPE_DOUBLE) { //TODO: this could probably be cleaned up
+        cdk::integer_node *dclini = dynamic_cast<cdk::integer_node *>(arg);
+        cdk::double_node ddi(dclini->lineno(), dclini->value());
+        ddi.accept(this, lvl);
+        argsSize += ddi.type()->size();
+      } else {
+        arg->accept(this, lvl + 2);
+        argsSize += arg->type()->size();
+      }
     }
   }
   _pf.CALL(name);
@@ -435,7 +443,6 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
     _pf.TRASH(argsSize);
   }
 
-  std::shared_ptr<og::symbol> symbol = _symtab.find(node->identifier());
 
   if (symbol->is_typed(cdk::TYPE_INT) || symbol->is_typed(cdk::TYPE_POINTER) || symbol->is_typed(cdk::TYPE_STRING)) {
     _pf.LDFVAL32();
@@ -510,12 +517,15 @@ void og::postfix_writer::do_return_node(og::return_node * const node, int lvl) {
 }
 
 void og::postfix_writer::do_write_node(og::write_node * const node, int lvl) {
-  // TODO: handle newline flag
+  // TODO: handle newline flag and print EVERYTHING
   ASSERT_SAFE_EXPRESSIONS;
   node->argument()->accept(this, lvl); // determine the value to print
   if (node->argument()->is_typed(cdk::TYPE_INT)) {
     _pf.CALL("printi");
     _pf.TRASH(4); // delete the printed value
+  } else if (node->argument()->is_typed(cdk::TYPE_DOUBLE)) {
+    _pf.CALL("printd");
+    _pf.TRASH(8); // delete the printed value
   } else if (node->argument()->is_typed(cdk::TYPE_STRING)) {
     _pf.CALL("prints");
     _pf.TRASH(4); // delete the printed value's address

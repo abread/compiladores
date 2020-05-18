@@ -429,7 +429,7 @@ std::shared_ptr<og::symbol> og::type_checker::declare_function(T *const node, in
   int qualifier = node->qualifier();
   auto ret_type = node->type();
   auto id = node->identifier();
-  std::shared_ptr<cdk::basic_type> args_type;
+  std::shared_ptr<cdk::structured_type> args_type;
 
   // compute arguments type
   std::vector<std::shared_ptr<cdk::basic_type>> each_arg_type;

@@ -4,6 +4,7 @@
 #include <string>
 #include <memory>
 #include <cdk/types/basic_type.h>
+#include <cdk/types/structured_type.h>
 
 namespace og {
 
@@ -11,14 +12,14 @@ namespace og {
     int _qualifier;
     std::shared_ptr<cdk::basic_type> _type;
     std::string _name;
-    std::shared_ptr<cdk::basic_type> _argsType; // nullptr for variables
+    std::shared_ptr<cdk::structured_type> _argsType; // nullptr for variables
 
     int _offset = 0; // 0 means global
     bool _definedOrInitialized = false;
     bool _autoType; // tracks if function/variable was originally auto
 
   public:
-    symbol(int qualifier, std::shared_ptr<cdk::basic_type> type, const std::string &name, std::shared_ptr<cdk::basic_type> argsType = nullptr) :
+    symbol(int qualifier, std::shared_ptr<cdk::basic_type> type, const std::string &name, std::shared_ptr<cdk::structured_type> argsType = nullptr) :
         _qualifier(qualifier), _type(type), _name(name), _argsType(argsType) {
           _autoType = type->name() == cdk::TYPE_UNSPEC;
         }
@@ -60,7 +61,7 @@ namespace og {
     bool isVariable() const {
       return _argsType == nullptr;
     }
-    std::shared_ptr<cdk::basic_type> argsType() const {
+    std::shared_ptr<cdk::structured_type> argsType() const {
       return _argsType;
     }
     bool definedOrInitialized() const {
