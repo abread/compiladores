@@ -450,7 +450,7 @@ std::shared_ptr<og::symbol> og::type_checker::declare_function(T *const node, in
   if (old_sym) {
     if (!compatible_types(old_sym->type(), sym->type(), DECL_TYPE_COMPAT)
         || !compatible_types(old_sym->argsType(), sym->argsType(), DECL_TYPE_COMPAT)
-        || !old_sym->qualifier() != sym->qualifier()
+        || old_sym->qualifier() != sym->qualifier()
         || old_sym->autoType() != sym->autoType()) {
       throw std::string("conflicting declarations for " + id);
     }
