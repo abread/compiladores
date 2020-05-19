@@ -518,6 +518,8 @@ void og::postfix_writer::return_tuple(cdk::expression_node * expr, int lvl, int 
   auto tuple = dynamic_cast<og::tuple_node *>(expr);
   auto components = (cdk::structured_type_cast(expr->type()))->components();
 
+  // TODO return properly
+
   for (size_t ix = 0; ix < tuple->size(); ix++) {
     auto val = tuple->element(ix);
     if (val->is_typed(cdk::TYPE_STRUCT)) {
@@ -687,8 +689,15 @@ void og::postfix_writer::do_if_else_node(og::if_else_node * const node, int lvl)
 void og::postfix_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   auto elements = node->elements();
-  for (auto it = elements.rbegin(); it != elements.rend(); it++) {
-    (*it)->accept(this, lvl);
+  
+  if (_inFunctionBody) {
+    for (auto it = elements.rbegin(); it != elements.rend(); it++) {
+      (*it)->accept(this, lvl);
+    }
+  } else {
+    for (auto it = elements.begin(); it != elements.end(); it++) {
+      (*it)->accept(this, lvl);
+    }
   }
 }
 
@@ -706,6 +715,7 @@ void og::postfix_writer::set_declaration_offsets(og::variable_declaration_node *
       _offset -= typesize;
       offset = _offset;
     } else {
+      // cases like auto a, b = 1, 2.3
       auto tuple_initializer = dynamic_cast<og::tuple_node *>(node->initializer());
       for (size_t ix = 0; ix < ids.size(); ix++) {
         std::string& id = ids[ix];
@@ -733,23 +743,37 @@ void og::postfix_writer::set_declaration_offsets(og::variable_declaration_node *
   }
 }
 
+void og::postfix_writer::store_local(std::shared_ptr<cdk::basic_type> lvalType, std::shared_ptr<cdk::basic_type> rvalType, int offset) {
+  if (lvalType->name() == cdk::TYPE_INT || lvalType->name() == cdk::TYPE_STRING || lvalType->name() == cdk::TYPE_POINTER) {
+    _pf.LOCAL(offset);
+    _pf.STINT();
+  } else if (lvalType->name() == cdk::TYPE_DOUBLE) {
+    if (rvalType->name() == cdk::TYPE_INT) {
+      _pf.I2D();
+    }
+  
+    _pf.LOCAL(offset);
+    _pf.STDOUBLE();
+  } else if (lvalType->name() == cdk::TYPE_STRUCT) {
+    if (rvalType->name() != cdk::TYPE_STRUCT) ERROR("typechecker is dumb");
+
+    auto lvalStructType = cdk::structured_type_cast(lvalType);
+    auto rvalStructType = cdk::structured_type_cast(rvalType);
+
+    for (size_t i = 0; i < lvalStructType->length(); i++) {
+       store_local(lvalStructType->component(i), rvalStructType->component(i), offset);
+       offset += lvalStructType->component(i)->size();
+    }
+  } else {
+    ERROR("cannot initialize");
+  }
+}
+
 void og::postfix_writer::define_variable(std::string& id, cdk::expression_node * init, int qualifier, int lvl) {
   std::shared_ptr<symbol> symbol = _symtab.find(id);
-    if (_inFunctionBody) {
-      init->accept(this, lvl);
-      if (symbol->is_typed(cdk::TYPE_INT) || symbol->is_typed(cdk::TYPE_STRING) || symbol->is_typed(cdk::TYPE_POINTER) 
-      || symbol->is_typed(cdk::TYPE_STRUCT)) {
-        _pf.LOCAL(symbol->offset());
-        _pf.STINT();
-      } else if (symbol->is_typed(cdk::TYPE_DOUBLE)) {
-        if (init->is_typed(cdk::TYPE_INT)) {
-          _pf.I2D();
-        }
-        _pf.LOCAL(symbol->offset());
-        _pf.STDOUBLE();
-      } else {
-        ERROR("cannot initialize");
-      }
+  if (_inFunctionBody) {
+    init->accept(this, lvl);
+    store_local(symbol->type(), init->type(), symbol->offset());
   } else {
     if (qualifier == tREQUIRE) {
       _pf.EXTERN(id);
@@ -770,6 +794,8 @@ void og::postfix_writer::define_variable(std::string& id, cdk::expression_node *
           // allocate a double if the type is double
           //FIXME doesn't work
           cdk::integer_node *dclini = dynamic_cast<cdk::integer_node *>(init);
+          if (dclini == nullptr) ERROR("only literals are allowed in global variable initializers");
+
           cdk::double_node ddi(dclini->lineno(), dclini->value());
           ddi.accept(this, lvl);
         } else {
@@ -826,15 +852,15 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
 
 void og::postfix_writer::do_tuple_index_node(og::tuple_index_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  // TODO
   node->base()->accept(this, lvl);
+  auto components = (cdk::structured_type_cast(node->base()->type()))->components();
 
-
-  int index = node->index();
-
-//  for tipo->component():
-//      offset += component->size();
-
+  int offset = 0;
+  for (size_t ix = 0; ix < node->index()-1; ix++) {
+    offset += components[ix]->size();
+  }
+  _pf.INT(offset);
+  _pf.ADD();  
 }
 
 void og::postfix_writer::do_sizeof_node(og::sizeof_node *const node, int lvl) {
