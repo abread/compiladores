@@ -127,10 +127,8 @@ void og::frame_size_calculator::do_tuple_node(og::tuple_node * const node, int l
 }
 
 void og::frame_size_calculator::do_sequence_node(cdk::sequence_node * const node, int lvl) {
-  for (size_t i = 0; i < node->size(); i++) {
-    cdk::basic_node *n = node->node(i);
-    if (n == nullptr) break;
-    n->accept(this, lvl + 2);
+  for (auto child : node->nodes()) {
+    child->accept(this, lvl + 2);
   }
 }
 
