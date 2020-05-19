@@ -50,7 +50,7 @@ namespace og {
     void processIDBinaryExpression(cdk::binary_operation_node *const node, int lvl);
     void processIDComparison(cdk::binary_operation_node *const node, int lvl);
     void set_declaration_offsets(og::variable_declaration_node * const node);
-    void return_tuple(cdk::expression_node * expr, int lvl, int & offset);
+    void store_complex_ret(std::shared_ptr<cdk::basic_type> lvalType, std::shared_ptr<cdk::basic_type> rvalType, int offset);
     void define_variable(std::string& id, cdk::expression_node * init, int qualifier, int lvl);
     void store_local(std::shared_ptr<cdk::basic_type> lvalType, std::shared_ptr<cdk::basic_type> rvalType, int offset);
 

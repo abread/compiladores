@@ -514,52 +514,50 @@ void og::postfix_writer::do_block_node(og::block_node * const node, int lvl) {
   _symtab.pop();
 }
 
-void og::postfix_writer::return_tuple(cdk::expression_node * expr, int lvl, int & offset) {
-  auto tuple = dynamic_cast<og::tuple_node *>(expr);
-  auto components = (cdk::structured_type_cast(expr->type()))->components();
-
-  // TODO return properly
-
-  for (size_t ix = 0; ix < tuple->size(); ix++) {
-    auto val = tuple->element(ix);
-    if (val->is_typed(cdk::TYPE_STRUCT)) {
-      return_tuple(val, lvl, offset);
-      offset += components[ix]->size();
-      continue;
-    } else {
-      val->accept(this, lvl + 2);
-      offset += components[ix]->size();
-    }
-    _pf.LOCAL(8); // the address is here
-    _pf.LDINT();  // load the address
+void og::postfix_writer::store_complex_ret(std::shared_ptr<cdk::basic_type> lvalType, std::shared_ptr<cdk::basic_type> rvalType, int offset = 0) {
+  if (lvalType->name() == cdk::TYPE_INT || lvalType->name() == cdk::TYPE_STRING || lvalType->name() == cdk::TYPE_POINTER) {
+    _pf.LOCV(8);
     _pf.INT(offset);
     _pf.ADD();
-
-    if (expr->is_typed(cdk::TYPE_DOUBLE)) {
-      _pf.STDOUBLE();
-    } else {
-      _pf.STINT();
+    _pf.STINT();
+  } else if (lvalType->name() == cdk::TYPE_DOUBLE) {
+    if (rvalType->name() == cdk::TYPE_INT) {
+      _pf.I2D();
     }
+  
+    _pf.LOCV(8);
+    _pf.INT(offset);
+    _pf.ADD();
+    _pf.STDOUBLE();
+  } else if (lvalType->name() == cdk::TYPE_STRUCT) {
+    if (rvalType->name() != cdk::TYPE_STRUCT) ERROR("typechecker is dumb");
+
+    auto lvalStructType = cdk::structured_type_cast(lvalType);
+    auto rvalStructType = cdk::structured_type_cast(rvalType);
+
+    for (size_t i = 0; i < lvalStructType->length(); i++) {
+       store_local(lvalStructType->component(i), rvalStructType->component(i), offset);
+       offset += lvalStructType->component(i)->size();
+    }
+  } else {
+    ERROR("cannot initialize");
   }
 }
 
 void og::postfix_writer::do_return_node(og::return_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  // TODO: tuples
   if (!_function->is_typed(cdk::TYPE_VOID)) {
+    node->retval()->accept(this, lvl + 2);
     if (_function->is_typed(cdk::TYPE_INT) || _function->is_typed(cdk::TYPE_STRING)
         || _function->is_typed(cdk::TYPE_POINTER)) {
-      node->retval()->accept(this, lvl + 2);
       _pf.STFVAL32();
     } else if (_function->is_typed(cdk::TYPE_DOUBLE)) {
-      node->retval()->accept(this, lvl + 2);
       if (node->retval()->is_typed(cdk::TYPE_INT)) {
         _pf.I2D();
       }
       _pf.STFVAL64();
     } else if (_function->is_typed(cdk::TYPE_STRUCT)) {
-      int offset = 0;
-      return_tuple(node->retval(), lvl, offset);
+      store_complex_ret(_function->type(), node->retval()->type());
     } else {
       // cannot happen!
       ERROR("ICE: unknown return type");
