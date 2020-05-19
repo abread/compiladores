@@ -650,7 +650,7 @@ void og::type_checker::do_tuple_node(og::tuple_node *const node, int lvl) {
   }
 }
 
-void og::type_checker::declare_var(int qualifier, std::shared_ptr<cdk::basic_type> typeHint, const std::string &id, std::shared_ptr<cdk::basic_type> initializerType = nullptr) {
+std::shared_ptr<og::symbol> og::type_checker::declare_var(int qualifier, std::shared_ptr<cdk::basic_type> typeHint, const std::string &id, std::shared_ptr<cdk::basic_type> initializerType = nullptr) {
   auto type = typeHint;
   if (initializerType != nullptr) {
     type = compatible_types(typeHint, initializerType, INITIALIZER_TYPE_COMPAT);
@@ -669,6 +669,8 @@ void og::type_checker::declare_var(int qualifier, std::shared_ptr<cdk::basic_typ
   } else {
     throw std::string("variable redeclaration: " + id);
   }
+
+  return sym;
 }
 
 void og::type_checker::do_variable_declaration_node(og::variable_declaration_node *const node, int lvl) {
@@ -700,8 +702,11 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
       initType = node->initializer()->type();
     }
 
-    declare_var(qualifier, typeHint, id, initType);
+    auto sym = declare_var(qualifier, typeHint, id, initType);
+    node->type(sym->type());
   } else {
+    std::vector<std::shared_ptr<cdk::basic_type>> compTypes(node->identifiers().size());
+
     for (size_t i = 0; i < node->identifiers().size(); i++) {
       auto id = node->identifiers()[i];
 
@@ -711,8 +716,11 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
         compInitType = initializerType->component(i);
       }
 
-      declare_var(qualifier, typeHint, id, compInitType);
+      auto sym = declare_var(qualifier, typeHint, id, compInitType);
+      compTypes[i] = sym->type();
     }
+
+    node->type(cdk::make_structured_type(compTypes));
   }
 }
 
