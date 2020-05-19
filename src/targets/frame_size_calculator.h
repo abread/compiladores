@@ -15,11 +15,14 @@ namespace og {
   class frame_size_calculator: public basic_ast_visitor {
     cdk::symbol_table<og::symbol> &_symtab;
 
+    // just so we can call ASSERT_SAFE_EXPRESSIONS
+    std::shared_ptr<og::symbol> _function;
+
     size_t _localsize;
 
   public:
-    frame_size_calculator(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<og::symbol> &symtab) :
-        basic_ast_visitor(compiler), _symtab(symtab), _localsize(0) {
+    frame_size_calculator(std::shared_ptr<cdk::compiler> compiler, std::shared_ptr<og::symbol> function, cdk::symbol_table<og::symbol> &symtab) :
+        basic_ast_visitor(compiler), _symtab(symtab), _function(function), _localsize(0) {
     }
 
   public:

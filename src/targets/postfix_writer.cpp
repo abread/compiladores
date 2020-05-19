@@ -377,7 +377,7 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
   }
   _pf.LABEL(name);
 
-  frame_size_calculator lsc(_compiler, _symtab);
+  frame_size_calculator lsc(_compiler, _function, _symtab);
   node->accept(&lsc, lvl);
   _pf.ENTER(lsc.localsize());
 

@@ -1,5 +1,6 @@
 #include <string>
 #include "targets/frame_size_calculator.h"
+#include "targets/type_checker.h"
 #include "targets/symbol.h"
 #include "ast/all.h"
 
@@ -157,7 +158,10 @@ void og::frame_size_calculator::do_if_else_node(og::if_else_node * const node, i
 }
 
 void og::frame_size_calculator::do_variable_declaration_node(og::variable_declaration_node * const node, int lvl) {
-  //TODO: tuples :(
+  _symtab.push(); // isolate any declarations from the outside world
+  ASSERT_SAFE_EXPRESSIONS;
+  _symtab.pop();
+
   _localsize += node->type()->size();
 }
 
