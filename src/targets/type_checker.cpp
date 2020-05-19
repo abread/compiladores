@@ -710,6 +710,11 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
     for (size_t i = 0; i < node->identifiers().size(); i++) {
       auto id = node->identifiers()[i];
 
+      if (node->is_typed(cdk::TYPE_STRUCT)) {
+        // fix typeHint
+        typeHint = cdk::structured_type_cast(node->type())->component(i);
+      }
+
       std::shared_ptr<cdk::basic_type> compInitType = nullptr;
       if (node->initializer()) {
         auto initializerType = cdk::structured_type_cast(node->initializer()->type());
