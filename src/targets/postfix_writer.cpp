@@ -9,6 +9,8 @@
 #include "og_parser.tab.h"
 #endif
 
+#define ERROR(MSG) { std::cerr << (MSG) << std::endl; exit(1); }
+
 static std::string fix_function_name(std::string name) {
   if (name == "og") {
     return "_main"; // entry point
@@ -301,9 +303,9 @@ void og::postfix_writer::do_rvalue_node(cdk::rvalue_node * const node, int lvl) 
   } else if (node->is_typed(cdk::TYPE_DOUBLE)) {
     _pf.LDDOUBLE();
   } else if (node->is_typed(cdk::TYPE_STRUCT)) {
-    throw std::string("tuples not supported like that yet");
+    ERROR("ICE: tuples not supported like that yet");
   } else {
-    throw std::string("Invalid type for rvalue node");
+    ERROR("ICE: Invalid type for rvalue node");
   }
 }
 
@@ -477,8 +479,7 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
     // EMPTY
   } else {
     // cannot happen!
-    std::cerr << "ICE(postfix_writer): unsupported function return type\n";
-    exit(1);
+    ERROR("ICE(postfix_writer): unsupported function return type");
   }
 }
 
@@ -497,8 +498,7 @@ void og::postfix_writer::do_evaluation_node(og::evaluation_node * const node, in
   } else if (node->argument()->is_typed(cdk::TYPE_VOID)) {
     // EMPTY
   } else {
-    std::cerr << "ERROR: CANNOT HAPPEN!" << std::endl;
-    exit(1);
+    ERROR("ICE(postfix_writer/evaluation_node): unknown type for expression");
   }
 }
 
@@ -560,8 +560,7 @@ void og::postfix_writer::do_return_node(og::return_node * const node, int lvl) {
       return_tuple(node->retval(), lvl, offset);
     } else {
       // cannot happen!
-      std::cerr << "ICE: unknown return type\n";
-      exit(1);
+      ERROR("ICE: unknown return type");
     }
   }
   _pf.LEAVE();
@@ -582,8 +581,7 @@ void og::postfix_writer::do_write_node(og::write_node * const node, int lvl) {
     _pf.CALL("prints");
     _pf.TRASH(4); // delete the printed value's address
   } else {
-    std::cerr << "ERROR: CANNOT HAPPEN!" << std::endl;
-    exit(1);
+    ERROR("ICE(postfix_writer/write_node): unkown type for write node");
   }
   if (node->newline()) {
     _pf.CALL("println"); // print a newline
@@ -649,7 +647,7 @@ void og::postfix_writer::do_continue_node(og::continue_node * const node, int lv
   if (_forIni.size() != 0) {
     _pf.JMP(mklbl(_forIncr.top())); // jump to next cycle
   } else {
-    throw std::string("continue outside 'for' loop");
+    ERROR("continue outside 'for' loop");
   }
 }
 
@@ -657,7 +655,7 @@ void og::postfix_writer::do_break_node(og::break_node * const node, int lvl) {
   if (_forIni.size() != 0) {
     _pf.JMP(mklbl(_forEnd.top())); // jump to for end
   } else {
-    throw std::string("break outside 'for' loop");
+    ERROR("break outside 'for' loop");
   }
 }
 
@@ -717,7 +715,7 @@ void og::postfix_writer::set_declaration_offsets(og::variable_declaration_node *
         if (symbol) {
           symbol->set_offset(_offset);
         } else {
-          throw std::string("SHOULD NOT HAPPEN");
+          ERROR("SHOULD NOT HAPPEN");
         }
       }
       reset_new_symbol();
@@ -731,7 +729,7 @@ void og::postfix_writer::set_declaration_offsets(og::variable_declaration_node *
     symbol->set_offset(offset);
     reset_new_symbol();
   } else {
-    throw std::string("SHOULD NOT HAPPEN");
+    ERROR("SHOULD NOT HAPPEN");
   }
 }
 
@@ -750,7 +748,7 @@ void og::postfix_writer::define_variable(std::string& id, cdk::expression_node *
         _pf.LOCAL(symbol->offset());
         _pf.STDOUBLE();
       } else {
-        throw std::string("cannot initialize");
+        ERROR("cannot initialize");
       }
   } else {
     if (qualifier == tREQUIRE) {
@@ -775,7 +773,7 @@ void og::postfix_writer::define_variable(std::string& id, cdk::expression_node *
           cdk::double_node ddi(dclini->lineno(), dclini->value());
           ddi.accept(this, lvl);
         } else {
-          throw std::string("bad initializer for real value");
+          ERROR("bad initializer for real value");
         }
       } else {
         init->accept(this, lvl);

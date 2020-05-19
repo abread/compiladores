@@ -544,17 +544,19 @@ void og::type_checker::do_evaluation_node(og::evaluation_node *const node, int l
 
 void og::type_checker::do_block_node(og::block_node * const node, int lvl) {
   // HACK: run typechecker for function definition ahead of code generation
-  if (_typecheckingFunctionBody) _symtab.push();
+  if (_typecheckingFunctionBody) {
+    _symtab.push();
 
-  if (node->declarations()) {
-    node->declarations()->accept(this, lvl + 2);
+    if (node->declarations()) {
+      node->declarations()->accept(this, lvl + 2);
+    }
+
+    if (node->instructions()) {
+      node->instructions()->accept(this, lvl + 2);
+    }
+
+    _symtab.pop();
   }
-
-  if (node->instructions()) {
-    node->instructions()->accept(this, lvl + 2);
-  }
-
-  if (_typecheckingFunctionBody) _symtab.pop();
 }
 
 void og::type_checker::do_write_node(og::write_node *const node, int lvl) {
@@ -587,10 +589,20 @@ void og::type_checker::do_stack_alloc_node(og::stack_alloc_node * const node, in
 
 void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
   // HACK: run typechecker for function definition ahead of code generation
-  if (_typecheckingFunctionBody) _symtab.push();
+  if (_typecheckingFunctionBody) {
+    _symtab.push();
 
-  if (node->initializers()) {
-    node->initializers()->accept(this, lvl + 2);
+    if (node->initializers()) {
+      node->initializers()->accept(this, lvl + 2);
+    }
+    
+    if (node->increments()) {
+      node->increments()->accept(this, lvl + 2);
+    }
+
+    node->block()->accept(this, lvl + 2);
+
+    _symtab.pop();
   }
 
   if (node->conditions()) {
@@ -605,14 +617,6 @@ void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
       throw std::string("invalid type for for-loop conditions: " + cdk::to_string(t));
     }
   }
-
-  if (node->increments()) {
-    node->increments()->accept(this, lvl + 2);
-  }
-
-  node->block()->accept(this, lvl + 2);
-
-  if (_typecheckingFunctionBody) _symtab.pop();
 }
 
 
