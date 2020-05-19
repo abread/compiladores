@@ -164,7 +164,6 @@ void og::frame_size_calculator::do_variable_declaration_node(og::variable_declar
 }
 
 void og::frame_size_calculator::do_function_definition_node(og::function_definition_node * const node, int lvl) {
-  // _localsize += node->type()->size(); // save space for the function's return type
-  // TODO account if it's a tuple
+  // _localsize += node->type()->size(); // save space for the function's return type //FIXME ?
   node->block()->accept(this, lvl + 2);
 }
