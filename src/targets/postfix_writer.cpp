@@ -105,11 +105,11 @@ void og::postfix_writer::do_string_node(cdk::string_node * const node, int lvl) 
 
 void og::postfix_writer::do_neg_node(cdk::neg_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  node->argument()->accept(this, lvl); // determine the value
-  if (node->is_typed(cdk::TYPE_INT)) {
-    _pf.NEG();
-  } else if (node->argument()->is_typed(cdk::TYPE_DOUBLE)) {
+  node->argument()->accept(this, lvl);
+  if (node->is_typed(cdk::TYPE_DOUBLE)) {
     _pf.DNEG();
+  } else {
+    _pf.NEG();
   }
 }
 
@@ -173,6 +173,8 @@ void og::postfix_writer::do_add_node(cdk::add_node * const node, int lvl) {
 }
 void og::postfix_writer::do_sub_node(cdk::sub_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
+  // TODO: are pointers just ints? maybe uints?
+
   node->left()->accept(this, lvl);
   if (node->is_typed(cdk::TYPE_DOUBLE) && node->left()->is_typed(cdk::TYPE_INT)) {
     _pf.I2D();
@@ -272,7 +274,7 @@ void og::postfix_writer::do_nullptr_node(og::nullptr_node * const node, int lvl)
 void og::postfix_writer::do_variable_node(cdk::variable_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   const std::string &id = node->name();
-  auto symbol = _symtab.find(id);
+  auto symbol = _symtab.find(id); //TODO: new_symbol?
 
   if (symbol->global()) {
     _pf.ADDR(node->name());
@@ -381,7 +383,8 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
 
   _inFunctionBody = true;
 
-  _offset = -_function->type()->size();
+  // _offset = -_function->type()->size(); TODO: maybe?
+  _offset = 0;
   os() << "        ;; before body " << std::endl;
   node->block()->accept(this, lvl);
   os() << "        ;; after body " << std::endl;
@@ -643,81 +646,133 @@ void og::postfix_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
   }
 }
 
-void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_node *const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS; // declare variable with typechecker
+void og::postfix_writer::set_declaration_offsets(og::variable_declaration_node * const node) {
+  std::shared_ptr<og::symbol> symbol = new_symbol();
+  int offset, typesize = node->type()->size();
 
-  auto id = node->identifiers()[0]; //TODO: tuples :(
-  int offset = 0, typesize = node->type()->size();
-
-  if (_inFunctionBody) {
-    _offset -= typesize;
-    offset = _offset;
-  } else if (_inFunctionArgs) {
+  if (_inFunctionArgs) {
     offset = _offset;
     _offset += typesize;
-  } else {
+  } else if (_inFunctionBody) {
+    auto ids = node->identifiers();
+
+    if (!node->initializer() || ids.size() == 1) {
+      _offset -= typesize;
+      offset = _offset;
+    } else {
+      auto tuple_initializer = dynamic_cast<og::tuple_node *>(node->initializer());
+      for (size_t ix = 0; ix < ids.size(); ix++) {
+        std::string& id = ids[ix];
+        cdk::expression_node * init = tuple_initializer->element(ix);
+        symbol = _symtab.find(id);
+        _offset -= init->type()->size();
+        if (symbol) {
+          symbol->set_offset(_offset);
+        } else {
+          throw "SHOULD NOT HAPPEN";
+        }
+      }
+      reset_new_symbol();
+      return;
+    }
+  } else { // global
     offset = 0;
   }
 
-  std::shared_ptr<og::symbol> symbol = new_symbol();
   if (symbol) {
     symbol->set_offset(offset);
     reset_new_symbol();
+  } else {
+    throw "SHOULD NOT HAPPEN";
   }
+}
 
-  // do nothing with function arguments
-  if (_inFunctionArgs) {
-    return;
-  }
-
-  if (_inFunctionBody) {
-    if (node->initializer()) {
-      node->initializer()->accept(this, lvl);
-      if (node->is_typed(cdk::TYPE_INT) || node->is_typed(cdk::TYPE_STRING)
-          || node->is_typed(cdk::TYPE_POINTER)) {
+void og::postfix_writer::define_variable(std::string& id, cdk::expression_node * init, int qualifier, int lvl) {
+  std::shared_ptr<symbol> symbol = _symtab.find(id);
+    if (_inFunctionBody) {
+      init->accept(this, lvl);
+      int symbolType = symbol->type()->name();
+      if (symbolType == cdk::TYPE_INT || symbolType == cdk::TYPE_STRING || symbolType == cdk::TYPE_POINTER || symbolType == cdk::TYPE_STRUCT) {
         _pf.LOCAL(symbol->offset());
         _pf.STINT();
-      } else if (node->is_typed(cdk::TYPE_DOUBLE)) {
+      } else if (symbolType == cdk::TYPE_DOUBLE) {
+        if (init->is_typed(cdk::TYPE_INT)) {
+          _pf.I2D();
+        }
         _pf.LOCAL(symbol->offset());
         _pf.STDOUBLE();
       } else {
         throw std::string("cannot initialize");
       }
-    }
   } else {
-    if (node->qualifier() == tREQUIRE) {
+    if (qualifier == tREQUIRE) {
       _pf.EXTERN(id);
       return;
     }
 
-    if (node->initializer()) {
-      _pf.DATA();
-    } else {
-      _pf.BSS();
-    }
-
+    _pf.DATA();
     _pf.ALIGN();
-    if (node->qualifier() == tPUBLIC) {
+    if (qualifier == tPUBLIC) {
       _pf.GLOBAL(id, _pf.OBJ());
     }
     _pf.LABEL(id);
-    if (node->initializer()) {
-      if (node->is_typed(cdk::TYPE_DOUBLE)) {
-        if (node->initializer()->is_typed(cdk::TYPE_DOUBLE)) {
-          node->initializer()->accept(this, lvl);
-        } else if (node->initializer()->is_typed(cdk::TYPE_INT)) {
+    if (init) {
+      if (symbol->type()->name() == cdk::TYPE_DOUBLE) {
+        if (init->is_typed(cdk::TYPE_DOUBLE)) {
+          init->accept(this, lvl);
+        } else if (init->is_typed(cdk::TYPE_INT)) {
           // allocate a double if the type is double
-          cdk::integer_node *dclini = dynamic_cast<cdk::integer_node *>(node->initializer());
+          cdk::integer_node *dclini = dynamic_cast<cdk::integer_node *>(init);
           cdk::double_node ddi(dclini->lineno(), dclini->value());
           ddi.accept(this, lvl);
         } else {
           throw std::string("bad initializer for real value");
         }
       } else {
-        node->initializer()->accept(this, lvl); //TODO: compare with gr8 because of string alloc
+        init->accept(this, lvl);
       }
+    }
+  }
+}
+
+void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_node *const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS; // declare variable with typechecker
+
+  auto ids = node->identifiers();
+
+  set_declaration_offsets(node);
+  // do nothing with function arguments
+  if (_inFunctionArgs) {
+    return;
+  }
+
+  if (!node->initializer()) {
+    // tuples have to be initialized, so we can pick the first id
+    auto id = ids[0];
+    if (!_inFunctionBody) {
+      if (node->qualifier() == tREQUIRE) {
+        _pf.EXTERN(id);
+      } else {
+        _pf.BSS();
+        _pf.ALIGN();
+        _pf.SALLOC(node->type()->size());
+        if (node->qualifier() == tPUBLIC) {
+          _pf.GLOBAL(id, _pf.OBJ());
+        }
+        _pf.LABEL(id);
+      }
+    }
+  } else {
+    if (ids.size() == 1) {
+      // we have 1 id to a tuple (e.g.: auto a = 1, 2, 3)
+      define_variable(ids[0], node->initializer(), node->qualifier(), lvl);
     } else {
-      _pf.SALLOC(node->type()->size());
+      auto tuple_initializer = dynamic_cast<og::tuple_node *>(node->initializer()); //TODO: this cast isn't possible for functions
+      for (size_t ix = 0; ix < ids.size(); ix++) {
+        auto id = ids[ix];
+        cdk::expression_node * init = tuple_initializer->element(ix);
+        define_variable(id, init, node->qualifier(), lvl);
+      }
     }
   }
 }

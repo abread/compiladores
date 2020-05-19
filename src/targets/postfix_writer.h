@@ -49,6 +49,8 @@ namespace og {
 
     void processIDBinaryExpression(cdk::binary_operation_node *const node, int lvl);
     void processIDComparison(cdk::binary_operation_node *const node, int lvl);
+    void set_declaration_offsets(og::variable_declaration_node * const node);
+    void define_variable(std::string& id, cdk::expression_node * init, int qualifier, int lvl);
 
   public:
   // do not edit these lines
