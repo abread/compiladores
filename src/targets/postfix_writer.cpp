@@ -536,7 +536,7 @@ void og::postfix_writer::store_complex_ret(std::shared_ptr<cdk::basic_type> lval
     auto rvalStructType = cdk::structured_type_cast(rvalType);
 
     for (size_t i = 0; i < lvalStructType->length(); i++) {
-       store_local(lvalStructType->component(i), rvalStructType->component(i), offset);
+       store_complex_ret(lvalStructType->component(i), rvalStructType->component(i), offset);
        offset += lvalStructType->component(i)->size();
     }
   } else {
