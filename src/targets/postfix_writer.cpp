@@ -1,5 +1,6 @@
 #include <string>
 #include <sstream>
+#include <functional>
 #include "targets/type_checker.h"
 #include "targets/frame_size_calculator.h"
 #include "targets/postfix_writer.h"
@@ -290,23 +291,40 @@ void og::postfix_writer::do_pointer_index_node(og::pointer_index_node * const no
   ASSERT_SAFE_EXPRESSIONS;
   node->base()->accept(this, lvl);
   node->index()->accept(this, lvl);
-  _pf.INT(3); //TODO: depends on size of the referenced type
-  _pf.SHTL();
+  auto reftype = cdk::reference_type_cast(node->base()->type());
+  _pf.INT(reftype->referenced()->size());
+  _pf.MUL();
   _pf.ADD(); // add pointer and index
 }
 
-void og::postfix_writer::do_rvalue_node(cdk::rvalue_node * const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS; //TODO: tuples
-  node->lvalue()->accept(this, lvl);
-  if (node->is_typed(cdk::TYPE_INT) || node->is_typed(cdk::TYPE_STRING) || node->is_typed(cdk::TYPE_POINTER)) {
+void og::postfix_writer::load(std::shared_ptr<cdk::basic_type> type, std::function<void()> baseProducer, int offset = 0) {
+  if (type->name() == cdk::TYPE_INT || type->name() == cdk::TYPE_STRING || type->name() == cdk::TYPE_POINTER) {
+    baseProducer();
+    _pf.INT(offset);
+    _pf.ADD();
     _pf.LDINT();
-  } else if (node->is_typed(cdk::TYPE_DOUBLE)) {
+  } else if (type->name() == cdk::TYPE_DOUBLE) {
+    baseProducer();
+    _pf.INT(offset);
+    _pf.ADD();
     _pf.LDDOUBLE();
-  } else if (node->is_typed(cdk::TYPE_STRUCT)) {
-    ERROR("ICE: tuples not supported like that yet");
+  } else if (type->name() == cdk::TYPE_STRUCT) {
+    auto structType = cdk::structured_type_cast(type);
+
+    for (size_t i = 0; i < structType->length(); i++) {
+       load(structType->component(i), baseProducer, offset);
+       offset += structType->component(i)->size();
+    }
   } else {
     ERROR("ICE: Invalid type for rvalue node");
   }
+}
+
+void og::postfix_writer::do_rvalue_node(cdk::rvalue_node * const node, int lvl) {
+  os() << ";; rvalue_node start\n";
+  ASSERT_SAFE_EXPRESSIONS; //TODO: tuples
+  load(node->type(), [node, this, lvl]() { node->lvalue()->accept(this, lvl); });
+  os() << ";; rvalue_node end\n";
 }
 
 void og::postfix_writer::do_assignment_node(cdk::assignment_node * const node, int lvl) {
@@ -685,6 +703,7 @@ void og::postfix_writer::do_if_else_node(og::if_else_node * const node, int lvl)
 }
 
 void og::postfix_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
+  os() << ";; tuple_node start\n";
   ASSERT_SAFE_EXPRESSIONS;
   auto elements = node->elements();
   
@@ -697,6 +716,7 @@ void og::postfix_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
       (*it)->accept(this, lvl);
     }
   }
+  os() << ";; tuple_node end\n";
 }
 
 void og::postfix_writer::set_declaration_offsets(og::variable_declaration_node * const node) {

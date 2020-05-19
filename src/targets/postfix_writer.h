@@ -3,6 +3,7 @@
 
 #include "targets/basic_ast_visitor.h"
 
+#include <functional>
 #include <sstream>
 #include <stack>
 #include <set>
@@ -49,6 +50,7 @@ namespace og {
 
     void processIDBinaryExpression(cdk::binary_operation_node *const node, int lvl);
     void processIDComparison(cdk::binary_operation_node *const node, int lvl);
+    void load(std::shared_ptr<cdk::basic_type> type, std::function<void()> baseProducer, int offset);
     void set_declaration_offsets(og::variable_declaration_node * const node);
     void store_complex_ret(std::shared_ptr<cdk::basic_type> lvalType, std::shared_ptr<cdk::basic_type> rvalType, int offset);
     void define_variable(std::string& id, cdk::expression_node * init, int qualifier, int lvl);
