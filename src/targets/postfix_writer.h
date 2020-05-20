@@ -65,7 +65,7 @@ namespace og {
     void load(std::shared_ptr<cdk::basic_type> type, std::function<void()> baseSupplier, int offset = 0);
     void load(cdk::expression_node *const node, int lvl, int tempOffset = 0);
     void set_declaration_offsets(og::variable_declaration_node * const node);
-    void define_variable(const cdk::basic_node *node, const std::string& id, cdk::expression_node * init, int qualifier, int lvl);
+    void define_global_variable(const std::string& id, cdk::expression_node * init, int qualifier, int lvl);
     void store(std::shared_ptr<cdk::basic_type> lvalType, std::shared_ptr<cdk::basic_type> rvalType, std::function<void()> baseSupplier, int offset = 0);
 
   public:

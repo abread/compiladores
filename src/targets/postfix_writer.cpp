@@ -719,6 +719,10 @@ void og::postfix_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
     if (node->is_typed(cdk::TYPE_STRUCT)) {
       // alocate space in BSS for the whole tuple
       int tuple_base_addr = tempOffsetForNode(node);
+      if (tuple_base_addr == 0) {
+        std::cerr << "ICE(postfix_writer): Node was not assigned exclusive temporary storage for tuple_node\n";
+        exit(1);
+      }
 
       os() << ";; tuple_node load start\n";
       for (auto it = elements.rbegin(); it != elements.rend(); it++) {
@@ -756,12 +760,13 @@ void og::postfix_writer::set_declaration_offsets(og::variable_declaration_node *
       offset = _offset;
     } else {
       // cases like auto a, b = 1, 2.3
-      auto tuple_initializer = dynamic_cast<og::tuple_node *>(node->initializer());
+      auto rvalueType = cdk::structured_type_cast(node->initializer()->type());
+
       for (size_t ix = 0; ix < ids.size(); ix++) {
         std::string& id = ids[ix];
-        cdk::expression_node * init = tuple_initializer->element(ix);
+        auto compType = rvalueType->component(ix);
         symbol = _symtab.find(id);
-        _offset -= init->type()->size();
+        _offset -= compType->size();
         if (symbol) {
           symbol->set_offset(_offset);
         } else {
@@ -813,51 +818,36 @@ void og::postfix_writer::store(std::shared_ptr<cdk::basic_type> lvalType, std::s
   }
 }
 
-void og::postfix_writer::define_variable(const cdk::basic_node *node, const std::string& id, cdk::expression_node * init, int qualifier, int lvl) {
+void og::postfix_writer::define_global_variable(const std::string& id, cdk::expression_node * init, int qualifier, int lvl) {
+  if (qualifier == tREQUIRE) {
+    _pf.EXTERN(id);
+    return;
+  }
+
   std::shared_ptr<symbol> symbol = _symtab.find(id);
-  if (_inFunctionBody) {
-    init->accept(this, lvl);
-    if (init->is_typed(cdk::TYPE_STRUCT)) {
-      // store tuple base addr to use multiple times
-      int tuple_base_addr_location = tempOffsetForNode(node);
-      _pf.LOCAL(tuple_base_addr_location);
-      _pf.STINT();
 
-      load(init->type(), [this, tuple_base_addr_location]() { _pf.LOCV(tuple_base_addr_location); });
-    }
-
-    os() << ";; var_decl store start\n";
-    store(symbol->type(), init->type(), [this, symbol](){ _pf.LOCAL(symbol->offset()); });
-    os() << ";; var_decl store end\n";
-  } else {
-    if (qualifier == tREQUIRE) {
-      _pf.EXTERN(id);
-      return;
-    }
-
-    _pf.DATA();
-    _pf.ALIGN();
-    if (qualifier == tPUBLIC) {
-      _pf.GLOBAL(id, _pf.OBJ());
-    }
-    _pf.LABEL(id);
-    if (init) {
-      if (symbol->is_typed(cdk::TYPE_DOUBLE)) {
-        if (init->is_typed(cdk::TYPE_DOUBLE)) {
-          init->accept(this, lvl);
-        } else if (init->is_typed(cdk::TYPE_INT)) {
-          // allocate a double if the type is double
-          cdk::integer_node *dclini = dynamic_cast<cdk::integer_node *>(init);
-          if (dclini == nullptr) ERROR("only literals are allowed in global variable initializers");
-
-          cdk::double_node ddi(dclini->lineno(), dclini->value());
-          ddi.accept(this, lvl);
-        } else {
-          ERROR("bad initializer for real value");
-        }
-      } else {
+  _pf.DATA();
+  _pf.ALIGN();
+  if (qualifier == tPUBLIC) {
+    _pf.GLOBAL(id, _pf.OBJ());
+  }
+  _pf.LABEL(id);
+  if (init) {
+    if (symbol->is_typed(cdk::TYPE_DOUBLE)) {
+      if (init->is_typed(cdk::TYPE_DOUBLE)) {
         init->accept(this, lvl);
+      } else if (init->is_typed(cdk::TYPE_INT)) {
+        // allocate a double if the type is double
+        cdk::integer_node *dclini = dynamic_cast<cdk::integer_node *>(init);
+        if (dclini == nullptr) ERROR("only literals are allowed in global variable initializers");
+
+        cdk::double_node ddi(dclini->lineno(), dclini->value());
+        ddi.accept(this, lvl);
+      } else {
+        ERROR("bad initializer for real value");
       }
+    } else {
+      init->accept(this, lvl);
     }
   }
 }
@@ -874,15 +864,42 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
   }
 
   if (node->initializer()) {
-    if (ids.size() == 1) {
-      // we have 1 id to a tuple (e.g.: auto a = 1, 2, 3)
-      define_variable(node, ids[0], node->initializer(), node->qualifier(), lvl);
+    if (_inFunctionBody) {
+      load(node->initializer(), lvl, tempOffsetForNode(node));
+
+      if (ids.size() == 1) {
+        // we have 1 id to an expression (e.g.: auto a = 1, 2, 3)
+        auto id = ids[0];
+        auto type = node->initializer()->type();
+        std::shared_ptr<symbol> symbol = _symtab.find(id);
+
+        store(symbol->type(), type, [this, symbol](){ _pf.LOCAL(symbol->offset()); });
+      } else {
+        // we have n-ids to a n-tuple expression (e.g.: auto a, b, c = 1, 2, 3)
+
+        auto rvalType = cdk::structured_type_cast(node->initializer()->type());
+
+        for (size_t ix = 0; ix < ids.size(); ix++) {
+          auto type = rvalType->component(ix);
+          auto id = ids[ix];
+          std::shared_ptr<symbol> symbol = _symtab.find(id);
+
+          store(symbol->type(), type, [this, symbol](){ _pf.LOCAL(symbol->offset()); });
+        }
+      }
     } else {
-      auto tuple_initializer = dynamic_cast<og::tuple_node *>(node->initializer()); //TODO: this cast isn't possible for functions
-      for (size_t ix = 0; ix < ids.size(); ix++) {
-        auto id = ids[ix];
-        cdk::expression_node * init = tuple_initializer->element(ix);
-        define_variable(node, id, init, node->qualifier(), lvl);
+      if (ids.size() == 1) {
+        // we have 1 id to a tuple (e.g.: auto a = 1, 2, 3)
+        define_global_variable(ids[0], node->initializer(), node->qualifier(), lvl);
+      } else {
+        // we have n-ids to a n-tuple expression (e.g.: auto a, b, c = 1, 2, 3)
+        auto tuple_initializer = dynamic_cast<og::tuple_node *>(node->initializer());
+
+        for (size_t ix = 0; ix < ids.size(); ix++) {
+          auto id = node->identifiers()[ix];
+          auto init = tuple_initializer->element(ix);
+          define_global_variable(id, init, node->qualifier(), lvl);
+        }
       }
     }
   } else {
