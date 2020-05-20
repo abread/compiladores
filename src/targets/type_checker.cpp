@@ -757,22 +757,26 @@ void og::type_checker::do_tuple_index_node(og::tuple_index_node *const node, int
   ASSERT_UNSPEC;
   node->base()->accept(this, lvl + 2);
 
-  if (! node->base()->is_typed(cdk::TYPE_STRUCT)) {
-    throw std::string("tuple index base is not a tuple");
+  if (node->base()->is_typed(cdk::TYPE_STRUCT)) {
+    auto baseType = cdk::structured_type_cast(node->base()->type());
+
+    if (node->index() < 1) {
+      throw std::string("invalid tuple index. remember that it starts with 1");
+    }
+
+    if (node->index() > baseType->length()) {
+      throw std::string("tuple index too big");
+    }
+
+    size_t idx = node->index() - 1;
+    node->type(baseType->component(idx));
+  } else  {
+    if (node->index() != 1) {
+      throw std::string("invalid tuple index: you're trying to index a 1-tuple with a non-one index");
+    }
+
+    node->type(node->base()->type());
   }
-
-  auto baseType = cdk::structured_type_cast(node->base()->type());
-
-  if (node->index() < 1) {
-    throw std::string("invalid tuple index. remember that it starts with 1");
-  }
-
-  if (node->index() > baseType->length()) {
-    throw std::string("tuple index too big");
-  }
-
-  size_t idx = node->index() - 1;
-  node->type(baseType->component(idx));
 }
 
 void og::type_checker::do_sizeof_node(og::sizeof_node *const node, int lvl) {
