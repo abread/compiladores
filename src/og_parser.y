@@ -136,7 +136,7 @@ type : tINTD                    { $$ = new cdk::primitive_type(4, cdk::TYPE_INT)
                $$ = new cdk::reference_type(4, std::shared_ptr<cdk::basic_type>($3));
           }
      }
-     | tPTR    '<' tAUTO '>'    { $$ = new cdk::reference_type(4, cdk::make_primitive_type(0, cdk::TYPE_VOID)); }
+     | tPTR    '<' tAUTO '>'    { $$ = new cdk::reference_type(4, cdk::make_primitive_type(1, cdk::TYPE_VOID)); }
      ;
 
 
