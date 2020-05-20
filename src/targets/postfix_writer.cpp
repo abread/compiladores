@@ -526,18 +526,13 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
 
 void og::postfix_writer::do_evaluation_node(og::evaluation_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  // TODO: tuples
   node->argument()->accept(this, lvl); // determine the value
-  if (node->argument()->is_typed(cdk::TYPE_INT) || node->argument()->is_typed(cdk::TYPE_POINTER)) {
-    _pf.TRASH(4); // delete the evaluated value
-  } else if (node->argument()->is_typed(cdk::TYPE_STRING)) {
-    _pf.TRASH(4); // delete the evaluated value's address
-  } else if (node->argument()->is_typed(cdk::TYPE_DOUBLE)) {
-    _pf.TRASH(8);
-  } else if (node->argument()->is_typed(cdk::TYPE_VOID)) {
-    // EMPTY
+
+  if (node->argument()->is_typed(cdk::TYPE_STRUCT)) {
+    // tuples evaluate to an address
+    _pf.TRASH(4);
   } else {
-    ERROR("ICE(postfix_writer/evaluation_node): unknown type for expression");
+    _pf.TRASH(node->argument()->type()->size());
   }
 }
 
