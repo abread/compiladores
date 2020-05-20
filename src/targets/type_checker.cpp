@@ -758,7 +758,7 @@ void og::type_checker::do_tuple_index_node(og::tuple_index_node *const node, int
   node->base()->accept(this, lvl + 2);
 
   if (! node->base()->is_typed(cdk::TYPE_STRUCT)) {
-    throw std::string("tuple index base is not a tuple");
+    throw std::string("can't index 1-tuples");
   }
 
   auto baseType = cdk::structured_type_cast(node->base()->type());
