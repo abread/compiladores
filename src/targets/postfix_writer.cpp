@@ -417,20 +417,9 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
 
   // these are just a few library function imports
   if (name == "_main")  {
-    _pf.EXTERN("readi");
-    _pf.EXTERN("readd");
-    _pf.EXTERN("printi");
-    _pf.EXTERN("printd");
-    _pf.EXTERN("prints");
-    _pf.EXTERN("println");
-    _pf.EXTERN("argc");
-    _pf.EXTERN("argv");
-    _pf.EXTERN("envp");
+    for (auto ext : _functions_to_declare)
+      _pf.EXTERN(ext);
   }
-
-    // TODO: use extern on undefined functions
-    // for (std::string& s : _functions_to_declare)
-    //   _pf.EXTERN(s);
 }
 
 //---------------------------------------------------------------------------
@@ -587,21 +576,25 @@ void og::postfix_writer::do_return_node(og::return_node * const node, int lvl) {
 
 void og::postfix_writer::do_write_node(og::write_node * const node, int lvl) {
   // TODO: handle newline flag and print EVERYTHING
-  ASSERT_SAFE_EXPRESSIONS;
+  ASSERT_SAFE_EXPRESSIONS; //TODO: print structs
   node->argument()->accept(this, lvl); // determine the value to print
   if (node->argument()->is_typed(cdk::TYPE_INT)) {
+    _functions_to_declare.insert("printi");
     _pf.CALL("printi");
     _pf.TRASH(4); // delete the printed value
   } else if (node->argument()->is_typed(cdk::TYPE_DOUBLE)) {
+    _functions_to_declare.insert("printd");
     _pf.CALL("printd");
     _pf.TRASH(8); // delete the printed value
   } else if (node->argument()->is_typed(cdk::TYPE_STRING)) {
+    _functions_to_declare.insert("prints");
     _pf.CALL("prints");
     _pf.TRASH(4); // delete the printed value's address
   } else {
     ERROR("ICE(postfix_writer/write_node): unkown type for write node");
   }
   if (node->newline()) {
+    _functions_to_declare.insert("println");
     _pf.CALL("println"); // print a newline
   }
 }
@@ -612,6 +605,7 @@ void og::postfix_writer::do_write_node(og::write_node * const node, int lvl) {
 void og::postfix_writer::do_input_node(og::input_node * const node, int lvl) {
   // TODO: refactor to be an expression
   ASSERT_SAFE_EXPRESSIONS;
+  _functions_to_declare.insert("readi"); //TODO: this
   _pf.CALL("readi");
   _pf.LDFVAL32();
   _pf.STINT();
