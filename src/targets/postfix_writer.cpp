@@ -632,6 +632,8 @@ void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
   _forIncr.push(lblincr = ++_lbl);
   _forEnd.push(lblend = ++_lbl);
 
+  _symtab.push();
+
   if (node->initializers()) {
     node->initializers()->accept(this, lvl);
   }
@@ -667,6 +669,8 @@ void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
 
   _pf.JMP(mklbl(lblini));
   _pf.LABEL(mklbl(lblend));
+
+  _symtab.pop();
 
   _forIni.pop();
   _forIncr.pop();
