@@ -748,6 +748,12 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
     if (auto alloc = dynamic_cast<og::stack_alloc_node*>(node->initializer()); alloc && node->is_typed(cdk::TYPE_POINTER)) {
       alloc->type(node->type());
     }
+
+    // HACK: real a = input must work with doubles
+    // if this isn't here, input will return an int which will be converted to a double (when a is a double)
+    if (auto input = dynamic_cast<og::input_node*>(node->initializer()); input && node->is_typed(cdk::TYPE_DOUBLE)) {
+      input->type(node->type());
+    }
   } else {
     std::vector<std::shared_ptr<cdk::basic_type>> compTypes(node->identifiers().size());
 
