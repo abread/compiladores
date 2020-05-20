@@ -932,21 +932,17 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
 void og::postfix_writer::do_tuple_index_node(og::tuple_index_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   node->base()->accept(this, lvl);
+  auto components = (cdk::structured_type_cast(node->base()->type()))->components();
 
-  if (node->base()->is_typed(cdk::TYPE_STRUCT)) {
-    auto components = (cdk::structured_type_cast(node->base()->type()))->components();
-
-    int offset = 0;
-    for (size_t ix = 0; ix < node->index()-1; ix++) {
-      offset += components[ix]->size();
-    }
-
-    if (offset) {
-      _pf.INT(offset);
-      _pf.ADD();
-    }
+  int offset = 0;
+  for (size_t ix = 0; ix < node->index()-1; ix++) {
+    offset += components[ix]->size();
   }
-  // else: we're already good
+
+  if (offset) {
+    _pf.INT(offset);
+    _pf.ADD();
+  }
 }
 
 void og::postfix_writer::do_sizeof_node(og::sizeof_node *const node, int lvl) {
