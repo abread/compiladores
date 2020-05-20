@@ -461,7 +461,7 @@ std::shared_ptr<og::symbol> og::type_checker::declare_function(T *const node, in
     return old_sym;
   } else {
     _symtab.insert(id, sym);
-    if (!_typecheckingFunctionBody) _parent->set_new_symbol(sym);
+    if (!_typecheckingFunction) _parent->set_new_symbol(sym);
     return sym;
   }
 }
@@ -484,7 +484,7 @@ void og::type_checker::do_function_definition_node(og::function_definition_node 
 
   // ensure return type is known
   _function = sym;
-  _typecheckingFunctionBody = true;
+  _typecheckingFunction = true;
   _symtab.push();
 
   if (node->arguments()) {
@@ -494,7 +494,7 @@ void og::type_checker::do_function_definition_node(og::function_definition_node 
   node->block()->accept(this, lvl+2);
 
   _symtab.pop();
-  _typecheckingFunctionBody = false;
+  _typecheckingFunction = false;
   _function = nullptr;
 
   // TODO: what if there's still nothing returned? void? confirm
@@ -546,7 +546,7 @@ void og::type_checker::do_evaluation_node(og::evaluation_node *const node, int l
 
 void og::type_checker::do_block_node(og::block_node * const node, int lvl) {
   // HACK: run typechecker for function definition ahead of code generation
-  if (_typecheckingFunctionBody) {
+  if (_typecheckingFunction) {
     _symtab.push();
 
     if (node->declarations()) {
@@ -603,7 +603,7 @@ void og::type_checker::do_stack_alloc_node(og::stack_alloc_node * const node, in
 
 void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
   // HACK: run typechecker for function definition ahead of code generation
-  if (_typecheckingFunctionBody) _symtab.push();
+  if (_typecheckingFunction) _symtab.push();
 
   if (node->initializers()) {
     node->initializers()->accept(this, lvl + 2);
@@ -628,7 +628,7 @@ void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
 
   node->block()->accept(this, lvl + 2);
 
-  if (_typecheckingFunctionBody) _symtab.pop();
+  if (_typecheckingFunction) _symtab.pop();
 }
 
 
@@ -684,12 +684,28 @@ std::shared_ptr<og::symbol> og::type_checker::declare_var(int qualifier, std::sh
   }
 
   if (_symtab.insert(id, sym)) {
-    if (!_typecheckingFunctionBody) _parent->set_new_symbol(sym);
+    if (!_typecheckingFunction) _parent->set_new_symbol(sym);
   } else {
     throw std::string("variable redeclaration: " + id);
   }
 
   return sym;
+}
+
+static bool is_literal(cdk::expression_node *expr) {
+  if (auto tuple = dynamic_cast<og::tuple_node*>(expr)) {
+    for (auto el : tuple->elements()) {
+      if (!is_literal(static_cast<cdk::expression_node*>(el))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  return dynamic_cast<cdk::integer_node*>(expr) || \
+          dynamic_cast<cdk::string_node*>(expr) || \
+          dynamic_cast<cdk::double_node*>(expr) || \
+          dynamic_cast<og::nullptr_node*>(expr);
 }
 
 void og::type_checker::do_variable_declaration_node(og::variable_declaration_node *const node, int lvl) {
@@ -709,6 +725,10 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
         ) {
         throw std::string("number of identifiers does not match number of expressions");
       }
+
+    if (!_function && !is_literal(node->initializer())) {
+      throw std::string("global variable declarations may only be initialized with literals");
+    }
   }
 
   int qualifier = node->qualifier();

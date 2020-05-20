@@ -11,7 +11,7 @@ namespace og {
   class type_checker: public basic_ast_visitor {
     cdk::symbol_table<og::symbol> &_symtab;
     std::shared_ptr<og::symbol> _function;
-    bool _typecheckingFunctionBody = false;
+    bool _typecheckingFunction = false;
 
     basic_ast_visitor *_parent;
 
