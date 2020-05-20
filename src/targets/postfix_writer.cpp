@@ -720,8 +720,8 @@ void og::postfix_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
 
   os() << ";; tuple_node start\n";
   if (_inFunctionBody) {
-    if (node->is_typed(cdk::TYPE_STRUCT)) {
-      // alocate space in BSS for the whole tuple
+    if (node->size() > 1) { // implies TYPE_STRUCT, when there is only one element with TYPE_STRUCT we can just pass its value up
+      // store tuple in temp storage to allow indexing operations
       int tuple_base_addr = tempOffsetForNode(node);
       if (tuple_base_addr == 0) {
         std::cerr << "ICE(postfix_writer): Node was not assigned exclusive temporary storage for tuple_node\n";

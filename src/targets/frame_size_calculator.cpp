@@ -143,7 +143,7 @@ void og::frame_size_calculator::do_sizeof_node(og::sizeof_node * const node, int
 void og::frame_size_calculator::do_tuple_node(og::tuple_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
 
-  if (node->is_typed(cdk::TYPE_STRUCT)) {
+  if (node->size() > 1) { // implies TYPE_STRUCT, when size == 1 we can just pass whatever's inside as is
     _unsharedTempSizeTab[node] = node->type()->size();
   }
 
