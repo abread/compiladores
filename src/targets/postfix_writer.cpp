@@ -574,21 +574,26 @@ void og::postfix_writer::do_return_node(og::return_node * const node, int lvl) {
 void og::postfix_writer::do_write_node(og::write_node * const node, int lvl) {
   // TODO: handle newline flag and print EVERYTHING
   ASSERT_SAFE_EXPRESSIONS; //TODO: print structs
-  node->argument()->accept(this, lvl); // determine the value to print
-  if (node->argument()->is_typed(cdk::TYPE_INT)) {
-    _functions_to_declare.insert("printi");
-    _pf.CALL("printi");
-    _pf.TRASH(4); // delete the printed value
-  } else if (node->argument()->is_typed(cdk::TYPE_DOUBLE)) {
-    _functions_to_declare.insert("printd");
-    _pf.CALL("printd");
-    _pf.TRASH(8); // delete the printed value
-  } else if (node->argument()->is_typed(cdk::TYPE_STRING)) {
-    _functions_to_declare.insert("prints");
-    _pf.CALL("prints");
-    _pf.TRASH(4); // delete the printed value's address
-  } else {
-    ERROR("ICE(postfix_writer/write_node): unkown type for write node");
+  load(node->argument(), lvl, tempOffsetForNode(node)); // determine the value to print
+
+  for (auto node : node->argument()->elements()) {
+    auto expr = static_cast<cdk::expression_node*>(node);
+
+    if (expr->is_typed(cdk::TYPE_INT)) {
+      _functions_to_declare.insert("printi");
+      _pf.CALL("printi");
+      _pf.TRASH(4); // delete the printed value
+    } else if (expr->is_typed(cdk::TYPE_DOUBLE)) {
+      _functions_to_declare.insert("printd");
+      _pf.CALL("printd");
+      _pf.TRASH(8); // delete the printed value
+    } else if (expr->is_typed(cdk::TYPE_STRING)) {
+      _functions_to_declare.insert("prints");
+      _pf.CALL("prints");
+      _pf.TRASH(4); // delete the printed value's address
+    } else {
+      ERROR("ICE(postfix_writer/write_node): unkown type for write node");
+    }
   }
   if (node->newline()) {
     _functions_to_declare.insert("println");

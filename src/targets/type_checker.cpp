@@ -563,6 +563,18 @@ void og::type_checker::do_block_node(og::block_node * const node, int lvl) {
 
 void og::type_checker::do_write_node(og::write_node *const node, int lvl) {
   node->argument()->accept(this, lvl + 2);
+
+  if (node->argument()->is_typed(cdk::TYPE_STRUCT)) {
+    auto type = cdk::structured_type_cast(node->argument()->type());
+
+    for (auto comp : type->components()) {
+      if (comp->name() != cdk::TYPE_INT && comp->name() != cdk::TYPE_DOUBLE && comp->name() != cdk::TYPE_STRING) {
+        throw std::string("invalid expression type in write statement");
+      }
+    }
+  } else if (!node->argument()->is_typed(cdk::TYPE_INT) && !node->argument()->is_typed(cdk::TYPE_DOUBLE) && !node->argument()->is_typed(cdk::TYPE_STRING)) {
+    throw std::string("invalid expression type in write statement");
+  }
 }
 
 //---------------------------------------------------------------------------
