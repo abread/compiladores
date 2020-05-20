@@ -462,7 +462,7 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
 
     }
   }
-
+;
   if (return_struct) {
     _pf.ADDR(mklbl(_lbl));
   }
@@ -597,12 +597,16 @@ void og::postfix_writer::do_write_node(og::write_node * const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_input_node(og::input_node * const node, int lvl) {
-  // TODO: refactor to be an expression
   ASSERT_SAFE_EXPRESSIONS;
-  _functions_to_declare.insert("readi"); //TODO: this
-  _pf.CALL("readi");
-  _pf.LDFVAL32();
-  _pf.STINT();
+  if (node->is_typed(cdk::TYPE_INT)) {
+    _functions_to_declare.insert("readd");
+    _pf.CALL("readd");
+    _pf.LDFVAL64();
+  } else {
+    _functions_to_declare.insert("readi");
+    _pf.CALL("readi");
+    _pf.LDFVAL32();
+  }
 }
 
 //---------------------------------------------------------------------------
