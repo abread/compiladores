@@ -176,7 +176,6 @@ void og::postfix_writer::do_add_node(cdk::add_node * const node, int lvl) {
 }
 void og::postfix_writer::do_sub_node(cdk::sub_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  // TODO: are pointers just ints? maybe uints?
 
   node->left()->accept(this, lvl);
   if (node->is_typed(cdk::TYPE_DOUBLE) && node->left()->is_typed(cdk::TYPE_INT)) {
@@ -248,8 +247,6 @@ void og::postfix_writer::do_eq_node(cdk::eq_node * const node, int lvl) {
 
 void og::postfix_writer::do_address_of_node(og::address_of_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  // TODO: HMMMMMMMMMMMMMM
-  // since the argument is an lvalue, it is already an address
   node->lvalue()->accept(this, lvl + 2);
 }
 
@@ -264,8 +261,7 @@ void og::postfix_writer::do_stack_alloc_node(og::stack_alloc_node * const node, 
 }
 
 void og::postfix_writer::do_nullptr_node(og::nullptr_node * const node, int lvl) {
-  ASSERT_SAFE_EXPRESSIONS; // a pointer is a 32-bit integer
-  // TODO
+  ASSERT_SAFE_EXPRESSIONS;
   if (_inFunctionBody) {
     _pf.INT(0);
   } else {
