@@ -501,6 +501,8 @@ void og::type_checker::do_function_definition_node(og::function_definition_node 
   if (sym->is_typed(cdk::TYPE_UNSPEC)) {
     sym->type(cdk::make_primitive_type(0, cdk::TYPE_VOID));
   }
+
+  node->type(sym->type());
 }
 
 void og::type_checker::do_function_call_node(og::function_call_node *const node, int lvl) {
@@ -594,7 +596,7 @@ void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
   if (node->initializers()) {
     node->initializers()->accept(this, lvl + 2);
   }
-  
+
   if (node->conditions()) {
     node->conditions()->accept(this, lvl + 2);
     auto t = node->conditions()->type();
@@ -607,7 +609,7 @@ void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
       throw std::string("invalid type for for-loop conditions: " + cdk::to_string(t));
     }
   }
-  
+
   if (node->increments()) {
     node->increments()->accept(this, lvl + 2);
   }

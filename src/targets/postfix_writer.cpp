@@ -320,6 +320,23 @@ void og::postfix_writer::load(std::shared_ptr<cdk::basic_type> type, std::functi
   }
 }
 
+void og::postfix_writer::load(cdk::expression_node *const node, int lvl, int tempOffset) {
+    node->accept(this, lvl);
+
+    if (node->is_typed(cdk::TYPE_STRUCT)) {
+      int tuple_base_addr_location = tempOffset;
+      if (tuple_base_addr_location == 0) {
+        std::cerr << "ICE(postfix_writer): Node was not assigned exclusive temporary storage for load\n";
+        exit(1);
+      }
+
+      _pf.LOCAL(tuple_base_addr_location);
+      _pf.STINT();
+
+      load(node->type(), [this, tuple_base_addr_location]() { _pf.LOCV(tuple_base_addr_location); });
+    }
+}
+
 void og::postfix_writer::do_rvalue_node(cdk::rvalue_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   os() << ";; rvalue_node start\n";
@@ -364,10 +381,10 @@ void og::postfix_writer::do_function_declaration_node(og::function_declaration_n
 std::map<const cdk::basic_node*, int> calculate_unshared_temp_offsets(const og::frame_size_calculator &fsc) {
   std::map<const cdk::basic_node*, int> offsetTab;
 
-  int offset = - fsc.localsize() - fsc.calltempsize();
+  int offset = - fsc.localsize() - fsc.calltempsize() - fsc.returntempsize();
   for (auto& [node, tempsz] : fsc.unsharedTempSizeTab()) {
-    offsetTab.emplace(node, offset);
     offset -= tempsz;
+    offsetTab[node] = offset;
   }
 
   return offsetTab;
@@ -384,6 +401,11 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
   _functions_to_declare.erase(name);
 
   _offset = 8;
+  if (node->is_typed(cdk::TYPE_STRUCT)) {
+    // account for hidden first argument (return write pointer)
+    _offset += 4;
+  }
+
   // declare args, and their respective scope
   _symtab.push();
   if (node->arguments()) {
@@ -404,7 +426,9 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
 
   frame_size_calculator fsc(_compiler, _function, _symtab);
   node->accept(&fsc, lvl);
-  _callTempOffset = - fsc.localsize();
+  _callTempOffset = - fsc.localsize() - fsc.calltempsize();
+  if (fsc.returntempsize())
+    _returnTempOffset = _callTempOffset - fsc.returntempsize();
   _unsharedTempOffsetTab = calculate_unshared_temp_offsets(fsc);
 
   _pf.ENTER(fsc.localsize() + fsc.tempsize());
@@ -423,6 +447,8 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
     _pf.RET();
   }
   _function = nullptr;
+  _callTempOffset = 0;
+  _returnTempOffset = 0;
   _unsharedTempOffsetTab.clear();
 
 
@@ -525,7 +551,7 @@ void og::postfix_writer::do_block_node(og::block_node * const node, int lvl) {
 void og::postfix_writer::do_return_node(og::return_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   if (!_function->is_typed(cdk::TYPE_VOID)) {
-    node->retval()->accept(this, lvl + 2);
+    load(node->retval(), lvl, _returnTempOffset);
     if (_function->is_typed(cdk::TYPE_INT) || _function->is_typed(cdk::TYPE_STRING)
         || _function->is_typed(cdk::TYPE_POINTER)) {
       _pf.STFVAL32();

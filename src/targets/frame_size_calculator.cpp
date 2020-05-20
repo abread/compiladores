@@ -203,5 +203,11 @@ void og::frame_size_calculator::do_variable_declaration_node(og::variable_declar
 }
 
 void og::frame_size_calculator::do_function_definition_node(og::function_definition_node * const node, int lvl) {
+  //ASSERT_SAFE_EXPRESSIONS; // writer already called it
+
   node->block()->accept(this, lvl + 2);
+
+  if (node->is_typed(cdk::TYPE_STRUCT)) {
+    _returntempsize = 4; // will need to store a pointer to the top of the tuple
+  }
 }
