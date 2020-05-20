@@ -436,10 +436,11 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
   bool return_struct = node->is_typed(cdk::TYPE_STRUCT);
 
   if (return_struct) {
-    _pf.INT(node->type()->size());
-    _pf.ALLOC();
-    _pf.SP();
-    argsSize += 4;
+    _pf.DATA();
+    _pf.ALIGN();
+    _pf.LABEL(mklbl(++_lbl));
+    _pf.SALLOC(node->type()->size()); // save space for address
+    _pf.TEXT();
   }
 
   if (node->arguments()) {
@@ -449,7 +450,6 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
 
       if (return_struct && argTypes[ax - 1]->name() == cdk::TYPE_DOUBLE) {
         _pf.I2D(); // convert address to a double
-        // _pf.INT(0); might be architecture dependant
       }
       // convert ints to doubles in arguments
       arg->accept(this, lvl + 2);
@@ -460,18 +460,12 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
         argsSize += arg->type()->size();
       }
 
-      if (return_struct) {
-        if (argTypes[ax - 1]->name() == cdk::TYPE_DOUBLE) {
-          _pf.D2I();
-          _pf.SWAP64();
-          // _pf.TRASH(4); // trash the placeholder 0 for swapping doubles
-        } else {
-          _pf.SWAP32();
-        }
-      }
     }
   }
 
+  if (return_struct) {
+    _pf.ADDR(mklbl(_lbl));
+  }
   _pf.CALL(name);
   if (argsSize != 0) {
     _pf.TRASH(argsSize); // leaves the SP if the return is a struct
