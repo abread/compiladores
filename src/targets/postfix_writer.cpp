@@ -300,13 +300,17 @@ void og::postfix_writer::do_pointer_index_node(og::pointer_index_node * const no
 void og::postfix_writer::load(std::shared_ptr<cdk::basic_type> type, std::function<void()> baseProducer, int offset) {
   if (type->name() == cdk::TYPE_INT || type->name() == cdk::TYPE_STRING || type->name() == cdk::TYPE_POINTER) {
     baseProducer();
-    _pf.INT(offset);
-    _pf.ADD();
+    if (offset) {
+      _pf.INT(offset);
+      _pf.ADD();
+    }
     _pf.LDINT();
   } else if (type->name() == cdk::TYPE_DOUBLE) {
     baseProducer();
-    _pf.INT(offset);
-    _pf.ADD();
+    if (offset) {
+      _pf.INT(offset);
+      _pf.ADD();
+    }
     _pf.LDDOUBLE();
   } else if (type->name() == cdk::TYPE_STRUCT) {
     auto structType = cdk::structured_type_cast(type);
@@ -791,8 +795,10 @@ void og::postfix_writer::set_declaration_offsets(og::variable_declaration_node *
 void og::postfix_writer::store(std::shared_ptr<cdk::basic_type> lvalType, std::shared_ptr<cdk::basic_type> rvalType, std::function<void()> baseSupplier, int offset) {
   if (lvalType->name() == cdk::TYPE_INT || lvalType->name() == cdk::TYPE_STRING || lvalType->name() == cdk::TYPE_POINTER) {
     baseSupplier();
-    _pf.INT(offset);
-    _pf.ADD();
+    if (offset) {
+      _pf.INT(offset);
+      _pf.ADD();
+    }
     _pf.STINT();
   } else if (lvalType->name() == cdk::TYPE_DOUBLE) {
     if (rvalType->name() == cdk::TYPE_INT) {
@@ -800,8 +806,10 @@ void og::postfix_writer::store(std::shared_ptr<cdk::basic_type> lvalType, std::s
     }
 
     baseSupplier();
-    _pf.INT(offset);
-    _pf.ADD();
+    if (offset) {
+      _pf.INT(offset);
+      _pf.ADD();
+    }
     _pf.STDOUBLE();
   } else if (lvalType->name() == cdk::TYPE_STRUCT) {
     if (rvalType->name() != cdk::TYPE_STRUCT) ERROR("typechecker is dumb");
@@ -930,8 +938,11 @@ void og::postfix_writer::do_tuple_index_node(og::tuple_index_node *const node, i
   for (size_t ix = 0; ix < node->index()-1; ix++) {
     offset += components[ix]->size();
   }
-  _pf.INT(offset);
-  _pf.ADD();
+
+  if (offset) {
+    _pf.INT(offset);
+    _pf.ADD();
+  }
 }
 
 void og::postfix_writer::do_sizeof_node(og::sizeof_node *const node, int lvl) {
