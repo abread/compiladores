@@ -69,7 +69,7 @@ void og::frame_size_calculator::do_or_node(cdk::or_node * const node, int lvl) {
   // EMPTY
 }
 void og::frame_size_calculator::do_rvalue_node(cdk::rvalue_node * const node, int lvl) {
-  // EMPTY
+  node->lvalue()->accept(this, lvl);
 }
 void og::frame_size_calculator::do_string_node(cdk::string_node * const node, int lvl) {
   // EMPTY
@@ -78,10 +78,10 @@ void og::frame_size_calculator::do_sub_node(cdk::sub_node * const node, int lvl)
   // EMPTY
 }
 void og::frame_size_calculator::do_evaluation_node(og::evaluation_node * const node, int lvl) {
-  // EMPTY
+  node->argument()->accept(this, lvl);
 }
 void og::frame_size_calculator::do_write_node(og::write_node * const node, int lvl) {
-  // EMPTY
+  node->argument()->accept(this, lvl);
 }
 void og::frame_size_calculator::do_input_node(og::input_node * const node, int lvl) {
   // EMPTY
@@ -90,13 +90,17 @@ void og::frame_size_calculator::do_address_of_node(og::address_of_node * const n
   // EMPTY
 }
 void og::frame_size_calculator::do_function_call_node(og::function_call_node * const node, int lvl) {
-  // EMPTY
+  ASSERT_SAFE_EXPRESSIONS;
+
+  if (node->is_typed(cdk::TYPE_STRUCT)) {
+    _calltempsize = std::max(_calltempsize, node->type()->size());
+  }
 }
 void og::frame_size_calculator::do_function_declaration_node(og::function_declaration_node * const node, int lvl) {
   // EMPTY
 }
 void og::frame_size_calculator::do_tuple_index_node(og::tuple_index_node * const node, int lvl) {
-  // EMPTY
+  node->base()->accept(this, lvl);
 }
 void og::frame_size_calculator::do_continue_node(og::continue_node * const node, int lvl) {
   // EMPTY
@@ -105,7 +109,7 @@ void og::frame_size_calculator::do_nullptr_node(og::nullptr_node * const node, i
   // EMPTY
 }
 void og::frame_size_calculator::do_return_node(og::return_node * const node, int lvl) {
-  // EMPTY
+  if (node->retval()) node->retval()->accept(this, lvl);
 }
 void og::frame_size_calculator::do_stack_alloc_node(og::stack_alloc_node * const node, int lvl) {
   // EMPTY
@@ -120,10 +124,14 @@ void og::frame_size_calculator::do_pointer_index_node(og::pointer_index_node * c
   // EMPTY
 }
 void og::frame_size_calculator::do_sizeof_node(og::sizeof_node * const node, int lvl) {
-  // EMPTY
+  node->arguments()->accept(this, lvl);
 }
 void og::frame_size_calculator::do_tuple_node(og::tuple_node * const node, int lvl) {
-  // EMPTY
+  ASSERT_SAFE_EXPRESSIONS;
+
+  if (node->is_typed(cdk::TYPE_STRUCT)) {
+    _unsharedTempSizeTab[node] = node->type()->size();
+  }
 }
 
 void og::frame_size_calculator::do_sequence_node(cdk::sequence_node * const node, int lvl) {
@@ -138,9 +146,16 @@ void og::frame_size_calculator::do_block_node(og::block_node * const node, int l
 }
 
 void og::frame_size_calculator::do_for_node(og::for_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
+
   if (node->initializers()) {
     node->initializers()->accept(this, lvl + 2);
   }
+
+  if (node->conditions()->is_typed(cdk::TYPE_STRUCT)) {
+    _unsharedTempSizeTab[node] = 4; // will need to store a pointer to the top of the struct
+  }
+
   if (node->block()) {
     node->block()->accept(this, lvl + 2);
   }
@@ -160,14 +175,17 @@ void og::frame_size_calculator::do_variable_declaration_node(og::variable_declar
   ASSERT_SAFE_EXPRESSIONS;
   _symtab.pop();
 
+  _localsize += node->type()->size();
+
   if (node->is_typed(cdk::TYPE_STRUCT)) {
-    _localsize += 4; // we only store an address in the frame
-  } else {
-    _localsize += node->type()->size();
+    _unsharedTempSizeTab[node] = 4; // will need to store a pointer to the top of the struct
+  }
+
+  if (node->initializer()) {
+    node->initializer()->accept(this, lvl);
   }
 }
 
 void og::frame_size_calculator::do_function_definition_node(og::function_definition_node * const node, int lvl) {
-  // _localsize += node->type()->size(); // save space for the function's return type //FIXME ?
   node->block()->accept(this, lvl + 2);
 }

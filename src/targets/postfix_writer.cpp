@@ -361,6 +361,17 @@ void og::postfix_writer::do_function_declaration_node(og::function_declaration_n
   _functions_to_declare.insert(name);
 }
 
+std::map<const cdk::basic_node*, int> calculate_unshared_temp_offsets(const og::frame_size_calculator &fsc) {
+  std::map<const cdk::basic_node*, int> offsetTab;
+
+  int offset = - fsc.localsize() - fsc.calltempsize();
+  for (auto& [node, tempsz] : fsc.unsharedTempSizeTab()) {
+    offsetTab.emplace(node, offset);
+    offset -= tempsz;
+  }
+
+  return offsetTab;
+}
 
 void og::postfix_writer::do_function_definition_node(og::function_definition_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
@@ -391,9 +402,12 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
   }
   _pf.LABEL(name);
 
-  frame_size_calculator lsc(_compiler, _function, _symtab);
-  node->accept(&lsc, lvl);
-  _pf.ENTER(lsc.localsize());
+  frame_size_calculator fsc(_compiler, _function, _symtab);
+  node->accept(&fsc, lvl);
+  _callTempOffset = - fsc.localsize();
+  _unsharedTempOffsetTab = calculate_unshared_temp_offsets(fsc);
+
+  _pf.ENTER(fsc.localsize() + fsc.tempsize());
 
   _inFunctionBody = true;
 
@@ -409,6 +423,7 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
     _pf.RET();
   }
   _function = nullptr;
+  _unsharedTempOffsetTab.clear();
 
 
   // these are just a few library function imports
@@ -431,16 +446,6 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
 
   bool return_struct = node->is_typed(cdk::TYPE_STRUCT);
 
-  int return_tuple_label = _lbl;
-
-  if (return_struct) {
-    _pf.BSS();
-    _pf.ALIGN();
-    _pf.LABEL(mklbl(return_tuple_label = ++_lbl));
-    _pf.SALLOC(node->type()->size()); // save space for tupltuple
-    _pf.TEXT();
-  }
-
   if (node->arguments()) {
     for (int ax = node->arguments()->size(); ax > 0; ax--) {
 
@@ -462,13 +467,17 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
   }
 
   if (return_struct) {
-    _pf.ADDR(mklbl(return_tuple_label));
+    argsSize += 4;
+    _pf.LOCAL(_callTempOffset);
   }
   _pf.CALL(name);
   if (argsSize != 0) {
     _pf.TRASH(argsSize); // leaves the SP if the return is a struct
   }
 
+  if (return_struct) {
+    _pf.LOCAL(_callTempOffset);
+  }
 
   if (symbol->is_typed(cdk::TYPE_INT) || symbol->is_typed(cdk::TYPE_POINTER) || symbol->is_typed(cdk::TYPE_STRING)) {
     _pf.LDFVAL32();
@@ -597,17 +606,12 @@ void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
     node->conditions()->accept(this, lvl);
 
     if (node->conditions()->is_typed(cdk::TYPE_STRUCT)) {
-      // store tuple base addr to use multiple times
-      auto tuple_base_addr = mklbl(++_lbl);
-      _pf.BSS();
-      _pf.ALIGN();
-      _pf.LABEL(tuple_base_addr);
-      _pf.SALLOC(4);
-      _pf.TEXT();
-      _pf.ADDR(tuple_base_addr);
+      int tuple_base_addr_location = tempOffsetForNode(node);
+
+      _pf.LOCAL(tuple_base_addr_location);
       _pf.STINT();
 
-      load(node->conditions()->type(), [this, tuple_base_addr]() { _pf.ADDRV(tuple_base_addr); });
+      load(node->conditions()->type(), [this, tuple_base_addr_location]() { _pf.LOCV(tuple_base_addr_location); });
     }
   }
   _pf.JZ(mklbl(lblend));
@@ -680,22 +684,17 @@ void og::postfix_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
   if (_inFunctionBody) {
     if (node->is_typed(cdk::TYPE_STRUCT)) {
       // alocate space in BSS for the whole tuple
-      auto tuple_base_addr = mklbl(++_lbl);
-      _pf.BSS();
-      _pf.ALIGN();
-      _pf.LABEL(tuple_base_addr);
-      _pf.SALLOC(node->type()->size());
-      _pf.TEXT();
+      int tuple_base_addr = tempOffsetForNode(node);
 
       os() << ";; tuple_node load start\n";
       for (auto it = elements.rbegin(); it != elements.rend(); it++) {
         (*it)->accept(this, lvl);
       }
       os() << ";; tuple_node load end; store start\n";
-      store(node->type(), node->type(), [this, tuple_base_addr]() { _pf.ADDR(tuple_base_addr); });
+      store(node->type(), node->type(), [this, tuple_base_addr]() { _pf.LOCAL(tuple_base_addr); });
 
       // leave base address in stack
-      _pf.ADDR(tuple_base_addr);
+      _pf.LOCAL(tuple_base_addr);
     } else {
       // only 1 element
       node->element(0)->accept(this, lvl);
@@ -780,22 +779,17 @@ void og::postfix_writer::store(std::shared_ptr<cdk::basic_type> lvalType, std::s
   }
 }
 
-void og::postfix_writer::define_variable(std::string& id, cdk::expression_node * init, int qualifier, int lvl) {
+void og::postfix_writer::define_variable(const cdk::basic_node *node, const std::string& id, cdk::expression_node * init, int qualifier, int lvl) {
   std::shared_ptr<symbol> symbol = _symtab.find(id);
   if (_inFunctionBody) {
     init->accept(this, lvl);
     if (init->is_typed(cdk::TYPE_STRUCT)) {
       // store tuple base addr to use multiple times
-      auto tuple_base_addr = mklbl(++_lbl);
-      _pf.BSS();
-      _pf.ALIGN();
-      _pf.LABEL(tuple_base_addr);
-      _pf.SALLOC(4);
-      _pf.TEXT();
-      _pf.ADDR(tuple_base_addr);
+      int tuple_base_addr_location = tempOffsetForNode(node);
+      _pf.LOCAL(tuple_base_addr_location);
       _pf.STINT();
 
-      load(init->type(), [this, tuple_base_addr]() { _pf.ADDRV(tuple_base_addr); });
+      load(init->type(), [this, tuple_base_addr_location]() { _pf.LOCV(tuple_base_addr_location); });
     }
 
     os() << ";; var_decl store start\n";
@@ -848,13 +842,13 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
   if (node->initializer()) {
     if (ids.size() == 1) {
       // we have 1 id to a tuple (e.g.: auto a = 1, 2, 3)
-      define_variable(ids[0], node->initializer(), node->qualifier(), lvl);
+      define_variable(node, ids[0], node->initializer(), node->qualifier(), lvl);
     } else {
       auto tuple_initializer = dynamic_cast<og::tuple_node *>(node->initializer()); //TODO: this cast isn't possible for functions
       for (size_t ix = 0; ix < ids.size(); ix++) {
         auto id = ids[ix];
         cdk::expression_node * init = tuple_initializer->element(ix);
-        define_variable(id, init, node->qualifier(), lvl);
+        define_variable(node, id, init, node->qualifier(), lvl);
       }
     }
   } else {
