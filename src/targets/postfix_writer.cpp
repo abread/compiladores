@@ -903,6 +903,10 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
         // we have n-ids to a n-tuple expression (e.g.: auto a, b, c = 1, 2, 3)
         auto tuple_initializer = dynamic_cast<og::tuple_node *>(node->initializer());
 
+        // when parentheses are used aroud the n-tuple, it may be wrapped in multiple tuple_nodes
+        while (tuple_initializer->size() != ids.size())
+          tuple_initializer = dynamic_cast<og::tuple_node *>(tuple_initializer->element(0));
+
         for (size_t ix = 0; ix < ids.size(); ix++) {
           auto id = node->identifiers()[ix];
           auto init = tuple_initializer->element(ix);
