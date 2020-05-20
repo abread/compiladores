@@ -247,7 +247,7 @@ expr  : tINT                      { $$ = new cdk::integer_node(LINE, $1); }
 
 lval : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, *$1); delete $1; }
      | expr '[' expr ']'       { $$ = new og::pointer_index_node(LINE, $1, $3); }
-     | lval '@' tINT           { $$ = new og::tuple_index_node(LINE, $1, $3); }
+     | expr '@' tINT           { $$ = new og::tuple_index_node(LINE, $1, $3); }
      ;
 
 string : tSTRING              { $$ = $1; }
