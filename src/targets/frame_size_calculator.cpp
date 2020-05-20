@@ -160,7 +160,11 @@ void og::frame_size_calculator::do_variable_declaration_node(og::variable_declar
   ASSERT_SAFE_EXPRESSIONS;
   _symtab.pop();
 
-  _localsize += node->type()->size();
+  if (node->is_typed(cdk::TYPE_STRUCT)) {
+    _localsize += 4; // we only store an address in the frame
+  } else {
+    _localsize += node->type()->size();
+  }
 }
 
 void og::frame_size_calculator::do_function_definition_node(og::function_definition_node * const node, int lvl) {

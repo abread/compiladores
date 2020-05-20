@@ -297,7 +297,7 @@ void og::postfix_writer::do_pointer_index_node(og::pointer_index_node * const no
   _pf.ADD(); // add pointer and index
 }
 
-void og::postfix_writer::load(std::shared_ptr<cdk::basic_type> type, std::function<void()> baseProducer, int offset = 0) {
+void og::postfix_writer::load(std::shared_ptr<cdk::basic_type> type, std::function<void()> baseProducer, int offset) {
   if (type->name() == cdk::TYPE_INT || type->name() == cdk::TYPE_STRING || type->name() == cdk::TYPE_POINTER) {
     baseProducer();
     _pf.INT(offset);
@@ -321,9 +321,14 @@ void og::postfix_writer::load(std::shared_ptr<cdk::basic_type> type, std::functi
 }
 
 void og::postfix_writer::do_rvalue_node(cdk::rvalue_node * const node, int lvl) {
+  ASSERT_SAFE_EXPRESSIONS;
   os() << ";; rvalue_node start\n";
-  ASSERT_SAFE_EXPRESSIONS; //TODO: tuples
-  load(node->type(), [node, this, lvl]() { node->lvalue()->accept(this, lvl); });
+  if (node->lvalue()->is_typed(cdk::TYPE_STRUCT)) {
+    // delay getting value
+    node->lvalue()->accept(this, lvl);
+  } else {
+    load(node->type(), [node, this, lvl]() { node->lvalue()->accept(this, lvl); });
+  }
   os() << ";; rvalue_node end\n";
 }
 
@@ -353,12 +358,7 @@ void og::postfix_writer::do_function_declaration_node(og::function_declaration_n
   ASSERT_SAFE_EXPRESSIONS; // typechecker takes care of declaring functions
   auto name = fix_function_name(node->identifier());
 
-  // if (_inFunctionBody || _inFunctionArgs) { TODO: don't think this is even needed
-  //   error(node->lineno(), "cannot declare function in body or in args");
-  //   return;
-  // }
-  //DAVID: FIXME: should be at the beginning
-  _functions_to_declare.insert(name); //TODO: this
+  _functions_to_declare.insert(name);
 }
 
 
@@ -370,22 +370,19 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
   _symtab.push();
 
   auto name = fix_function_name(node->identifier());
-  _functions_to_declare.erase(name); //TODO: this
+  _functions_to_declare.erase(name);
 
   _offset = 8;
   // declare args, and their respective scope
   _symtab.push();
   if (node->arguments()) {
-    _inFunctionArgs = true; //FIXME really needed?
-    for (size_t ix = 0; ix < node->arguments()->size(); ix++) {
-        cdk::basic_node *arg = node->arguments()->node(ix);
-        if (arg == nullptr) break; //TODO: needed? The grammar probably won't allow this case
-        arg->accept(this, 0);
+    _inFunctionArgs = true;
+    for (auto arg : node->arguments()->nodes()) {
+      arg->accept(this, lvl);
     }
-    _inFunctionArgs = false; //FIXME really needed?
+    _inFunctionArgs = false;
   }
 
-  //TODO: adapt for all functions, watch out for qualifiers
   // generate the main function (RTS mandates that its name be "_main")
   _pf.TEXT();
   _pf.ALIGN();
@@ -400,7 +397,6 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
 
   _inFunctionBody = true;
 
-  // _offset = -_function->type()->size(); TODO: maybe?
   _offset = 0;
   os() << "        ;; before body " << std::endl;
   node->block()->accept(this, lvl);
@@ -417,7 +413,7 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
 
   // these are just a few library function imports
   if (name == "_main")  {
-    for (auto ext : _functions_to_declare)
+    for (std::string ext : _functions_to_declare)
       _pf.EXTERN(ext);
   }
 }
@@ -435,11 +431,13 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
 
   bool return_struct = node->is_typed(cdk::TYPE_STRUCT);
 
+  int return_tuple_label = _lbl;
+
   if (return_struct) {
-    _pf.DATA();
+    _pf.BSS();
     _pf.ALIGN();
-    _pf.LABEL(mklbl(++_lbl));
-    _pf.SALLOC(node->type()->size()); // save space for address
+    _pf.LABEL(mklbl(return_tuple_label = ++_lbl));
+    _pf.SALLOC(node->type()->size()); // save space for tupltuple
     _pf.TEXT();
   }
 
@@ -464,7 +462,7 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
   }
 
   if (return_struct) {
-    _pf.ADDR(mklbl(_lbl));
+    _pf.ADDR(mklbl(return_tuple_label));
   }
   _pf.CALL(name);
   if (argsSize != 0) {
@@ -515,36 +513,6 @@ void og::postfix_writer::do_block_node(og::block_node * const node, int lvl) {
   _symtab.pop();
 }
 
-void og::postfix_writer::store_complex_ret(std::shared_ptr<cdk::basic_type> lvalType, std::shared_ptr<cdk::basic_type> rvalType, int offset = 0) {
-  if (lvalType->name() == cdk::TYPE_INT || lvalType->name() == cdk::TYPE_STRING || lvalType->name() == cdk::TYPE_POINTER) {
-    _pf.LOCV(8);
-    _pf.INT(offset);
-    _pf.ADD();
-    _pf.STINT();
-  } else if (lvalType->name() == cdk::TYPE_DOUBLE) {
-    if (rvalType->name() == cdk::TYPE_INT) {
-      _pf.I2D();
-    }
-  
-    _pf.LOCV(8);
-    _pf.INT(offset);
-    _pf.ADD();
-    _pf.STDOUBLE();
-  } else if (lvalType->name() == cdk::TYPE_STRUCT) {
-    if (rvalType->name() != cdk::TYPE_STRUCT) ERROR("typechecker is dumb");
-
-    auto lvalStructType = cdk::structured_type_cast(lvalType);
-    auto rvalStructType = cdk::structured_type_cast(rvalType);
-
-    for (size_t i = 0; i < lvalStructType->length(); i++) {
-       store_complex_ret(lvalStructType->component(i), rvalStructType->component(i), offset);
-       offset += lvalStructType->component(i)->size();
-    }
-  } else {
-    ERROR("cannot initialize");
-  }
-}
-
 void og::postfix_writer::do_return_node(og::return_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   if (!_function->is_typed(cdk::TYPE_VOID)) {
@@ -558,7 +526,7 @@ void og::postfix_writer::do_return_node(og::return_node * const node, int lvl) {
       }
       _pf.STFVAL64();
     } else if (_function->is_typed(cdk::TYPE_STRUCT)) {
-      store_complex_ret(_function->type(), node->retval()->type());
+      store(_function->type(), node->retval()->type(), [this]() { _pf.LOCV(8); });
     } else {
       // cannot happen!
       ERROR("ICE: unknown return type");
@@ -627,6 +595,20 @@ void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
   os() << "        ;; FOR conditions" << std::endl; //TODO: there might be multiple conditions
   if (node->conditions()) {
     node->conditions()->accept(this, lvl);
+
+    if (node->conditions()->is_typed(cdk::TYPE_STRUCT)) {
+      // store tuple base addr to use multiple times
+      auto tuple_base_addr = mklbl(++_lbl);
+      _pf.BSS();
+      _pf.ALIGN();
+      _pf.LABEL(tuple_base_addr);
+      _pf.SALLOC(4);
+      _pf.TEXT();
+      _pf.ADDR(tuple_base_addr);
+      _pf.STINT();
+
+      load(node->conditions()->type(), [this, tuple_base_addr]() { _pf.ADDRV(tuple_base_addr); });
+    }
   }
   _pf.JZ(mklbl(lblend));
 
@@ -691,13 +673,32 @@ void og::postfix_writer::do_if_else_node(og::if_else_node * const node, int lvl)
 }
 
 void og::postfix_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
-  os() << ";; tuple_node start\n";
   ASSERT_SAFE_EXPRESSIONS;
   auto elements = node->elements();
-  
+
+  os() << ";; tuple_node start\n";
   if (_inFunctionBody) {
-    for (auto it = elements.rbegin(); it != elements.rend(); it++) {
-      (*it)->accept(this, lvl);
+    if (node->is_typed(cdk::TYPE_STRUCT)) {
+      // alocate space in BSS for the whole tuple
+      auto tuple_base_addr = mklbl(++_lbl);
+      _pf.BSS();
+      _pf.ALIGN();
+      _pf.LABEL(tuple_base_addr);
+      _pf.SALLOC(node->type()->size());
+      _pf.TEXT();
+
+      os() << ";; tuple_node load start\n";
+      for (auto it = elements.rbegin(); it != elements.rend(); it++) {
+        (*it)->accept(this, lvl);
+      }
+      os() << ";; tuple_node load end; store start\n";
+      store(node->type(), node->type(), [this, tuple_base_addr]() { _pf.ADDR(tuple_base_addr); });
+
+      // leave base address in stack
+      _pf.ADDR(tuple_base_addr);
+    } else {
+      // only 1 element
+      node->element(0)->accept(this, lvl);
     }
   } else {
     for (auto it = elements.begin(); it != elements.end(); it++) {
@@ -749,16 +750,20 @@ void og::postfix_writer::set_declaration_offsets(og::variable_declaration_node *
   }
 }
 
-void og::postfix_writer::store_local(std::shared_ptr<cdk::basic_type> lvalType, std::shared_ptr<cdk::basic_type> rvalType, int offset) {
+void og::postfix_writer::store(std::shared_ptr<cdk::basic_type> lvalType, std::shared_ptr<cdk::basic_type> rvalType, std::function<void()> baseSupplier, int offset) {
   if (lvalType->name() == cdk::TYPE_INT || lvalType->name() == cdk::TYPE_STRING || lvalType->name() == cdk::TYPE_POINTER) {
-    _pf.LOCAL(offset);
+    baseSupplier();
+    _pf.INT(offset);
+    _pf.ADD();
     _pf.STINT();
   } else if (lvalType->name() == cdk::TYPE_DOUBLE) {
     if (rvalType->name() == cdk::TYPE_INT) {
       _pf.I2D();
     }
-  
-    _pf.LOCAL(offset);
+
+    baseSupplier();
+    _pf.INT(offset);
+    _pf.ADD();
     _pf.STDOUBLE();
   } else if (lvalType->name() == cdk::TYPE_STRUCT) {
     if (rvalType->name() != cdk::TYPE_STRUCT) ERROR("typechecker is dumb");
@@ -767,7 +772,7 @@ void og::postfix_writer::store_local(std::shared_ptr<cdk::basic_type> lvalType, 
     auto rvalStructType = cdk::structured_type_cast(rvalType);
 
     for (size_t i = 0; i < lvalStructType->length(); i++) {
-       store_local(lvalStructType->component(i), rvalStructType->component(i), offset);
+       store(lvalStructType->component(i), rvalStructType->component(i), baseSupplier, offset);
        offset += lvalStructType->component(i)->size();
     }
   } else {
@@ -779,7 +784,23 @@ void og::postfix_writer::define_variable(std::string& id, cdk::expression_node *
   std::shared_ptr<symbol> symbol = _symtab.find(id);
   if (_inFunctionBody) {
     init->accept(this, lvl);
-    store_local(symbol->type(), init->type(), symbol->offset());
+    if (init->is_typed(cdk::TYPE_STRUCT)) {
+      // store tuple base addr to use multiple times
+      auto tuple_base_addr = mklbl(++_lbl);
+      _pf.BSS();
+      _pf.ALIGN();
+      _pf.LABEL(tuple_base_addr);
+      _pf.SALLOC(4);
+      _pf.TEXT();
+      _pf.ADDR(tuple_base_addr);
+      _pf.STINT();
+
+      load(init->type(), [this, tuple_base_addr]() { _pf.ADDRV(tuple_base_addr); });
+    }
+
+    os() << ";; var_decl store start\n";
+    store(symbol->type(), init->type(), [this, symbol](){ _pf.LOCAL(symbol->offset()); });
+    os() << ";; var_decl store end\n";
   } else {
     if (qualifier == tREQUIRE) {
       _pf.EXTERN(id);
@@ -798,7 +819,6 @@ void og::postfix_writer::define_variable(std::string& id, cdk::expression_node *
           init->accept(this, lvl);
         } else if (init->is_typed(cdk::TYPE_INT)) {
           // allocate a double if the type is double
-          //FIXME doesn't work
           cdk::integer_node *dclini = dynamic_cast<cdk::integer_node *>(init);
           if (dclini == nullptr) ERROR("only literals are allowed in global variable initializers");
 
@@ -866,7 +886,7 @@ void og::postfix_writer::do_tuple_index_node(og::tuple_index_node *const node, i
     offset += components[ix]->size();
   }
   _pf.INT(offset);
-  _pf.ADD();  
+  _pf.ADD();
 }
 
 void og::postfix_writer::do_sizeof_node(og::sizeof_node *const node, int lvl) {
