@@ -156,16 +156,18 @@ void og::postfix_writer::do_add_node(cdk::add_node * const node, int lvl) {
   if (node->is_typed(cdk::TYPE_DOUBLE) && node->left()->is_typed(cdk::TYPE_INT)) {
     _pf.I2D();
   } else if (node->is_typed(cdk::TYPE_POINTER) && node->left()->is_typed(cdk::TYPE_INT)) {
-    _pf.INT(3); //TODO: depends on sizeof referenced type
-    _pf.SHTL();
+    auto reftype = cdk::reference_type_cast(node->type());
+    _pf.INT(reftype->referenced()->size());
+    _pf.MUL();
   }
 
   node->right()->accept(this, lvl);
   if (node->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT)) {
     _pf.I2D();
   } else if (node->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_INT)) {
-    _pf.INT(3); //TODO: depends on sizeof referenced type
-    _pf.SHTL();
+    auto reftype = cdk::reference_type_cast(node->type());
+    _pf.INT(reftype->referenced()->size());
+    _pf.MUL();
   }
 
   if (node->is_typed(cdk::TYPE_DOUBLE)) {
@@ -186,8 +188,9 @@ void og::postfix_writer::do_sub_node(cdk::sub_node * const node, int lvl) {
   if (node->is_typed(cdk::TYPE_DOUBLE) && node->right()->is_typed(cdk::TYPE_INT)) {
     _pf.I2D();
   } else if (node->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_INT)) {
-    _pf.INT(3); //TODO: depends on sizeof referenced type
-    _pf.SHTL();
+    auto reftype = cdk::reference_type_cast(node->type());
+    _pf.INT(reftype->referenced()->size());
+    _pf.MUL();
   }
 
   if (node->is_typed(cdk::TYPE_DOUBLE)) {
