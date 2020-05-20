@@ -634,20 +634,21 @@ void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
 
   _pf.LABEL(mklbl(lblini));
 
-  os() << "        ;; FOR conditions" << std::endl; //TODO: there might be multiple conditions
+  os() << "        ;; FOR conditions" << std::endl;
   if (node->conditions()) {
-    node->conditions()->accept(this, lvl);
+    load(node->conditions(), lvl, tempOffsetForNode(node));
+
+    // multiple conditions
+    size_t n_conditions = 1;
 
     if (node->conditions()->is_typed(cdk::TYPE_STRUCT)) {
-      int tuple_base_addr_location = tempOffsetForNode(node);
+      n_conditions = cdk::structured_type_cast(node->conditions()->type())->length();
+    }
 
-      _pf.LOCAL(tuple_base_addr_location);
-      _pf.STINT();
-
-      load(node->conditions()->type(), [this, tuple_base_addr_location]() { _pf.LOCV(tuple_base_addr_location); });
+    for (size_t i = 0; i < n_conditions; i++) {
+      _pf.JZ(mklbl(lblend));
     }
   }
-  _pf.JZ(mklbl(lblend));
 
   os() << "        ;; FOR block" << std::endl;
   if (node->block()) {
