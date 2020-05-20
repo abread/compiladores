@@ -311,9 +311,11 @@ void og::postfix_writer::load(std::shared_ptr<cdk::basic_type> type, std::functi
   } else if (type->name() == cdk::TYPE_STRUCT) {
     auto structType = cdk::structured_type_cast(type);
 
-    for (size_t i = 0; i < structType->length(); i++) {
-       load(structType->component(i), baseProducer, offset);
-       offset += structType->component(i)->size();
+    // we push the last element of a tuple first
+    offset += structType->size();
+    for (ssize_t i = structType->length() - 1; i >= 0; i--) {
+      offset -= structType->component(i)->size();
+      load(structType->component(i), baseProducer, offset);
     }
   } else {
     ERROR("ICE: Invalid type for rvalue node");
