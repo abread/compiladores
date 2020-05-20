@@ -740,7 +740,9 @@ void og::postfix_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
 
       os() << ";; tuple_node load start\n";
       for (auto it = elements.rbegin(); it != elements.rend(); it++) {
-        (*it)->accept(this, lvl);
+        int inner_tupple_base_addr_location = tuple_base_addr + node->type()->size();
+
+        load(static_cast<cdk::expression_node*>(*it), lvl, inner_tupple_base_addr_location);
       }
       os() << ";; tuple_node load end; store start\n";
       store(node->type(), node->type(), [this, tuple_base_addr]() { _pf.LOCAL(tuple_base_addr); });

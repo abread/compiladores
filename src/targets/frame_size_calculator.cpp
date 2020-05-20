@@ -144,7 +144,17 @@ void og::frame_size_calculator::do_tuple_node(og::tuple_node * const node, int l
   ASSERT_SAFE_EXPRESSIONS;
 
   if (node->size() > 1) { // implies TYPE_STRUCT, when size == 1 we can just pass whatever's inside as is
-    _unsharedTempSizeTab[node] = node->type()->size();
+    size_t sz = node->type()->size();
+
+    // if tuple contains tuples, it will need space to store a pointer to the start of the inner tuple
+    for (auto el : node->elements()) {
+      if (static_cast<cdk::expression_node*>(el)->is_typed(cdk::TYPE_STRUCT)) {
+        sz += 4;
+        break;
+      }
+    }
+
+    _unsharedTempSizeTab[node] = sz;
   }
 
   node->seq()->accept(this, lvl);
