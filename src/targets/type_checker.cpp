@@ -461,7 +461,7 @@ std::shared_ptr<og::symbol> og::type_checker::declare_function(T *const node, in
     return old_sym;
   } else {
     _symtab.insert(id, sym);
-    if (!_typecheckingFunctionBody) _parent->set_new_symbol(sym);
+    if (!_typecheckingFunction) _parent->set_new_symbol(sym);
     return sym;
   }
 }
@@ -484,7 +484,7 @@ void og::type_checker::do_function_definition_node(og::function_definition_node 
 
   // ensure return type is known
   _function = sym;
-  _typecheckingFunctionBody = true;
+  _typecheckingFunction = true;
   _symtab.push();
 
   if (node->arguments()) {
@@ -494,13 +494,15 @@ void og::type_checker::do_function_definition_node(og::function_definition_node 
   node->block()->accept(this, lvl+2);
 
   _symtab.pop();
-  _typecheckingFunctionBody = false;
+  _typecheckingFunction = false;
   _function = nullptr;
 
   // TODO: what if there's still nothing returned? void? confirm
   if (sym->is_typed(cdk::TYPE_UNSPEC)) {
     sym->type(cdk::make_primitive_type(0, cdk::TYPE_VOID));
   }
+
+  node->type(sym->type());
 }
 
 void og::type_checker::do_function_call_node(og::function_call_node *const node, int lvl) {
@@ -544,7 +546,7 @@ void og::type_checker::do_evaluation_node(og::evaluation_node *const node, int l
 
 void og::type_checker::do_block_node(og::block_node * const node, int lvl) {
   // HACK: run typechecker for function definition ahead of code generation
-  if (_typecheckingFunctionBody) {
+  if (_typecheckingFunction) {
     _symtab.push();
 
     if (node->declarations()) {
@@ -561,6 +563,18 @@ void og::type_checker::do_block_node(og::block_node * const node, int lvl) {
 
 void og::type_checker::do_write_node(og::write_node *const node, int lvl) {
   node->argument()->accept(this, lvl + 2);
+
+  if (node->argument()->is_typed(cdk::TYPE_STRUCT)) {
+    auto type = cdk::structured_type_cast(node->argument()->type());
+
+    for (auto comp : type->components()) {
+      if (comp->name() != cdk::TYPE_INT && comp->name() != cdk::TYPE_DOUBLE && comp->name() != cdk::TYPE_STRING) {
+        throw std::string("invalid expression type in write statement");
+      }
+    }
+  } else if (!node->argument()->is_typed(cdk::TYPE_INT) && !node->argument()->is_typed(cdk::TYPE_DOUBLE) && !node->argument()->is_typed(cdk::TYPE_STRING)) {
+    throw std::string("invalid expression type in write statement");
+  }
 }
 
 //---------------------------------------------------------------------------
@@ -589,12 +603,12 @@ void og::type_checker::do_stack_alloc_node(og::stack_alloc_node * const node, in
 
 void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
   // HACK: run typechecker for function definition ahead of code generation
-  if (_typecheckingFunctionBody) _symtab.push();
+  if (_typecheckingFunction) _symtab.push();
 
   if (node->initializers()) {
     node->initializers()->accept(this, lvl + 2);
   }
-  
+
   if (node->conditions()) {
     node->conditions()->accept(this, lvl + 2);
     auto t = node->conditions()->type();
@@ -607,14 +621,14 @@ void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
       throw std::string("invalid type for for-loop conditions: " + cdk::to_string(t));
     }
   }
-  
+
   if (node->increments()) {
     node->increments()->accept(this, lvl + 2);
   }
 
   node->block()->accept(this, lvl + 2);
 
-  if (_typecheckingFunctionBody) _symtab.pop();
+  if (_typecheckingFunction) _symtab.pop();
 }
 
 
@@ -670,12 +684,28 @@ std::shared_ptr<og::symbol> og::type_checker::declare_var(int qualifier, std::sh
   }
 
   if (_symtab.insert(id, sym)) {
-    if (!_typecheckingFunctionBody) _parent->set_new_symbol(sym);
+    if (!_typecheckingFunction) _parent->set_new_symbol(sym);
   } else {
     throw std::string("variable redeclaration: " + id);
   }
 
   return sym;
+}
+
+static bool is_literal(cdk::expression_node *expr) {
+  if (auto tuple = dynamic_cast<og::tuple_node*>(expr)) {
+    for (auto el : tuple->elements()) {
+      if (!is_literal(static_cast<cdk::expression_node*>(el))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  return dynamic_cast<cdk::integer_node*>(expr) || \
+          dynamic_cast<cdk::string_node*>(expr) || \
+          dynamic_cast<cdk::double_node*>(expr) || \
+          dynamic_cast<og::nullptr_node*>(expr);
 }
 
 void og::type_checker::do_variable_declaration_node(og::variable_declaration_node *const node, int lvl) {
@@ -695,6 +725,10 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
         ) {
         throw std::string("number of identifiers does not match number of expressions");
       }
+
+    if (!_function && !is_literal(node->initializer())) {
+      throw std::string("global variable declarations may only be initialized with literals");
+    }
   }
 
   int qualifier = node->qualifier();
@@ -713,6 +747,12 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
     // HACK: alloc gets its type from the left value
     if (auto alloc = dynamic_cast<og::stack_alloc_node*>(node->initializer()); alloc && node->is_typed(cdk::TYPE_POINTER)) {
       alloc->type(node->type());
+    }
+
+    // HACK: real a = input must work with doubles
+    // if this isn't here, input will return an int which will be converted to a double (when a is a double)
+    if (auto input = dynamic_cast<og::input_node*>(node->initializer()); input && node->is_typed(cdk::TYPE_DOUBLE)) {
+      input->type(node->type());
     }
   } else {
     std::vector<std::shared_ptr<cdk::basic_type>> compTypes(node->identifiers().size());
@@ -744,7 +784,7 @@ void og::type_checker::do_tuple_index_node(og::tuple_index_node *const node, int
   node->base()->accept(this, lvl + 2);
 
   if (! node->base()->is_typed(cdk::TYPE_STRUCT)) {
-    throw std::string("tuple index base is not a tuple");
+    throw std::string("can't index 1-tuples");
   }
 
   auto baseType = cdk::structured_type_cast(node->base()->type());

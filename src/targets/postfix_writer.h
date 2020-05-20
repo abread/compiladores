@@ -25,6 +25,9 @@ namespace og {
     bool _inFunctionBody = false;
     bool _inFunctionArgs = false;
     int _offset = 0;
+    std::map<const cdk::basic_node*, int> _unsharedTempOffsetTab;
+    int _callTempOffset;
+    int _returnTempOffset;
 
   public:
     postfix_writer(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<og::symbol> &symtab,
@@ -48,13 +51,22 @@ namespace og {
       return oss.str();
     }
 
+    inline int tempOffsetForNode(const cdk::basic_node* node) const {
+      auto it = _unsharedTempOffsetTab.find(node);
+      if (it == _unsharedTempOffsetTab.end()) {
+        return 0;
+      }
+
+      return it->second;
+    }
+
     void processIDBinaryExpression(cdk::binary_operation_node *const node, int lvl);
     void processIDComparison(cdk::binary_operation_node *const node, int lvl);
-    void load(std::shared_ptr<cdk::basic_type> type, std::function<void()> baseProducer, int offset);
+    void load(std::shared_ptr<cdk::basic_type> type, std::function<void()> baseSupplier, int offset = 0);
+    void load(cdk::expression_node *const node, int lvl, int tempOffset = 0);
     void set_declaration_offsets(og::variable_declaration_node * const node);
-    void store_complex_ret(std::shared_ptr<cdk::basic_type> lvalType, std::shared_ptr<cdk::basic_type> rvalType, int offset);
-    void define_variable(std::string& id, cdk::expression_node * init, int qualifier, int lvl);
-    void store_local(std::shared_ptr<cdk::basic_type> lvalType, std::shared_ptr<cdk::basic_type> rvalType, int offset);
+    void define_global_variable(const std::string& id, cdk::expression_node * init, int qualifier, int lvl);
+    void store(std::shared_ptr<cdk::basic_type> lvalType, std::shared_ptr<cdk::basic_type> rvalType, std::function<void()> baseSupplier, int offset = 0);
 
   public:
   // do not edit these lines

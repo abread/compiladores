@@ -136,7 +136,7 @@ type : tINTD                    { $$ = new cdk::primitive_type(4, cdk::TYPE_INT)
                $$ = new cdk::reference_type(4, std::shared_ptr<cdk::basic_type>($3));
           }
      }
-     | tPTR    '<' tAUTO '>'    { $$ = new cdk::reference_type(4, cdk::make_primitive_type(0, cdk::TYPE_VOID)); }
+     | tPTR    '<' tAUTO '>'    { $$ = new cdk::reference_type(4, cdk::make_primitive_type(1, cdk::TYPE_VOID)); }
      ;
 
 
@@ -247,7 +247,7 @@ expr  : tINT                      { $$ = new cdk::integer_node(LINE, $1); }
 
 lval : tIDENTIFIER             { $$ = new cdk::variable_node(LINE, *$1); delete $1; }
      | expr '[' expr ']'       { $$ = new og::pointer_index_node(LINE, $1, $3); }
-     | lval '@' tINT           { $$ = new og::tuple_index_node(LINE, $1, $3); }
+     | expr '@' tINT           { $$ = new og::tuple_index_node(LINE, $1, $3); }
      ;
 
 string : tSTRING              { $$ = $1; }
