@@ -138,7 +138,8 @@ void og::frame_size_calculator::do_pointer_index_node(og::pointer_index_node * c
   node->base()->accept(this, lvl);
 }
 void og::frame_size_calculator::do_sizeof_node(og::sizeof_node * const node, int lvl) {
-  node->arguments()->accept(this, lvl);
+  // EMPTY
+  // expressions in sizeof are not evaluated
 }
 void og::frame_size_calculator::do_tuple_node(og::tuple_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
