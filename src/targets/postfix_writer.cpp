@@ -314,9 +314,8 @@ void og::postfix_writer::load(std::shared_ptr<cdk::basic_type> type, std::functi
   } else if (type->name() == cdk::TYPE_STRUCT) {
     auto structType = cdk::structured_type_cast(type);
 
-    // we push the last element of a tuple first
     offset += structType->size();
-    for (ssize_t i = structType->length() - 1; i >= 0; i--) {
+    for (size_t i = 0; i < structType->length(); i++) {
       offset -= structType->component(i)->size();
       load(structType->component(i), baseProducer, offset);
     }
@@ -557,11 +556,11 @@ void og::postfix_writer::do_return_node(og::return_node * const node, int lvl) {
 void og::postfix_writer::do_write_node(og::write_node * const node, int lvl) {
   // TODO: handle newline flag and print EVERYTHING
   ASSERT_SAFE_EXPRESSIONS; //TODO: print structs
-  load(node->argument(), lvl, tempOffsetForNode(node)); // determine the value to print
 
   for (auto node : node->argument()->elements()) {
     auto expr = static_cast<cdk::expression_node*>(node);
 
+    load(expr, lvl);
     if (expr->is_typed(cdk::TYPE_INT)) {
       _extern_functions.insert("printi");
       _pf.CALL("printi");
@@ -626,14 +625,22 @@ void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
     load(node->condition(), lvl, tempOffsetForNode(node));
 
     if (node->condition()->is_typed(cdk::TYPE_STRUCT)) {
-      // condition is at the top of the stack, copy it to the start of the tuple
+      // condition is at the top of the stack, move it to the start of the tuple (shortens tuple by 4 bytes)
       _pf.SP();
       _pf.INT(node->condition()->type()->size() - 4);
       _pf.ADD();
       _pf.STINT();
 
-      // trash everything but the condition
-      _pf.TRASH(node->condition()->type()->size() - 4);
+      // trash everything but the condition (which is now further down the stack)
+      size_t to_trash = node->condition()->type()->size() - 4 - 4;
+      if (to_trash > node->condition()->type()->size()) {
+        std::cerr << "ICE(postfix_writer): for condition to_trash calculation underflow\n";
+        exit(1);
+      }
+
+      if (to_trash) {
+        _pf.TRASH(to_trash);
+      }
     }
 
     _pf.JZ(mklbl(lblend));
@@ -716,7 +723,7 @@ void og::postfix_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
       }
 
       os() << ";; tuple_node load start\n";
-      for (auto it = elements.rbegin(); it != elements.rend(); it++) {
+      for (auto it = elements.begin(); it != elements.end(); it++) {
         int inner_tupple_base_addr_location = tuple_base_addr + node->type()->size();
 
         load(static_cast<cdk::expression_node*>(*it), lvl, inner_tupple_base_addr_location);
@@ -731,7 +738,7 @@ void og::postfix_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
       node->element(0)->accept(this, lvl);
     }
   } else {
-    for (auto it = elements.begin(); it != elements.end(); it++) {
+    for (auto it = elements.rbegin(); it != elements.rend(); it++) {
       (*it)->accept(this, lvl);
     }
   }
@@ -806,7 +813,7 @@ void og::postfix_writer::store(std::shared_ptr<cdk::basic_type> lvalType, std::s
     auto lvalStructType = cdk::structured_type_cast(lvalType);
     auto rvalStructType = cdk::structured_type_cast(rvalType);
 
-    for (size_t i = 0; i < lvalStructType->length(); i++) {
+    for (ssize_t i = lvalStructType->length() - 1; i >= 0; i--) {
        store(lvalStructType->component(i), rvalStructType->component(i), baseSupplier, offset);
        offset += lvalStructType->component(i)->size();
     }
@@ -876,7 +883,7 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
 
         auto rvalType = cdk::structured_type_cast(node->initializer()->type());
 
-        for (size_t ix = 0; ix < ids.size(); ix++) {
+        for (ssize_t ix = ids.size() - 1; ix >= 0; ix--) {
           auto type = rvalType->component(ix);
           auto id = ids[ix];
           std::shared_ptr<symbol> symbol = _symtab.find(id);
@@ -928,7 +935,7 @@ void og::postfix_writer::do_tuple_index_node(og::tuple_index_node *const node, i
   auto components = (cdk::structured_type_cast(node->base()->type()))->components();
 
   int offset = 0;
-  for (size_t ix = 0; ix < node->index()-1; ix++) {
+  for (ssize_t ix = components.size() - 1; ix > (ssize_t)node->index() - 1; ix--) {
     offset += components[ix]->size();
   }
 
