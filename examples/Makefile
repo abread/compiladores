@@ -32,7 +32,6 @@ EXECUTABLES = $(SOURCES:%.og=%)
 
 .PHONY: all
 all: $(EXECUTABLES) $(EXEC_FOLDERS)
-	echo $(SOURCE_FOLDERS)
 
 %.c: %.og
 	$(COMPILER) $< -o $@

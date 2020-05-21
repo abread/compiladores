@@ -96,6 +96,10 @@ void og::frame_size_calculator::do_evaluation_node(og::evaluation_node * const n
 }
 void og::frame_size_calculator::do_write_node(og::write_node * const node, int lvl) {
   node->argument()->accept(this, lvl);
+
+  if (node->argument()->is_typed(cdk::TYPE_STRUCT)) {
+    _unsharedTempSizeTab[node] = 4; // will need to store a pointer to the top of the tuple
+  }
 }
 void og::frame_size_calculator::do_input_node(og::input_node * const node, int lvl) {
   // EMPTY
