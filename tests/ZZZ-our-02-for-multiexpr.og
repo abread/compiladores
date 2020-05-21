@@ -1,0 +1,17 @@
+public int og() {
+	int i = 0;
+	auto b = i = i + 1, i;
+	write b@1;
+	write " = ";
+	writeln b@2;
+
+	for auto i, j = 0, 1;(((j > 0, (2.1, argc(), argv(0)), i < 10))); i = i + 1, j = j - 1 do {
+		write "i = ";
+		writeln i;
+	}
+
+	for int i = 0; i = i + 1, i < 10; do
+		write i;
+
+	return 0;
+}
