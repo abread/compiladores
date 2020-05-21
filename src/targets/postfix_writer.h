@@ -21,7 +21,7 @@ namespace og {
     std::stack<int> _forIni, _forIncr, _forEnd;
 
     std::shared_ptr<og::symbol> _function = nullptr;
-    std::set<std::string> _functions_to_declare;
+    std::set<std::string> _functions_to_declare = {"argc", "argv", "envp"};
     bool _inFunctionBody = false;
     bool _inFunctionArgs = false;
     int _offset = 0;
