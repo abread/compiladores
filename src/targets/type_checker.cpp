@@ -612,11 +612,16 @@ void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
   if (node->conditions()) {
     node->conditions()->accept(this, lvl + 2);
 
-    // only the last expression is considered a condition
-    auto last = node->conditions()->element(node->conditions()->size() - 1);
-    if (!last->is_typed(cdk::TYPE_INT)) {
-      throw std::string("the for condition (last expression in 2nd zone of header) must be an int/bool");
+    if (node->conditions()->is_typed(cdk::TYPE_STRUCT)) {
+      auto type = cdk::structured_type_cast(node->conditions()->type());
+
+      if (type->component(type->length() - 1)->name() != cdk::TYPE_INT) {
+        throw std::string("for condition must end with int/bool expression");
+      }
+    } else if (!node->conditions()->is_typed(cdk::TYPE_INT)) {
+      throw std::string("for condition must end with int/bool expression");
     }
+
   }
 
   if (node->increments()) {

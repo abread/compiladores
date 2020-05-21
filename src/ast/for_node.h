@@ -3,7 +3,6 @@
 
 #include <cdk/ast/basic_node.h>
 #include <cdk/ast/expression_node.h>
-#include "ast/tuple_node.h"
 
 namespace og {
 
@@ -12,12 +11,12 @@ namespace og {
    */
   class for_node: public cdk::basic_node {
     cdk::basic_node *_initializers;
-    og::tuple_node *_conditions;
+    cdk::expression_node *_conditions;
     cdk::basic_node *_increments;
     cdk::basic_node *_block;
 
   public:
-    inline for_node(int lineno, cdk::basic_node *initializers, og::tuple_node *conditions, cdk::basic_node *increments, cdk::basic_node *block) :
+    inline for_node(int lineno, cdk::basic_node *initializers, cdk::expression_node *conditions, cdk::basic_node *increments, cdk::basic_node *block) :
         basic_node(lineno), _initializers(initializers), _conditions(conditions), _increments(increments), _block(block) {
     }
 
@@ -25,7 +24,7 @@ namespace og {
     inline cdk::basic_node *initializers() {
       return _initializers;
     }
-    inline og::tuple_node *conditions() {
+    inline cdk::expression_node *conditions() {
       return _conditions;
     }
     inline cdk::basic_node *increments() {

@@ -640,16 +640,19 @@ void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
 
   os() << "        ;; FOR conditions" << std::endl;
   if (node->conditions()) {
-    // evaluate
-    for (size_t i = 0; i < node->conditions()->size() - 1; i++) {
-      auto expr = node->conditions()->element(i);
+    load(node->conditions(), lvl, tempOffsetForNode(node));
 
-      og::evaluation_node eval_node(expr);
-      eval_node.accept(this, lvl);
+    if (node->conditions()->is_typed(cdk::TYPE_STRUCT)) {
+      // condition is at the top of the stack, copy it to the start of the tuple
+      _pf.SP();
+      _pf.INT(node->conditions()->type()->size() - 4);
+      _pf.ADD();
+      _pf.STINT();
+
+      // trash everything but the condition
+      _pf.TRASH(node->conditions()->type()->size() - 4);
     }
 
-    auto cond = node->conditions()->element(node->conditions()->size() - 1);
-    load(cond, lvl);
     _pf.JZ(mklbl(lblend));
   }
 
