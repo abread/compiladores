@@ -3,6 +3,11 @@
 
 #include "targets/basic_ast_visitor.h"
 #include <cdk/ast/basic_node.h>
+#include <cdk/types/types.h>
+
+#ifndef tPUBLIC
+#include "og_parser.tab.h"
+#endif
 
 namespace og {
 
@@ -16,6 +21,19 @@ namespace og {
   public:
     xml_writer(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<og::symbol> &symtab) :
         basic_ast_visitor(compiler), _symtab(symtab) {
+      // ensure builtin functions are available
+      auto int_t = cdk::make_primitive_type(4, cdk::TYPE_INT);
+      auto str_t = cdk::make_primitive_type(4, cdk::TYPE_STRING);
+      auto tuple_empty_t = cdk::make_structured_type(std::vector<std::shared_ptr<cdk::basic_type>>());
+      auto tuple_int_t = cdk::make_structured_type(std::vector<std::shared_ptr<cdk::basic_type>>(1, int_t));
+
+      auto argc = std::make_shared<og::symbol>(tPUBLIC, int_t, "argc", tuple_empty_t);
+      auto argv = std::make_shared<og::symbol>(tPUBLIC, str_t, "argv", tuple_int_t);
+      auto envp = std::make_shared<og::symbol>(tPUBLIC, str_t, "envp", tuple_int_t);
+
+      for (auto sym : {argc, argv, envp}) {
+        _symtab.insert(sym->name(), sym);
+      }
     }
 
   public:
