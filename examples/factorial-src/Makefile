@@ -24,4 +24,4 @@ clean:
 	$(ASM) -felf32 $< -o $@
 
 $(EXECUTABLE): $(OBJECTS)
-	$(LD) $< -o $@ $(LDFLAGS)
+	$(LD) $^ -o $@ $(LDFLAGS)
