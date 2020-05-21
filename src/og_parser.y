@@ -129,13 +129,7 @@ proc : qualifier void_t tIDENTIFIER '('      ')'       { $$ = new og::function_d
 type : tINTD                    { $$ = new cdk::primitive_type(4, cdk::TYPE_INT); }
      | tREALD                   { $$ = new cdk::primitive_type(8, cdk::TYPE_DOUBLE); }
      | tSTRINGD                 { $$ = new cdk::primitive_type(4, cdk::TYPE_STRING); }
-     | tPTR    '<' type  '>'    {
-          if ($3->name() == cdk::TYPE_POINTER && ((cdk::reference_type*)$3)->referenced()->name() == cdk::TYPE_VOID) {
-               $$ = $3;
-          } else {
-               $$ = new cdk::reference_type(4, std::shared_ptr<cdk::basic_type>($3));
-          }
-     }
+     | tPTR    '<' type  '>'    { $$ = new cdk::reference_type(4, std::shared_ptr<cdk::basic_type>($3)); }
      | tPTR    '<' tAUTO '>'    { $$ = new cdk::reference_type(4, cdk::make_primitive_type(1, cdk::TYPE_VOID)); }
      ;
 
