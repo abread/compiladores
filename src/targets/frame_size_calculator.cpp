@@ -95,10 +95,9 @@ void og::frame_size_calculator::do_evaluation_node(og::evaluation_node * const n
   node->argument()->accept(this, lvl);
 }
 void og::frame_size_calculator::do_write_node(og::write_node * const node, int lvl) {
-  node->argument()->accept(this, lvl);
-
-  if (node->argument()->is_typed(cdk::TYPE_STRUCT)) {
-    _unsharedTempSizeTab[node] = 4; // will need to store a pointer to the top of the tuple
+  // we don't need space for the whole tuple, just for each argument (possibly)
+  for (auto el : node->argument()->elements()) {
+    el->accept(this, lvl);
   }
 }
 void og::frame_size_calculator::do_input_node(og::input_node * const node, int lvl) {
@@ -109,6 +108,13 @@ void og::frame_size_calculator::do_address_of_node(og::address_of_node * const n
 }
 void og::frame_size_calculator::do_function_call_node(og::function_call_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
+
+  if (node->arguments()) {
+    // we don't need space for the whole tuple, just for each argument (possibly)
+    for (auto el : node->arguments()->elements()) {
+      el->accept(this, lvl);
+    }
+  }
 
   if (node->is_typed(cdk::TYPE_STRUCT)) {
     _calltempsize = std::max(_calltempsize, node->type()->size());
@@ -180,10 +186,11 @@ void og::frame_size_calculator::do_for_node(og::for_node * const node, int lvl) 
   ASSERT_SAFE_EXPRESSIONS;
 
   if (node->initializers()) {
-    node->initializers()->accept(this, lvl + 2);
+    node->initializers()->accept(this, lvl);
   }
 
   if (node->condition()->is_typed(cdk::TYPE_STRUCT)) {
+    node->condition()->accept(this, lvl);
     _unsharedTempSizeTab[node] = 4; // will need to store a pointer to the top of the tuple
   }
 
