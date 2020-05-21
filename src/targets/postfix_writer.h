@@ -8,6 +8,11 @@
 #include <stack>
 #include <set>
 #include <cdk/emitters/basic_postfix_emitter.h>
+#include <cdk/types/types.h>
+
+#ifndef tREQUIRE
+#include "og_parser.tab.h"
+#endif
 
 namespace og {
 
@@ -21,7 +26,7 @@ namespace og {
     std::stack<int> _forIni, _forIncr, _forEnd;
 
     std::shared_ptr<og::symbol> _function = nullptr;
-    std::set<std::string> _functions_to_declare = {"argc", "argv", "envp"};
+    std::set<std::string> _extern_functions;
     bool _inFunctionBody = false;
     bool _inFunctionArgs = false;
     int _offset = 0;
@@ -33,13 +38,29 @@ namespace og {
     postfix_writer(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<og::symbol> &symtab,
                    cdk::basic_postfix_emitter &pf) :
         basic_ast_visitor(compiler), _symtab(symtab), _pf(pf), _lbl(0) {
+      // ensure builtin functions are available
+      auto int_t = cdk::make_primitive_type(4, cdk::TYPE_INT);
+      auto str_t = cdk::make_primitive_type(4, cdk::TYPE_STRING);
+      auto tuple_empty_t = cdk::make_structured_type(std::vector<std::shared_ptr<cdk::basic_type>>());
+      auto tuple_int_t = cdk::make_structured_type(std::vector<std::shared_ptr<cdk::basic_type>>(1, int_t));
+
+      auto argc = std::make_shared<og::symbol>(tPUBLIC, int_t, "argc", tuple_empty_t);
+      auto argv = std::make_shared<og::symbol>(tPUBLIC, str_t, "argv", tuple_int_t);
+      auto envp = std::make_shared<og::symbol>(tPUBLIC, str_t, "envp", tuple_int_t);
+
+      for (auto sym : {argc, argv, envp}) {
+        _symtab.insert(sym->name(), sym);
+        _extern_functions.insert(sym->name());
+      }
     }
 
   public:
     ~postfix_writer() {
-      for (std::string ext : _functions_to_declare)
-        _pf.EXTERN(ext);
       os().flush();
+    }
+
+    const std::set<std::string> &extern_functions() const {
+      return _extern_functions;
     }
 
   private:

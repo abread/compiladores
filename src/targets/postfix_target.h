@@ -30,6 +30,9 @@ namespace og {
       postfix_writer writer(compiler, symtab, pf);
       compiler->ast()->accept(&writer, 0);
 
+      for (std::string ext : writer.extern_functions())
+        pf.EXTERN(ext);
+
       return true;
     }
 
