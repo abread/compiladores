@@ -479,43 +479,33 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
 
   if (node->arguments()) {
     for (int ax = node->arguments()->size(); ax > 0; ax--) {
-
-      cdk::expression_node *arg = dynamic_cast<cdk::expression_node*>(node->arguments()->element(ax - 1));
-
-      if (return_struct && argTypes[ax - 1]->name() == cdk::TYPE_DOUBLE) {
-        _pf.I2D(); // convert address to a double
-      }
+      cdk::expression_node * arg = node->arguments()->element(ax - 1);
       // convert ints to doubles in arguments
       arg->accept(this, lvl + 2);
       if (arg->is_typed(cdk::TYPE_INT) && argTypes[ax - 1]->name() == cdk::TYPE_DOUBLE) {
         _pf.I2D();
-        argsSize += argTypes[ax - 1]->size();
-      } else {
-        argsSize += arg->type()->size();
       }
-
     }
+    argsSize += symbol->argsType()->size();
   }
-;
+
   if (return_struct) {
     argsSize += 4;
     _pf.LOCAL(_callTempOffset);
   }
   _pf.CALL(name);
   if (argsSize != 0) {
-    _pf.TRASH(argsSize); // leaves the SP if the return is a struct
-  }
-
-  if (return_struct) {
-    _pf.LOCAL(_callTempOffset);
+    _pf.TRASH(argsSize);
   }
 
   if (symbol->is_typed(cdk::TYPE_INT) || symbol->is_typed(cdk::TYPE_POINTER) || symbol->is_typed(cdk::TYPE_STRING)) {
     _pf.LDFVAL32();
   } else if (symbol->is_typed(cdk::TYPE_DOUBLE)) {
     _pf.LDFVAL64();
-  } else if (symbol->is_typed(cdk::TYPE_VOID) || symbol->is_typed(cdk::TYPE_STRUCT)) {
+  } else if (symbol->is_typed(cdk::TYPE_VOID)) {
     // EMPTY
+  } else if (return_struct) {
+    _pf.LOCAL(_callTempOffset);
   } else {
     // cannot happen!
     ERROR("ICE(postfix_writer): unsupported function return type");
