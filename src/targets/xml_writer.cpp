@@ -282,10 +282,7 @@ void og::xml_writer::do_input_node(og::input_node * const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::xml_writer::do_for_node(og::for_node * const node, int lvl) {
-  // HACK: typechecker declares initializer variables prematurely
-  _symtab.push();
   ASSERT_SAFE_EXPRESSIONS;
-  _symtab.pop();
 
   openTag(node, lvl);
 
@@ -296,10 +293,10 @@ void og::xml_writer::do_for_node(og::for_node * const node, int lvl) {
     closeTag("initializers", lvl + 2);
   }
 
-  if (node->conditions()) {
-    openTag("conditions", lvl + 2);
-    node->conditions()->accept(this, lvl + 2*2);
-    closeTag("conditions", lvl + 2);
+  if (node->condition()) {
+    openTag("condition", lvl + 2);
+    node->condition()->accept(this, lvl + 2*2);
+    closeTag("condition", lvl + 2);
   }
 
   if (node->increments()) {

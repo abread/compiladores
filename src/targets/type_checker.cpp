@@ -602,24 +602,26 @@ void og::type_checker::do_stack_alloc_node(og::stack_alloc_node * const node, in
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
-  // HACK: run typechecker for function definition ahead of code generation
-  if (_typecheckingFunction) _symtab.push();
+  // HACK: typechecking condition requires defining symbols: don't leak them
+  _symtab.push();
 
   if (node->initializers()) {
     node->initializers()->accept(this, lvl + 2);
   }
 
-  if (node->conditions()) {
-    node->conditions()->accept(this, lvl + 2);
-    auto t = node->conditions()->type();
+  if (node->condition()) {
+    node->condition()->accept(this, lvl + 2);
 
-    if (t->name() == cdk::TYPE_STRUCT) {
-      for (auto comp : cdk::structured_type_cast(t)->components())
-        if (comp->name() != cdk::TYPE_INT)
-          throw std::string("invalid type for for-loop conditional expression: " + cdk::to_string(comp));
-    } else if (t->name() != cdk::TYPE_INT) {
-      throw std::string("invalid type for for-loop conditions: " + cdk::to_string(t));
+    if (node->condition()->is_typed(cdk::TYPE_STRUCT)) {
+      auto type = cdk::structured_type_cast(node->condition()->type());
+
+      if (type->component(type->length() - 1)->name() != cdk::TYPE_INT) {
+        throw std::string("for condition must end with int/bool expression");
+      }
+    } else if (!node->condition()->is_typed(cdk::TYPE_INT)) {
+      throw std::string("for condition must end with int/bool expression");
     }
+
   }
 
   if (node->increments()) {
@@ -628,7 +630,7 @@ void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
 
   node->block()->accept(this, lvl + 2);
 
-  if (_typecheckingFunction) _symtab.pop();
+  _symtab.pop();
 }
 
 

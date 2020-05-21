@@ -606,10 +606,7 @@ void og::postfix_writer::do_input_node(og::input_node * const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
-  // HACK: typechecker declares initializer variables prematurely
-  _symtab.push();
   ASSERT_SAFE_EXPRESSIONS;
-  _symtab.pop();
 
   int lblini, lblincr, lblend;
   _forIni.push(lblini = ++_lbl);
@@ -624,20 +621,22 @@ void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
 
   _pf.LABEL(mklbl(lblini));
 
-  os() << "        ;; FOR conditions" << std::endl;
-  if (node->conditions()) {
-    load(node->conditions(), lvl, tempOffsetForNode(node));
+  os() << "        ;; FOR condition" << std::endl;
+  if (node->condition()) {
+    load(node->condition(), lvl, tempOffsetForNode(node));
 
-    // multiple conditions
-    size_t n_conditions = 1;
+    if (node->condition()->is_typed(cdk::TYPE_STRUCT)) {
+      // condition is at the top of the stack, copy it to the start of the tuple
+      _pf.SP();
+      _pf.INT(node->condition()->type()->size() - 4);
+      _pf.ADD();
+      _pf.STINT();
 
-    if (node->conditions()->is_typed(cdk::TYPE_STRUCT)) {
-      n_conditions = cdk::structured_type_cast(node->conditions()->type())->length();
+      // trash everything but the condition
+      _pf.TRASH(node->condition()->type()->size() - 4);
     }
 
-    for (size_t i = 0; i < n_conditions; i++) {
-      _pf.JZ(mklbl(lblend));
-    }
+    _pf.JZ(mklbl(lblend));
   }
 
   os() << "        ;; FOR block" << std::endl;

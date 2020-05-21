@@ -11,21 +11,21 @@ namespace og {
    */
   class for_node: public cdk::basic_node {
     cdk::basic_node *_initializers;
-    cdk::expression_node *_conditions;
+    cdk::expression_node *_condition;
     cdk::basic_node *_increments;
     cdk::basic_node *_block;
 
   public:
-    inline for_node(int lineno, cdk::basic_node *initializers, cdk::expression_node *conditions, cdk::basic_node *increments, cdk::basic_node *block) :
-        basic_node(lineno), _initializers(initializers), _conditions(conditions), _increments(increments), _block(block) {
+    inline for_node(int lineno, cdk::basic_node *initializers, cdk::expression_node *condition, cdk::basic_node *increments, cdk::basic_node *block) :
+        basic_node(lineno), _initializers(initializers), _condition(condition), _increments(increments), _block(block) {
     }
 
   public:
     inline cdk::basic_node *initializers() {
       return _initializers;
     }
-    inline cdk::expression_node *conditions() {
-      return _conditions;
+    inline cdk::expression_node *condition() {
+      return _condition;
     }
     inline cdk::basic_node *increments() {
       return _increments;
