@@ -179,7 +179,7 @@ void og::frame_size_calculator::do_for_node(og::for_node * const node, int lvl) 
     node->initializers()->accept(this, lvl + 2);
   }
 
-  if (node->conditions()->is_typed(cdk::TYPE_STRUCT)) {
+  if (node->condition()->is_typed(cdk::TYPE_STRUCT)) {
     _unsharedTempSizeTab[node] = 4; // will need to store a pointer to the top of the tuple
   }
 

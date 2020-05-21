@@ -638,19 +638,19 @@ void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
 
   _pf.LABEL(mklbl(lblini));
 
-  os() << "        ;; FOR conditions" << std::endl;
-  if (node->conditions()) {
-    load(node->conditions(), lvl, tempOffsetForNode(node));
+  os() << "        ;; FOR condition" << std::endl;
+  if (node->condition()) {
+    load(node->condition(), lvl, tempOffsetForNode(node));
 
-    if (node->conditions()->is_typed(cdk::TYPE_STRUCT)) {
+    if (node->condition()->is_typed(cdk::TYPE_STRUCT)) {
       // condition is at the top of the stack, copy it to the start of the tuple
       _pf.SP();
-      _pf.INT(node->conditions()->type()->size() - 4);
+      _pf.INT(node->condition()->type()->size() - 4);
       _pf.ADD();
       _pf.STINT();
 
       // trash everything but the condition
-      _pf.TRASH(node->conditions()->type()->size() - 4);
+      _pf.TRASH(node->condition()->type()->size() - 4);
     }
 
     _pf.JZ(mklbl(lblend));

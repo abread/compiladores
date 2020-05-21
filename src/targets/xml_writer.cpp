@@ -293,10 +293,10 @@ void og::xml_writer::do_for_node(og::for_node * const node, int lvl) {
     closeTag("initializers", lvl + 2);
   }
 
-  if (node->conditions()) {
-    openTag("conditions", lvl + 2);
-    node->conditions()->accept(this, lvl + 2*2);
-    closeTag("conditions", lvl + 2);
+  if (node->condition()) {
+    openTag("condition", lvl + 2);
+    node->condition()->accept(this, lvl + 2*2);
+    closeTag("condition", lvl + 2);
   }
 
   if (node->increments()) {

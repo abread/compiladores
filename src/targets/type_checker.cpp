@@ -609,16 +609,16 @@ void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
     node->initializers()->accept(this, lvl + 2);
   }
 
-  if (node->conditions()) {
-    node->conditions()->accept(this, lvl + 2);
+  if (node->condition()) {
+    node->condition()->accept(this, lvl + 2);
 
-    if (node->conditions()->is_typed(cdk::TYPE_STRUCT)) {
-      auto type = cdk::structured_type_cast(node->conditions()->type());
+    if (node->condition()->is_typed(cdk::TYPE_STRUCT)) {
+      auto type = cdk::structured_type_cast(node->condition()->type());
 
       if (type->component(type->length() - 1)->name() != cdk::TYPE_INT) {
         throw std::string("for condition must end with int/bool expression");
       }
-    } else if (!node->conditions()->is_typed(cdk::TYPE_INT)) {
+    } else if (!node->condition()->is_typed(cdk::TYPE_INT)) {
       throw std::string("for condition must end with int/bool expression");
     }
 
