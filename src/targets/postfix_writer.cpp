@@ -643,18 +643,17 @@ void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
 
   os() << "        ;; FOR conditions" << std::endl;
   if (node->conditions()) {
-    load(node->conditions(), lvl, tempOffsetForNode(node));
+    // evaluate
+    for (size_t i = 0; i < node->conditions()->size() - 1; i++) {
+      auto expr = node->conditions()->element(i);
 
-    // multiple conditions
-    size_t n_conditions = 1;
-
-    if (node->conditions()->is_typed(cdk::TYPE_STRUCT)) {
-      n_conditions = cdk::structured_type_cast(node->conditions()->type())->length();
+      og::evaluation_node eval_node(expr);
+      eval_node.accept(this, lvl);
     }
 
-    for (size_t i = 0; i < n_conditions; i++) {
-      _pf.JZ(mklbl(lblend));
-    }
+    auto cond = node->conditions()->element(node->conditions()->size() - 1);
+    load(cond, lvl);
+    _pf.JZ(mklbl(lblend));
   }
 
   os() << "        ;; FOR block" << std::endl;
