@@ -20,6 +20,7 @@ void og::flow_graph_checker::do_return_node(og::return_node * const node, int lv
 void og::flow_graph_checker::do_for_node(og::for_node * const node, int lvl) {
   _cycle_depth++;
   if (node->block()) {
+    _returning = false;
     _jumping_in_cycle = false;
     node->block()->accept(this, lvl);
   }
@@ -65,6 +66,8 @@ void og::flow_graph_checker::do_if_node(og::if_node * const node, int lvl) {
 }
 
 void og::flow_graph_checker::do_if_else_node(og::if_else_node * const node, int lvl) {
+  _returning = false;
+  _jumping_in_cycle = false;
   node->thenblock()->accept(this, lvl + 2);
   bool then_was_returning = _returning;
   bool then_was_jumping_in_cycle = _jumping_in_cycle;
