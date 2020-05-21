@@ -1,6 +1,6 @@
 // external builtin functions
 require int argc()
-require string argv(int n)
+//require string argv(int n)
 require int atoi(string s)
 
 // external user functions

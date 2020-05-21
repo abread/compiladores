@@ -380,7 +380,7 @@ void og::postfix_writer::do_function_declaration_node(og::function_declaration_n
   ASSERT_SAFE_EXPRESSIONS; // typechecker takes care of declaring functions
   auto name = fix_function_name(node->identifier());
 
-  _functions_to_declare.insert(name);
+  _extern_functions.insert(name);
 }
 
 std::map<const cdk::basic_node*, int> calculate_unshared_temp_offsets(const og::frame_size_calculator &fsc) {
@@ -403,7 +403,7 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
   _symtab.push();
 
   auto name = fix_function_name(node->identifier());
-  _functions_to_declare.erase(name);
+  _extern_functions.erase(name);
 
   _offset = 8;
   if (node->is_typed(cdk::TYPE_STRUCT)) {
@@ -463,7 +463,7 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
   ASSERT_SAFE_EXPRESSIONS;
 
   auto name = fix_function_name(node->identifier());
-  std::shared_ptr<og::symbol> symbol = _symtab.find(node->identifier()); //TODO: new_symbol()?
+  std::shared_ptr<og::symbol> symbol = _symtab.find(node->identifier());
 
   size_t argsSize = 0;
   auto argTypes = symbol->argsType()->components();
@@ -563,15 +563,15 @@ void og::postfix_writer::do_write_node(og::write_node * const node, int lvl) {
     auto expr = static_cast<cdk::expression_node*>(node);
 
     if (expr->is_typed(cdk::TYPE_INT)) {
-      _functions_to_declare.insert("printi");
+      _extern_functions.insert("printi");
       _pf.CALL("printi");
       _pf.TRASH(4); // delete the printed value
     } else if (expr->is_typed(cdk::TYPE_DOUBLE)) {
-      _functions_to_declare.insert("printd");
+      _extern_functions.insert("printd");
       _pf.CALL("printd");
       _pf.TRASH(8); // delete the printed value
     } else if (expr->is_typed(cdk::TYPE_STRING)) {
-      _functions_to_declare.insert("prints");
+      _extern_functions.insert("prints");
       _pf.CALL("prints");
       _pf.TRASH(4); // delete the printed value's address
     } else {
@@ -579,7 +579,7 @@ void og::postfix_writer::do_write_node(og::write_node * const node, int lvl) {
     }
   }
   if (node->newline()) {
-    _functions_to_declare.insert("println");
+    _extern_functions.insert("println");
     _pf.CALL("println"); // print a newline
   }
 }
@@ -591,11 +591,11 @@ void og::postfix_writer::do_input_node(og::input_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
 
   if (node->is_typed(cdk::TYPE_INT)) {
-    _functions_to_declare.insert("readi");
+    _extern_functions.insert("readi");
     _pf.CALL("readi");
     _pf.LDFVAL32();
   } else if (node->is_typed(cdk::TYPE_DOUBLE)) {
-    _functions_to_declare.insert("readd");
+    _extern_functions.insert("readd");
     _pf.CALL("readd");
     _pf.LDFVAL64();
   } else {
