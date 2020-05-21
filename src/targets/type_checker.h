@@ -10,12 +10,14 @@ namespace og {
    */
   class type_checker: public basic_ast_visitor {
     cdk::symbol_table<og::symbol> &_symtab;
+    std::shared_ptr<og::symbol> _function;
+    bool _typecheckingFunction = false;
 
     basic_ast_visitor *_parent;
 
   public:
-    type_checker(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<og::symbol> &symtab, basic_ast_visitor *parent) :
-        basic_ast_visitor(compiler), _symtab(symtab), _parent(parent) {
+    type_checker(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<og::symbol> &symtab, std::shared_ptr<og::symbol> function, basic_ast_visitor *parent) :
+        basic_ast_visitor(compiler), _symtab(symtab), _function(function), _parent(parent) {
     }
 
   public:
@@ -25,10 +27,15 @@ namespace og {
 
   protected:
     void processUnaryExpression(cdk::unary_operation_node *const node, int lvl);
-    void processBinaryExpression(cdk::binary_operation_node *const node, int lvl);
+    void processComparisonExpression(cdk::binary_operation_node *const node, int lvl, bool allowPointers);
+    void processArithmeticExpression(cdk::binary_operation_node *const node, int lvl);
+    void processLogicExpression(cdk::binary_operation_node *const node, int lvl);
     template<typename T>
     void process_literal(cdk::literal_node<T> *const node, int lvl) {
     }
+    template <typename T>
+    std::shared_ptr<og::symbol> declare_function(T *const node, int lvl);
+    std::shared_ptr<og::symbol> declare_var(int qualifier, std::shared_ptr<cdk::basic_type> typeHint, const std::string &id, std::shared_ptr<cdk::basic_type> initializerType);
 
   public:
     // do not edit these lines
@@ -45,9 +52,9 @@ namespace og {
 //     HELPER MACRO FOR TYPE CHECKING
 //---------------------------------------------------------------------------
 
-#define CHECK_TYPES(compiler, symtab, node) { \
+#define CHECK_TYPES(compiler, symtab, function, node) { \
   try { \
-    og::type_checker checker(compiler, symtab, this); \
+    og::type_checker checker(compiler, symtab, function, this); \
     (node)->accept(&checker, 0); \
   } \
   catch (const std::string &problem) { \
@@ -56,6 +63,6 @@ namespace og {
   } \
 }
 
-#define ASSERT_SAFE_EXPRESSIONS CHECK_TYPES(_compiler, _symtab, node)
+#define ASSERT_SAFE_EXPRESSIONS CHECK_TYPES(_compiler, _symtab, _function, node)
 
 #endif

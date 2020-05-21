@@ -11,6 +11,7 @@ namespace og {
    */
   class xml_writer: public basic_ast_visitor {
     cdk::symbol_table<og::symbol> &_symtab;
+    std::shared_ptr<og::symbol> _function = nullptr;
 
   public:
     xml_writer(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<og::symbol> &symtab) :
