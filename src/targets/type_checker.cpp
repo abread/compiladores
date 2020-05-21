@@ -165,8 +165,9 @@ void og::type_checker::do_sequence_node(cdk::sequence_node *const node, int lvl)
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_return_node(og::return_node *const node, int lvl) {
-  if (_function == nullptr) {
-    THROW_ERROR("return outside function body");
+  if (!_function) {
+    std::cerr << "ICE(type_checker/return_node): _function was not set\n";
+    exit(1);
   }
 
   if (node->retval()) {
