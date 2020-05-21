@@ -11,6 +11,9 @@
 
 #define ASSERT_UNSPEC { if (node->type() != nullptr && !node->is_typed(cdk::TYPE_UNSPEC)) return; }
 
+// throw without loosing lineno information
+#define THROW_ERROR(MSG) throw std::make_tuple<const cdk::basic_node*, std::string>(node, std::string(MSG))
+
 static bool is_ID(cdk::typed_node *const node) {
   return node->is_typed(cdk::TYPE_INT) || node->is_typed(cdk::TYPE_DOUBLE);
 }
@@ -82,7 +85,7 @@ static std::shared_ptr<cdk::basic_type> compatible_types_ptr(std::shared_ptr<cdk
     } else if (opts.generalizePtr) {
       return bb;
     } else {
-      std::cerr << "ICE: my creator was careless\n";
+      std::cerr << "ICE(type_checker/compatible_types_ptr): my creator was careless\n";
       exit(1);
     }
   } else {
@@ -162,13 +165,14 @@ void og::type_checker::do_sequence_node(cdk::sequence_node *const node, int lvl)
 //---------------------------------------------------------------------------
 
 void og::type_checker::do_return_node(og::return_node *const node, int lvl) {
-  if (_function == nullptr) {
-    throw std::string("return outside function body");
+  if (!_function) {
+    std::cerr << "ICE(type_checker/return_node): _function was not set\n";
+    exit(1);
   }
 
   if (node->retval()) {
     if (_function->is_typed(cdk::TYPE_VOID)) {
-      throw std::string("non-empty return in void function.");
+      THROW_ERROR("non-empty return in void function.");
     }
 
     node->retval()->accept(this, lvl + 2);
@@ -182,7 +186,7 @@ void og::type_checker::do_return_node(og::return_node *const node, int lvl) {
     auto type = compatible_types(_function->type(), node->retval()->type(), opts);
 
     if (type == nullptr) {
-      throw std::string("return expression incompatible with function return type");
+      THROW_ERROR("return expression incompatible with function return type");
     }
 
     if (_function->autoType()) {
@@ -190,7 +194,7 @@ void og::type_checker::do_return_node(og::return_node *const node, int lvl) {
       _function->type(type);
     }
   } else if (! _function->is_typed(cdk::TYPE_VOID)) {
-    throw std::string("empty return in non-void function");
+    THROW_ERROR("empty return in non-void function");
   }
 }
 
@@ -228,7 +232,7 @@ void og::type_checker::do_neg_node(cdk::neg_node *const node, int lvl) {
   processUnaryExpression(node, lvl);
 
   if (!is_ID(node)) {
-    throw std::string("invalid type");
+    THROW_ERROR("invalid type in negation");
   }
 }
 
@@ -236,7 +240,7 @@ void og::type_checker::do_not_node(cdk::not_node *const node, int lvl) {
   processUnaryExpression(node, lvl);
 
   if (!node->is_typed(cdk::TYPE_INT)) {
-    throw std::string("invalid type");
+    THROW_ERROR("invalid type in logical negation");
   }
 }
 
@@ -244,7 +248,7 @@ void og::type_checker::do_identity_node(og::identity_node *const node, int lvl) 
   processUnaryExpression(node, lvl);
 
   if (!is_ID(node)) {
-    throw std::string("invalid type");
+    THROW_ERROR("invalid type in identity");
   }
 }
 
@@ -257,7 +261,7 @@ void og::type_checker::processComparisonExpression(cdk::binary_operation_node *c
       ( (allowPointers && is_PID(node->left())) || is_ID(node->left()) )) {
     node->type(cdk::make_primitive_type(4, cdk::TYPE_INT));
   } else {
-    throw std::string("invalid types in comparison expr");
+    THROW_ERROR("invalid types in comparison expr");
   }
 }
 
@@ -269,7 +273,7 @@ void og::type_checker::processArithmeticExpression(cdk::binary_operation_node *c
   if (auto type = compatible_types(node->left(), node->right()); type != nullptr && is_ID(node->left()) && is_ID(node->right())) {
     node->type(type);
   } else {
-    throw std::string("invalid type for int/double binary expr");
+    THROW_ERROR("invalid type for int/double binary expr");
   }
 }
 
@@ -281,7 +285,7 @@ void og::type_checker::processLogicExpression(cdk::binary_operation_node *const 
   if (node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_INT)) {
     node->type(node->left()->type());
   } else {
-    throw std::string("invalid type for int binary expr");
+    THROW_ERROR("invalid type for int binary expr");
   }
 }
 
@@ -300,7 +304,7 @@ void og::type_checker::do_add_node(cdk::add_node *const node, int lvl) {
 
   auto type = compatible_types(node->left(), node->right());
   if (!type || !is_ID(node->left())) {
-    throw std::string("invalid types in binary expr");
+    THROW_ERROR("invalid types in binary expr");
   }
 
   node->type(type);
@@ -320,7 +324,7 @@ void og::type_checker::do_sub_node(cdk::sub_node *const node, int lvl) {
 
   auto type = compatible_types(node->left(), node->right());
   if (!type || !is_PID(node->left())) {
-    throw std::string("invalid types in binary expr");
+    THROW_ERROR("invalid types in binary expr");
   }
 
   if (node->left()->is_typed(cdk::TYPE_POINTER)) {
@@ -344,7 +348,7 @@ void og::type_checker::do_mod_node(cdk::mod_node *const node, int lvl) {
   if (node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_INT)) {
     node->type(node->left()->type());
   } else {
-    throw std::string("invalid type for int binary expr");
+    THROW_ERROR("invalid type for int binary expr");
   }
 }
 void og::type_checker::do_lt_node(cdk::lt_node *const node, int lvl) {
@@ -382,7 +386,7 @@ void og::type_checker::do_variable_node(cdk::variable_node *const node, int lvl)
   if (symbol) {
     node->type(symbol->type());
   } else {
-    throw std::string("undefined variable: " + id);
+    THROW_ERROR("undefined variable: " + id);
   }
 }
 
@@ -392,11 +396,11 @@ void og::type_checker::do_pointer_index_node(og::pointer_index_node * const node
   node->index()->accept(this, lvl + 2);
 
   if (! node->base()->is_typed(cdk::TYPE_POINTER)) {
-    throw std::string("pointer expression expected in pointer indexing");
+    THROW_ERROR("pointer expression expected in pointer indexing");
   }
 
   if (! node->index()->is_typed(cdk::TYPE_INT)) {
-    throw std::string("integer expected in index");
+    THROW_ERROR("integer expected in index");
   }
 
   auto ref = cdk::reference_type_cast(node->base()->type());
@@ -415,11 +419,11 @@ void og::type_checker::do_assignment_node(cdk::assignment_node *const node, int 
   node->rvalue()->accept(this, lvl + 2);
 
   if (node->lvalue()->is_typed(cdk::TYPE_STRUCT) || node->rvalue()->is_typed(cdk::TYPE_STRUCT)) {
-    throw std::string("tuple assignment not supported");
+    THROW_ERROR("tuple assignment not supported");
   }
 
   if (compatible_types(node->lvalue(), node->rvalue(), ASSIGNMENT_TYPE_COMPAT) == nullptr) {
-    throw std::string("incompatible types in assignment");
+    THROW_ERROR("incompatible types in assignment");
   }
 
   node->type(node->lvalue()->type());
@@ -466,7 +470,7 @@ std::shared_ptr<og::symbol> og::type_checker::declare_function(T *const node, in
         || !compatible_types(old_sym->argsType(), sym->argsType(), DECL_TYPE_COMPAT)
         || old_sym->qualifier() != sym->qualifier()
         || old_sym->autoType() != sym->autoType()) {
-      throw std::string("conflicting declarations for " + id);
+      THROW_ERROR("conflicting declarations for " + id);
     }
 
     return old_sym;
@@ -483,13 +487,13 @@ void og::type_checker::do_function_declaration_node(og::function_declaration_nod
 
 void og::type_checker::do_function_definition_node(og::function_definition_node *const node, int lvl) {
   if (node->qualifier() == tREQUIRE)
-    throw std::string("can't require a function definition");
+    THROW_ERROR("can't require a function definition");
 
   auto sym = declare_function(node, lvl);
 
   // Mark function as defined (throw if redefinition)
   if (sym && sym->definedOrInitialized()) {
-    throw std::string("function redefinition: " + sym->name());
+    THROW_ERROR("function redefinition: " + sym->name());
   }
   sym->definedOrInitialized() = true;
 
@@ -509,7 +513,7 @@ void og::type_checker::do_function_definition_node(og::function_definition_node 
   _function = nullptr;
 
   if (sym->is_typed(cdk::TYPE_UNSPEC)) {
-    throw std::string("auto function didn't return anything");
+    THROW_ERROR("auto function didn't return anything");
   }
 
   // Check flow graph to ensure function returns correctly (also checks breaks/continues)
@@ -526,7 +530,7 @@ void og::type_checker::do_function_call_node(og::function_call_node *const node,
 
   auto sym = _symtab.find(id);
   if (!sym) {
-    throw std::string("tried to use undeclared function: " + id);
+    THROW_ERROR("tried to use undeclared function: " + id);
   }
 
   std::shared_ptr<cdk::basic_type> argsType;
@@ -544,11 +548,11 @@ void og::type_checker::do_function_call_node(og::function_call_node *const node,
   }
 
   if (compatible_types(sym->argsType(), argsType, ASSIGNMENT_TYPE_COMPAT) == nullptr) {
-    throw std::string("incorrect argument type in call to " + id);
+    THROW_ERROR("incorrect argument type in call to " + id);
   }
 
   if (sym->is_typed(cdk::TYPE_UNSPEC)) {
-    throw std::string("called function does not have a known return type: " + id);
+    THROW_ERROR("called function does not have a known return type: " + id);
   }
 
   node->type(sym->type());
@@ -583,15 +587,15 @@ void og::type_checker::do_write_node(og::write_node *const node, int lvl) {
 
     for (auto comp : type->components()) {
       if (comp->name() != cdk::TYPE_INT && comp->name() != cdk::TYPE_DOUBLE && comp->name() != cdk::TYPE_STRING) {
-        throw std::string("invalid expression type in write statement");
+        THROW_ERROR("invalid expression type in write statement");
       }
     }
 
     if (node->argument()->size() != type->length()) {
-      throw std::string("invalid expression type in write statement");
+      THROW_ERROR("invalid expression type in write statement");
     }
   } else if (!node->argument()->is_typed(cdk::TYPE_INT) && !node->argument()->is_typed(cdk::TYPE_DOUBLE) && !node->argument()->is_typed(cdk::TYPE_STRING)) {
-    throw std::string("invalid expression type in write statement");
+    THROW_ERROR("invalid expression type in write statement");
   }
 }
 
@@ -634,10 +638,10 @@ void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
       auto type = cdk::structured_type_cast(node->condition()->type());
 
       if (type->component(type->length() - 1)->name() != cdk::TYPE_INT) {
-        throw std::string("for condition must end with int/bool expression");
+        THROW_ERROR("for condition must end with int/bool expression");
       }
     } else if (!node->condition()->is_typed(cdk::TYPE_INT)) {
-      throw std::string("for condition must end with int/bool expression");
+      THROW_ERROR("for condition must end with int/bool expression");
     }
 
   }
@@ -664,7 +668,7 @@ void og::type_checker::do_if_node(og::if_node *const node, int lvl) {
   node->block()->accept(this, lvl + 2);
 
   if (! node->condition()->is_typed(cdk::TYPE_INT))
-    throw std::string("invalid type for condition" + cdk::to_string(node->condition()->type()));
+    THROW_ERROR("invalid type for condition" + cdk::to_string(node->condition()->type()));
 }
 
 void og::type_checker::do_if_else_node(og::if_else_node *const node, int lvl) {
@@ -673,7 +677,7 @@ void og::type_checker::do_if_else_node(og::if_else_node *const node, int lvl) {
   node->elseblock()->accept(this, lvl + 2);
 
   if (! node->condition()->is_typed(cdk::TYPE_INT))
-    throw std::string("invalid type for condition" + cdk::to_string(node->condition()->type()));
+    THROW_ERROR("invalid type for condition" + cdk::to_string(node->condition()->type()));
 }
 
 void og::type_checker::do_tuple_node(og::tuple_node *const node, int lvl) {
@@ -735,10 +739,10 @@ static bool is_literal(cdk::expression_node *expr) {
 
 void og::type_checker::do_variable_declaration_node(og::variable_declaration_node *const node, int lvl) {
   if (node->initializer() && node->qualifier() == tREQUIRE)
-    throw std::string("external(required) variables cannot be initialized");
+    THROW_ERROR("external(required) variables cannot be initialized");
 
   if (node->is_typed(cdk::TYPE_UNSPEC) && node->qualifier() == tREQUIRE)
-    throw std::string("external(required) variables must have a concrete type");
+    THROW_ERROR("external(required) variables must have a concrete type");
 
   if (node->initializer()) {
     node->initializer()->accept(this, lvl);
@@ -748,11 +752,11 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
           (node->initializer()->is_typed(cdk::TYPE_STRUCT) && cdk::structured_type_cast(node->initializer()->type())->length() == node->identifiers().size())
           )
         ) {
-        throw std::string("number of identifiers does not match number of expressions");
+        THROW_ERROR("number of identifiers does not match number of expressions");
       }
 
     if (!_function && !is_literal(node->initializer())) {
-      throw std::string("global variable declarations may only be initialized with literals");
+      THROW_ERROR("global variable declarations may only be initialized with literals");
     }
   }
 
@@ -809,17 +813,17 @@ void og::type_checker::do_tuple_index_node(og::tuple_index_node *const node, int
   node->base()->accept(this, lvl + 2);
 
   if (! node->base()->is_typed(cdk::TYPE_STRUCT)) {
-    throw std::string("can't index 1-tuples");
+    THROW_ERROR("can't index 1-tuples");
   }
 
   auto baseType = cdk::structured_type_cast(node->base()->type());
 
   if (node->index() < 1) {
-    throw std::string("invalid tuple index. remember that it starts with 1");
+    THROW_ERROR("invalid tuple index. remember that it starts with 1");
   }
 
   if (node->index() > baseType->length()) {
-    throw std::string("tuple index too big");
+    THROW_ERROR("tuple index too big");
   }
 
   size_t idx = node->index() - 1;
