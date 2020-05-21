@@ -232,7 +232,7 @@ void og::type_checker::do_neg_node(cdk::neg_node *const node, int lvl) {
   processUnaryExpression(node, lvl);
 
   if (!is_ID(node)) {
-    THROW_ERROR("invalid type");
+    THROW_ERROR("invalid type in negation");
   }
 }
 
@@ -240,7 +240,7 @@ void og::type_checker::do_not_node(cdk::not_node *const node, int lvl) {
   processUnaryExpression(node, lvl);
 
   if (!node->is_typed(cdk::TYPE_INT)) {
-    THROW_ERROR("invalid type");
+    THROW_ERROR("invalid type in logical negation");
   }
 }
 
@@ -248,7 +248,7 @@ void og::type_checker::do_identity_node(og::identity_node *const node, int lvl) 
   processUnaryExpression(node, lvl);
 
   if (!is_ID(node)) {
-    THROW_ERROR("invalid type");
+    THROW_ERROR("invalid type in identity");
   }
 }
 
