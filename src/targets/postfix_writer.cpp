@@ -623,10 +623,7 @@ void og::postfix_writer::do_input_node(og::input_node * const node, int lvl) {
 //---------------------------------------------------------------------------
 
 void og::postfix_writer::do_for_node(og::for_node * const node, int lvl) {
-  // HACK: typechecker declares initializer variables prematurely
-  _symtab.push();
   ASSERT_SAFE_EXPRESSIONS;
-  _symtab.pop();
 
   int lblini, lblincr, lblend;
   _forIni.push(lblini = ++_lbl);
