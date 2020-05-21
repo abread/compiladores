@@ -1,0 +1,25 @@
+public int og() {
+	auto justneedthetype = 1, (2.0, (3.5, 4), "asd"), "def";
+	auto b = justneedthetype?;
+	b = [3];
+
+	for auto i , j = 0, 1; i < 3; i = i + 1, j = j + 1 do {
+		b[i]@1 = j;
+		b[i]@2@1 = j + 0.1;
+		b[i]@2@2@1 = j * 2.1;
+		b[i]@2@2@2 = j * 2;
+		b[i]@2@3 = "heh";
+		b[i]@3 = "heh";
+	}
+
+	for int i = 0; i < 3; i = i + 1 do {
+		write "b[", i, "]@1 = "; writeln b[i]@1;
+		write "b[", i, "]@2@1 = "; writeln b[i]@2@1;
+		write "b[", i, "]@2@2@1 = "; writeln b[i]@2@2@1;
+		write "b[", i, "]@2@2@2 = "; writeln b[i]@2@2@2;
+		write "b[", i, "]@2@3 = "; writeln b[i]@2@3;
+		write "b[", i, "]@3 = "; writeln b[i]@3;
+	}
+
+	return 0;
+}
