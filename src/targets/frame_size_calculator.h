@@ -1,5 +1,5 @@
-#ifndef __GR8_TARGET_FRAME_SIZE_CALCULATOR_H__
-#define __GR8_TARGET_FRAME_SIZE_CALCULATOR_H__
+#ifndef __OG_TARGET_FRAME_SIZE_CALCULATOR_H__
+#define __OG_TARGET_FRAME_SIZE_CALCULATOR_H__
 
 #include "targets/basic_ast_visitor.h"
 

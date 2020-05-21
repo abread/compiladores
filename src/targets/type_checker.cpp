@@ -1,7 +1,8 @@
 #include <string>
 #include <type_traits>
 #include "targets/type_checker.h"
-#include "ast/all.h"  // automatically generated
+#include "targets/flow_graph_checker.h"
+#include "ast/all.h" // automatically generated
 #include <cdk/types/primitive_type.h>
 
 #ifndef tREQUIRE
@@ -507,10 +508,13 @@ void og::type_checker::do_function_definition_node(og::function_definition_node 
   _typecheckingFunction = false;
   _function = nullptr;
 
-  // TODO: what if there's still nothing returned? void? confirm
   if (sym->is_typed(cdk::TYPE_UNSPEC)) {
-    sym->type(cdk::make_primitive_type(0, cdk::TYPE_VOID));
+    throw std::string("auto function didn't return anything");
   }
+
+  // Check flow graph to ensure function returns correctly (also checks breaks/continues)
+  flow_graph_checker fgc(_compiler);
+  node->accept(&fgc, lvl); // will throw if it fails
 
   node->type(sym->type());
 }
@@ -639,6 +643,11 @@ void og::type_checker::do_for_node(og::for_node *const node, int lvl) {
   }
 
   node->block()->accept(this, lvl + 2);
+
+  // Check flow graph to ensure breaks and continues are placed correctly
+  //flow_graph_checker fgc(_compiler);
+  //node->accept(&fgc, lvl); // will throw if it fails
+  // already checked in function_definition_node, and all loops must be inside a function definition
 
   _symtab.pop();
 }
