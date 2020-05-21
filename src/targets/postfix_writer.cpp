@@ -455,13 +455,6 @@ void og::postfix_writer::do_function_definition_node(og::function_definition_nod
   _callTempOffset = 0;
   _returnTempOffset = 0;
   _unsharedTempOffsetTab.clear();
-
-
-  // these are just a few library function imports
-  if (name == "_main")  {
-    for (std::string ext : _functions_to_declare)
-      _pf.EXTERN(ext);
-  }
 }
 
 //---------------------------------------------------------------------------
