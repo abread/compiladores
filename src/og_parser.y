@@ -200,13 +200,13 @@ iter_instr : tFOR fvars ';' exprs ';' exprs tDO instr    { $$ = new og::for_node
            | tFOR fvars ';' exprs ';'       tDO instr    { $$ = new og::for_node(LINE, $2, new og::tuple_node(LINE, $4), nullptr, $7); }
            | tFOR fvars ';'       ';' exprs tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, $5, $7); }
            | tFOR fvars ';'       ';'       tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, nullptr, $6); }
-           | tFOR exprs ';' exprs ';' exprs tDO instr    { $$ = new og::for_node(LINE, $2, new og::tuple_node(LINE, $4), $6, $8); }
-           | tFOR exprs ';' exprs ';'       tDO instr    { $$ = new og::for_node(LINE, $2, new og::tuple_node(LINE, $4), nullptr, $7); }
-           | tFOR exprs ';'       ';' exprs tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, $5, $7); }
-           | tFOR exprs ';'       ';'       tDO instr    { $$ = new og::for_node(LINE, $2, nullptr, nullptr, $6); }
-           | tFOR       ';' exprs ';' exprs tDO instr    { $$ = new og::for_node(LINE, nullptr, new og::tuple_node(LINE, $3), $5, $7); }
+           | tFOR exprs ';' exprs ';' exprs tDO instr    { $$ = new og::for_node(LINE, new cdk::evaluation_node(LINE, $2), new og::tuple_node(LINE, $4), new cdk::evaluation_node(LINE, $6), $8); }
+           | tFOR exprs ';' exprs ';'       tDO instr    { $$ = new og::for_node(LINE, new cdk::evaluation_node(LINE, $2), new og::tuple_node(LINE, $4), nullptr, $7); }
+           | tFOR exprs ';'       ';' exprs tDO instr    { $$ = new og::for_node(LINE, new cdk::evaluation_node(LINE, $2), nullptr, new cdk::evaluation_node(LINE, $5), $7); }
+           | tFOR exprs ';'       ';'       tDO instr    { $$ = new og::for_node(LINE, new cdk::evaluation_node(LINE, $2), nullptr, nullptr, $6); }
+           | tFOR       ';' exprs ';' exprs tDO instr    { $$ = new og::for_node(LINE, nullptr, new og::tuple_node(LINE, $3), new cdk::evaluation_node(LINE, $5), $7); }
            | tFOR       ';' exprs ';'       tDO instr    { $$ = new og::for_node(LINE, nullptr, new og::tuple_node(LINE, $3), nullptr, $6); }
-           | tFOR       ';'       ';' exprs tDO instr    { $$ = new og::for_node(LINE, nullptr, nullptr, $4, $6); }
+           | tFOR       ';'       ';' exprs tDO instr    { $$ = new og::for_node(LINE, nullptr, nullptr, new cdk::evaluation_node(LINE, $4), $6); }
            | tFOR       ';'       ';'       tDO instr    { $$ = new og::for_node(LINE, nullptr, nullptr, nullptr, $5); }
            ;
 
