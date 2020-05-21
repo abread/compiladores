@@ -61,6 +61,11 @@ namespace og {
     std::cerr << (node)->lineno() << ": " << problem << std::endl; \
     return; \
   } \
+  catch (const std::tuple<const cdk::basic_node*, std::string> &t) {\
+    const auto [node, problem] = t;\
+    std::cerr << (node)->lineno() << ": " << problem << std::endl; \
+    return; \
+  }\
 }
 
 #define ASSERT_SAFE_EXPRESSIONS CHECK_TYPES(_compiler, _symtab, _function, node)

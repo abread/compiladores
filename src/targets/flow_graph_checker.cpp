@@ -1,12 +1,15 @@
 #include "targets/flow_graph_checker.h"
 #include "ast/all.h" // automatically generated
 
+// throw without loosing lineno information
+#define THROW_ERROR(MSG) throw std::make_tuple<const cdk::basic_node*, std::string>(node, std::string(MSG))
+
 void og::flow_graph_checker::do_function_definition_node(og::function_definition_node * const node, int lvl) {
   _returning = false;
   node->block()->accept(this, lvl + 2);
 
   if (!_returning && !node->is_typed(cdk::TYPE_VOID)) {
-    throw std::string("function does not always return");
+    THROW_ERROR("function does not always return");
   }
 }
 void og::flow_graph_checker::do_return_node(og::return_node * const node, int lvl) {
@@ -24,13 +27,13 @@ void og::flow_graph_checker::do_for_node(og::for_node * const node, int lvl) {
 }
 void og::flow_graph_checker::do_continue_node(og::continue_node * const node, int lvl) {
   if (_cycle_depth == 0) {
-    throw std::string("continue outside loop");
+    THROW_ERROR("continue outside loop");
   }
   _jumping_in_cycle = true;
 }
 void og::flow_graph_checker::do_break_node(og::break_node * const node, int lvl) {
   if (_cycle_depth == 0) {
-    throw std::string("break outside loop");
+    THROW_ERROR("break outside loop");
   }
   _jumping_in_cycle = true;
 }
@@ -40,9 +43,9 @@ void og::flow_graph_checker::do_sequence_node(cdk::sequence_node * const node, i
   _jumping_in_cycle = false;
   for (auto child : node->nodes()) {
     if (_returning) {
-      throw std::string("return must be the last instruction in a block");
+      THROW_ERROR("return must be the last instruction in a block");
     } else if (_jumping_in_cycle) {
-      throw std::string("break/continue must be the last instruction in a block");
+      THROW_ERROR("break/continue must be the last instruction in a block");
     }
 
     child->accept(this, lvl + 2);
