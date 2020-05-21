@@ -62,14 +62,24 @@ static std::shared_ptr<cdk::basic_type> compatible_types_struct(std::shared_ptr<
   return cdk::make_structured_type(components);
 }
 
+static std::shared_ptr<cdk::basic_type> is_void_ptr(std::shared_ptr<cdk::reference_type> t) {
+  if (t->referenced()->name() == cdk::TYPE_POINTER) {
+    return is_void_ptr(cdk::reference_type_cast(t->referenced()));
+  } else if (t->referenced()->name() == cdk::TYPE_VOID) {
+    return t;
+  } else {
+    return nullptr;
+  }
+}
+
 static std::shared_ptr<cdk::basic_type> compatible_types_ptr(std::shared_ptr<cdk::reference_type> a, std::shared_ptr<cdk::reference_type> b, TypeCompatOptions opts) {
-  if (a->referenced()->name() == cdk::TYPE_UNSPEC && (opts.ptrAssignment || opts.generalizePtr)) {
-    return a;
-  } else if (b->referenced()->name() == cdk::TYPE_UNSPEC && (opts.ptrAssignment || opts.generalizePtr)) {
+  if (auto aa = is_void_ptr(a); aa && (opts.ptrAssignment || opts.generalizePtr)) {
+    return aa;
+  } else if (auto bb = is_void_ptr(b); bb && (opts.ptrAssignment || opts.generalizePtr)) {
     if (opts.ptrAssignment) {
       return a;
     } else if (opts.generalizePtr) {
-      return b;
+      return bb;
     } else {
       std::cerr << "ICE: my creator was careless\n";
       exit(1);
@@ -82,7 +92,7 @@ static std::shared_ptr<cdk::basic_type> compatible_types_ptr(std::shared_ptr<cdk
     auto referenced = compatible_types(a->referenced(), b->referenced(), opts);
     if (referenced == nullptr) {
       if (opts.generalizePtr) {
-        referenced = cdk::make_primitive_type(0, cdk::TYPE_UNSPEC);
+        referenced = cdk::make_primitive_type(1, cdk::TYPE_VOID);
       } else {
         return nullptr;
       }
@@ -202,7 +212,7 @@ void og::type_checker::do_string_node(cdk::string_node *const node, int lvl) {
 
 void og::type_checker::do_nullptr_node(og::nullptr_node * const node, int lvl) {
   ASSERT_UNSPEC;
-  node->type(cdk::make_reference_type(4, cdk::make_primitive_type(0, cdk::TYPE_UNSPEC)));
+  node->type(cdk::make_reference_type(4, cdk::make_primitive_type(1, cdk::TYPE_VOID)));
 }
 
 //---------------------------------------------------------------------------
@@ -417,7 +427,7 @@ void og::type_checker::do_assignment_node(cdk::assignment_node *const node, int 
     // HACK: a = input must work with doubles
     // if this isn't here, input will return an int which will be converted to a double (when a is a double)
     input->type(node->type());
-  } else if (auto alloc = dynamic_cast<og::stack_alloc_node *>(node->rvalue()); alloc && node->lvalue()->is_typed(cdk::TYPE_POINTER)) {
+  } else if (auto alloc = dynamic_cast<og::stack_alloc_node *>(node->rvalue())) {
     // HACK: alloc gets its type from the left value
     alloc->type(node->lvalue()->type());
   }
@@ -596,7 +606,7 @@ void og::type_checker::do_address_of_node(og::address_of_node * const node, int 
 void og::type_checker::do_stack_alloc_node(og::stack_alloc_node * const node, int lvl) {
   ASSERT_UNSPEC;
   node->argument()->accept(this, lvl + 2);
-  node->type(cdk::make_reference_type(4, cdk::make_primitive_type(0, cdk::TYPE_UNSPEC)));
+  node->type(cdk::make_reference_type(4, cdk::make_primitive_type(1, cdk::TYPE_VOID)));
 }
 
 //---------------------------------------------------------------------------
@@ -747,7 +757,7 @@ void og::type_checker::do_variable_declaration_node(og::variable_declaration_nod
     node->type(sym->type());
 
     // HACK: alloc gets its type from the left value
-    if (auto alloc = dynamic_cast<og::stack_alloc_node*>(node->initializer()); alloc && node->is_typed(cdk::TYPE_POINTER)) {
+    if (auto alloc = dynamic_cast<og::stack_alloc_node*>(node->initializer())) {
       alloc->type(node->type());
     }
 
