@@ -1,0 +1,5 @@
+public int og() {
+     auto a = 1 + (3 * 5) % 4 - 3;
+     writeln a, (0.123, "sdf", 2, 12)@3, 3.4, "asd";
+     return 0;
+}

@@ -586,6 +586,10 @@ void og::type_checker::do_write_node(og::write_node *const node, int lvl) {
         throw std::string("invalid expression type in write statement");
       }
     }
+
+    if (node->argument()->size() != type->length()) {
+      throw std::string("invalid expression type in write statement");
+    }
   } else if (!node->argument()->is_typed(cdk::TYPE_INT) && !node->argument()->is_typed(cdk::TYPE_DOUBLE) && !node->argument()->is_typed(cdk::TYPE_STRING)) {
     throw std::string("invalid expression type in write statement");
   }
