@@ -51,8 +51,8 @@ namespace og {
 
     size_t tempsize() const {
       size_t totalsz = _calltempsize + _returntempsize;
-      for (auto& [_, tempsz] : _unsharedTempSizeTab) {
-        totalsz += tempsz;
+      for (const auto&  tempsz : _unsharedTempSizeTab) {
+        totalsz += tempsz.second;
       }
 
       return totalsz;

@@ -37,6 +37,8 @@ namespace og {
 
   public:
     ~postfix_writer() {
+      for (std::string ext : _functions_to_declare)
+        _pf.EXTERN(ext);
       os().flush();
     }
 
