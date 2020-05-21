@@ -14,8 +14,9 @@ namespace og {
 
   public:
     inline evaluation_node(int lineno, cdk::expression_node *argument) :
-        cdk::basic_node(lineno), _argument(argument) {
-    }
+      cdk::basic_node(lineno), _argument(argument) {}
+    inline evaluation_node(cdk::expression_node *argument) :
+      evaluation_node(argument->lineno(), argument) {}
 
   public:
     inline cdk::expression_node *argument() {
