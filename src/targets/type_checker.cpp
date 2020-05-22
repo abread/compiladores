@@ -336,9 +336,6 @@ void og::type_checker::do_sub_node(cdk::sub_node *const node, int lvl) {
   if (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_INT)) {
     node->type(node->left()->type());
     return;
-  } else if (node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_POINTER)) {
-    node->type(node->right()->type());
-    return;
   }
 
   auto type = compatible_types(node->left(), node->right());
