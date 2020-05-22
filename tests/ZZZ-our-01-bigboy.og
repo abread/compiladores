@@ -17,7 +17,7 @@ public int og() {
   auto d3 = d@3;
   auto inner = d@2@4;
 
-  (1,2.2,3)@2 = 2;
+  (1,(2.2, (1, 2, 3.1), "asd"), (3, 7.5))@2@2@3 = 2;
 
   writeln a;
   writeln b;
