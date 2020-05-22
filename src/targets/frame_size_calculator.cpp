@@ -246,6 +246,10 @@ void og::frame_size_calculator::do_for_node(og::for_node * const node, int lvl) 
   if (node->block()) {
     node->block()->accept(this, lvl + 2);
   }
+
+  if (node->increments()) {
+    node->increments()->accept(this, lvl + 2);
+  }
 }
 
 void og::frame_size_calculator::do_if_node(og::if_node * const node, int lvl) {
