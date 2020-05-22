@@ -43,13 +43,13 @@ namespace og {
 
   private:
     void openTag(const std::string &tag, int lvl) {
-      os() << std::string(lvl, ' ') + "<" + tag + ">" << std::endl;
+      os() << std::string(lvl, ' ') << "<" << tag << ">" << std::endl;
     }
     void openTag(const cdk::basic_node *node, int lvl) {
       openTag(node->label(), lvl);
     }
     void closeTag(const std::string &tag, int lvl) {
-      os() << std::string(lvl, ' ') + "</" + tag + ">" << std::endl;
+      os() << std::string(lvl, ' ') << "</" << tag << ">" << std::endl;
     }
     void closeTag(const cdk::basic_node *node, int lvl) {
       closeTag(node->label(), lvl);
