@@ -602,7 +602,7 @@ void og::type_checker::do_write_node(og::write_node *const node, int lvl) {
     auto type = cdk::structured_type_cast(node->argument()->type());
 
     for (auto comp : type->components()) {
-      if (comp->name() != cdk::TYPE_INT && comp->name() != cdk::TYPE_DOUBLE && comp->name() != cdk::TYPE_STRING) {
+      if (comp->name() != cdk::TYPE_INT && comp->name() != cdk::TYPE_DOUBLE && comp->name() != cdk::TYPE_STRING && !is_void_ptr(comp)) {
         THROW_ERROR("invalid expression type in write statement");
       }
     }
@@ -610,7 +610,7 @@ void og::type_checker::do_write_node(og::write_node *const node, int lvl) {
     if (node->argument()->size() != type->length()) {
       THROW_ERROR("invalid expression type in write statement");
     }
-  } else if (!node->argument()->is_typed(cdk::TYPE_INT) && !node->argument()->is_typed(cdk::TYPE_DOUBLE) && !node->argument()->is_typed(cdk::TYPE_STRING)) {
+  } else if (!node->argument()->is_typed(cdk::TYPE_INT) && !node->argument()->is_typed(cdk::TYPE_DOUBLE) && !node->argument()->is_typed(cdk::TYPE_STRING) && !is_void_ptr(node->argument()->type())) {
     THROW_ERROR("invalid expression type in write statement");
   }
 }
