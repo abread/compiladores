@@ -25,20 +25,22 @@ static bool is_PID(cdk::typed_node *const node) {
 // Different operations have different notions of allowed types
 class TypeCompatOptions {
 public:
-  TypeCompatOptions(bool id = true, bool di = true, bool unspec = false, bool ptrassign = true, bool generalizeptr = false)
-    : acceptID(id), acceptDI(di), acceptUnspec(unspec), ptrAssignment(ptrassign) {}
+  TypeCompatOptions(bool id = true, bool di = true, bool unspec = false, bool ptrassign = true, bool generalizeptr = false, bool voidptrint = true, bool intvoidptr = true)
+    : acceptID(id), acceptDI(di), acceptUnspec(unspec), ptrAssignment(ptrassign), generalizePtr(generalizeptr), acceptVoidPtrInt(voidptrint), acceptIntVoidPtr(intvoidptr) {}
   bool acceptID; // accept (TYPE_INT, TYPE_DOUBLE), return TYPE_DOUBLE
   bool acceptDI; // accept (TYPE_DOUBLE, TYPE_INT), return TYPE_DOUBLE
   bool acceptUnspec; // accept TYPE_UNSPEC in one or more arguments, return the one that isn't TYPE_UNSPEC if it exists
   bool ptrAssignment; // (ptr<auto>, ptr<X>) returns ptr<auto> and (ptr<X>, ptr<auto>) returns ptr<X> (allow conversion to/from void ptr)
   bool generalizePtr; // (ptr<X>, ptr<Y>) returns ptr<auto>
+  bool acceptVoidPtrInt; // (ptr<auto>, int) returns int
+  bool acceptIntVoidPtr; // (int, ptr<auto>) returns int
 };
 
 const TypeCompatOptions DEFAULT_TYPE_COMPAT = TypeCompatOptions();
-const TypeCompatOptions GENERALIZE_TYPE_COMPAT = TypeCompatOptions(true, true, true, true, true);
-const TypeCompatOptions ASSIGNMENT_TYPE_COMPAT = TypeCompatOptions(false, true, false, true, false);
-const TypeCompatOptions INITIALIZER_TYPE_COMPAT = TypeCompatOptions(false, true, true, true, false);
-const TypeCompatOptions DECL_TYPE_COMPAT = TypeCompatOptions(false, false, true, false, false);
+const TypeCompatOptions GENERALIZE_TYPE_COMPAT = TypeCompatOptions(true, true, true, true, true, true, true);
+const TypeCompatOptions ASSIGNMENT_TYPE_COMPAT = TypeCompatOptions(false, true, false, true, false, false, true);
+const TypeCompatOptions INITIALIZER_TYPE_COMPAT = TypeCompatOptions(false, true, true, true, false, false, true);
+const TypeCompatOptions DECL_TYPE_COMPAT = TypeCompatOptions(false, false, true, false, false, false, false);
 
 static std::shared_ptr<cdk::basic_type> compatible_types(std::shared_ptr<cdk::basic_type> a, std::shared_ptr<cdk::basic_type> b, TypeCompatOptions opts);
 
@@ -76,6 +78,14 @@ static std::shared_ptr<cdk::basic_type> is_void_ptr(std::shared_ptr<cdk::referen
   }
 }
 
+static std::shared_ptr<cdk::basic_type> is_void_ptr(std::shared_ptr<cdk::basic_type> t) {
+  if (t->name() == cdk::TYPE_POINTER) {
+    return is_void_ptr(cdk::reference_type_cast(t));
+  } else {
+    return nullptr;
+  }
+}
+
 static std::shared_ptr<cdk::basic_type> compatible_types_ptr(std::shared_ptr<cdk::reference_type> a, std::shared_ptr<cdk::reference_type> b, TypeCompatOptions opts) {
   if (auto aa = is_void_ptr(a); aa && (opts.ptrAssignment || opts.generalizePtr)) {
     return aa;
@@ -92,6 +102,9 @@ static std::shared_ptr<cdk::basic_type> compatible_types_ptr(std::shared_ptr<cdk
     // ptr<int> != ptr<double> always
     opts.acceptID = false;
     opts.acceptDI = false;
+    // and ptr<ptr<auto>> ? ptr<int> is treated separately
+    opts.acceptVoidPtrInt = false;
+    opts.acceptIntVoidPtr = false;
 
     auto referenced = compatible_types(a->referenced(), b->referenced(), opts);
     if (referenced == nullptr) {
@@ -112,15 +125,19 @@ static std::shared_ptr<cdk::basic_type> compatible_types(std::shared_ptr<cdk::ba
   } else if (opts.acceptUnspec && b->name() == cdk::TYPE_UNSPEC) {
     return a;
   } else if (opts.acceptDI && a->name() == cdk::TYPE_DOUBLE && b->name() == cdk::TYPE_INT) {
-    return a;
+    return a; // convert to double
   } else if (opts.acceptID && a->name() == cdk::TYPE_INT && b->name() == cdk::TYPE_DOUBLE) {
-    return b;
+    return b; // convert to double
   } else if (a->name() == cdk::TYPE_STRUCT && cdk::structured_type_cast(a)->length() == 1) {
     auto aa = cdk::structured_type_cast(a);
-    return compatible_types(aa->component(0), b);
+    return compatible_types(aa->component(0), b, opts);
   } else if (b->name() == cdk::TYPE_STRUCT && cdk::structured_type_cast(b)->length() == 1) {
     auto bb = cdk::structured_type_cast(b);
-    return compatible_types(a, bb->component(0));
+    return compatible_types(a, bb->component(0), opts);
+  } else if (opts.acceptIntVoidPtr && a->name() == cdk::TYPE_INT && is_void_ptr(b)) {
+    return a; // convert to int
+  } else if (opts.acceptVoidPtrInt && is_void_ptr(a) && b->name() == cdk::TYPE_INT) {
+    return b; // convert to int
   } else if (a->name() != b->name()) { // structs with different sizes may be alright, pointers are all 4 bytes
     return nullptr;
   }
@@ -129,8 +146,10 @@ static std::shared_ptr<cdk::basic_type> compatible_types(std::shared_ptr<cdk::ba
     return compatible_types_struct(cdk::structured_type_cast(a), cdk::structured_type_cast(b), opts);
   } else if (a->name() == cdk::TYPE_POINTER) {
     return compatible_types_ptr(cdk::reference_type_cast(a), cdk::reference_type_cast(b), opts);
-  } else {
+  } else if (a->size() == b->size()) {
     return a;
+  } else {
+    return nullptr;
   }
 }
 
@@ -316,9 +335,6 @@ void og::type_checker::do_sub_node(cdk::sub_node *const node, int lvl) {
 
   if (node->left()->is_typed(cdk::TYPE_POINTER) && node->right()->is_typed(cdk::TYPE_INT)) {
     node->type(node->left()->type());
-    return;
-  } else if (node->left()->is_typed(cdk::TYPE_INT) && node->right()->is_typed(cdk::TYPE_POINTER)) {
-    node->type(node->right()->type());
     return;
   }
 
@@ -586,7 +602,7 @@ void og::type_checker::do_write_node(og::write_node *const node, int lvl) {
     auto type = cdk::structured_type_cast(node->argument()->type());
 
     for (auto comp : type->components()) {
-      if (comp->name() != cdk::TYPE_INT && comp->name() != cdk::TYPE_DOUBLE && comp->name() != cdk::TYPE_STRING) {
+      if (comp->name() != cdk::TYPE_INT && comp->name() != cdk::TYPE_DOUBLE && comp->name() != cdk::TYPE_STRING && !is_void_ptr(comp)) {
         THROW_ERROR("invalid expression type in write statement");
       }
     }
@@ -594,7 +610,7 @@ void og::type_checker::do_write_node(og::write_node *const node, int lvl) {
     if (node->argument()->size() != type->length()) {
       THROW_ERROR("invalid expression type in write statement");
     }
-  } else if (!node->argument()->is_typed(cdk::TYPE_INT) && !node->argument()->is_typed(cdk::TYPE_DOUBLE) && !node->argument()->is_typed(cdk::TYPE_STRING)) {
+  } else if (!node->argument()->is_typed(cdk::TYPE_INT) && !node->argument()->is_typed(cdk::TYPE_DOUBLE) && !node->argument()->is_typed(cdk::TYPE_STRING) && !is_void_ptr(node->argument()->type())) {
     THROW_ERROR("invalid expression type in write statement");
   }
 }

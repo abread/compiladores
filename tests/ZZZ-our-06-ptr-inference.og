@@ -1,0 +1,52 @@
+int a = nullptr;
+
+auto f(int i, ptr<auto> vp, int vpi) {
+	ptr<real> rp = nullptr + 0x8000;
+	ptr<string> sp = nullptr + 0x9000;
+
+	if i == 0 then
+		return 1, 2.1, vp, rp;
+	else
+		return 1.1, 2, vpi, sp;
+}
+
+public int og() {
+	{
+		ptr<real> a = nullptr + 7;
+		ptr<auto> b = a;
+		int c = b;
+
+		writeln b;
+		writeln c;
+	}
+
+	{
+		ptr<real> ap = nullptr + 69;
+		ptr<auto> vap = ap;
+
+		writeln vap;
+		writeln vap+1;
+		writeln 1+vap;
+		writeln vap-1;
+		writeln 1-vap;
+		writeln (ap+1)-ap;
+	}
+
+	{
+		ptr<int> p = nullptr + 42;
+		ptr<auto> vp = p;
+		auto a, b = f(0, vp, vp), f(1, p, vp);
+
+		writeln a@1;
+		writeln a@2;
+		writeln a@3;
+		writeln a@4;
+		writeln b@1;
+		writeln b@2;
+		writeln b@3;
+		writeln b@4;
+	}
+
+
+	return 0;
+}

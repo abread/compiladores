@@ -586,14 +586,13 @@ void og::postfix_writer::do_return_node(og::return_node * const node, int lvl) {
 }
 
 void og::postfix_writer::do_write_node(og::write_node * const node, int lvl) {
-  // TODO: handle newline flag and print EVERYTHING
-  ASSERT_SAFE_EXPRESSIONS; //TODO: print structs
+  ASSERT_SAFE_EXPRESSIONS;
 
   for (auto node : node->argument()->elements()) {
     auto expr = static_cast<cdk::expression_node*>(node);
 
     expr->accept(this, lvl);
-    if (expr->is_typed(cdk::TYPE_INT)) {
+    if (expr->is_typed(cdk::TYPE_INT) || expr->is_typed(cdk::TYPE_POINTER)) {
       _extern_functions.insert("printi");
       _pf.CALL("printi");
       _pf.TRASH(4); // delete the printed value
