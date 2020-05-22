@@ -668,7 +668,7 @@ void og::type_checker::do_if_node(og::if_node *const node, int lvl) {
   node->block()->accept(this, lvl + 2);
 
   if (! node->condition()->is_typed(cdk::TYPE_INT))
-    THROW_ERROR("invalid type for condition" + cdk::to_string(node->condition()->type()));
+    THROW_ERROR("invalid type for condition: " + cdk::to_string(node->condition()->type()));
 }
 
 void og::type_checker::do_if_else_node(og::if_else_node *const node, int lvl) {
@@ -677,7 +677,7 @@ void og::type_checker::do_if_else_node(og::if_else_node *const node, int lvl) {
   node->elseblock()->accept(this, lvl + 2);
 
   if (! node->condition()->is_typed(cdk::TYPE_INT))
-    THROW_ERROR("invalid type for condition" + cdk::to_string(node->condition()->type()));
+    THROW_ERROR("invalid type for condition: " + cdk::to_string(node->condition()->type()));
 }
 
 void og::type_checker::do_tuple_node(og::tuple_node *const node, int lvl) {
