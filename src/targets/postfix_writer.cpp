@@ -350,7 +350,6 @@ void og::postfix_writer::load(cdk::typed_node *const lval_or_expr, int lvl, int 
     int tuple_base_addr_location = tempOffset;
     if (tuple_base_addr_location == 0) {
       std::cerr << "ICE(postfix_writer): Node was not assigned exclusive temporary storage for load\n";
-      throw 1;
       exit(1);
     }
 
