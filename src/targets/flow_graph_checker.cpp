@@ -9,7 +9,7 @@ void og::flow_graph_checker::do_function_definition_node(og::function_definition
   node->block()->accept(this, lvl + 2);
 
   if (!_returning && !node->is_typed(cdk::TYPE_VOID)) {
-    THROW_ERROR("function does not always return");
+    std::cerr << node->lineno() + ": WARNING: function may not always return\n";
   }
 }
 void og::flow_graph_checker::do_return_node(og::return_node * const node, int lvl) {
