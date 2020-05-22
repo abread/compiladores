@@ -114,8 +114,10 @@ void og::frame_size_calculator::do_sub_node(cdk::sub_node * const node, int lvl)
   node->right()->accept(this, lvl);
 }
 void og::frame_size_calculator::do_evaluation_node(og::evaluation_node * const node, int lvl) {
+  bool old = _needTupleAddr;
   _needTupleAddr = false;
   node->argument()->accept(this, lvl);
+  _needTupleAddr = old;
 }
 void og::frame_size_calculator::do_write_node(og::write_node * const node, int lvl) {
   // we don't need space for the whole tuple, just for each argument (possibly)

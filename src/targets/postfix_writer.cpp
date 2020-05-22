@@ -535,10 +535,15 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
 
 void og::postfix_writer::do_evaluation_node(og::evaluation_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
-  node->argument()->accept(this, lvl); // determine the value
 
-  if (node->argument()->is_typed(cdk::TYPE_STRUCT)) {
-    // tuples evaluate to an address
+  bool old = _needTupleAddr;
+  _needTupleAddr = false; // we don't *need* an address
+  node->argument()->accept(this, lvl); // determine the value
+  _needTupleAddr = old;
+
+  if (node->argument()->is_typed(cdk::TYPE_STRUCT) && _evaledTupleAddr) {
+    // tuple evaluated to a base address
+    // it *was* evaluated, just trash it
     _pf.TRASH(4);
   } else {
     _pf.TRASH(node->argument()->type()->size());
