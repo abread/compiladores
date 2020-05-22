@@ -34,6 +34,10 @@ namespace og {
     int _callTempOffset;
     int _returnTempOffset;
 
+    bool _needTupleAddr = false; // true = needs tuple to be stored somewhere and evaluate to its base address
+    bool _evaledTupleAddr = false; // true = tuple was evaluated to base address
+    // if the parent activates _needTupleAddr, _evaledTupleAddr must be set to true by child (child must eval address)
+
   public:
     postfix_writer(std::shared_ptr<cdk::compiler> compiler, cdk::symbol_table<og::symbol> &symtab,
                    cdk::basic_postfix_emitter &pf) :
@@ -85,8 +89,8 @@ namespace og {
 
     void processIDBinaryExpression(cdk::binary_operation_node *const node, int lvl);
     void processIDComparison(cdk::binary_operation_node *const node, int lvl);
-    void load(std::shared_ptr<cdk::basic_type> type, std::function<void()> baseSupplier, int offset = 0);
-    void load(cdk::expression_node *const node, int lvl, int tempOffset = 0);
+    void load_from_base(std::shared_ptr<cdk::basic_type> type, std::function<void()> baseSupplier, int offset = 0);
+    void load(cdk::typed_node *const node, int lvl, int tempOffset = 0);
     void set_declaration_offsets(og::variable_declaration_node * const node);
     void define_global_variable(const std::string& id, cdk::expression_node * init, int qualifier, int lvl);
     void store(std::shared_ptr<cdk::basic_type> lvalType, std::shared_ptr<cdk::basic_type> rvalType, std::function<void()> baseSupplier, int offset = 0);

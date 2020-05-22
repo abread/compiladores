@@ -22,7 +22,12 @@ namespace og {
     size_t _calltempsize = 0; // storage for tuple-returning functions (only one is used at a time, so a single space is sufficient)
     size_t _returntempsize = 0; // storage for return with tuple (only one return will run in each function so a single space is sufficient)
 
-    std::map<cdk::basic_node*, int> _unsharedTempSizeTab; // storage required for tuple_nodes temporary variables and for_node temporary variables
+    std::map<cdk::basic_node const*, int> _unsharedTempSizeTab; // storage required for tuple_nodes temporary variables and for_node temporary variables
+
+    bool _needTupleAddr = true; // true = needs tuple to be stored somewhere and evaluate to its base address
+    bool _evaledTupleAddr = true; // true = tuple was evaluated to base address
+
+    void load_value(cdk::typed_node *lval_or_expr, int lvl, cdk::basic_node const * caller);
 
   public:
     frame_size_calculator(std::shared_ptr<cdk::compiler> compiler, std::shared_ptr<og::symbol> function, cdk::symbol_table<og::symbol> &symtab) :
@@ -37,7 +42,7 @@ namespace og {
       return _localsize;
     }
 
-    const std::map<cdk::basic_node*, int> unsharedTempSizeTab() const {
+    const std::map<cdk::basic_node const*, int> unsharedTempSizeTab() const {
       return _unsharedTempSizeTab;
     }
 

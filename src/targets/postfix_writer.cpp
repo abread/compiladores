@@ -296,7 +296,12 @@ void og::postfix_writer::do_pointer_index_node(og::pointer_index_node * const no
   _pf.ADD(); // add pointer and index
 }
 
-void og::postfix_writer::load(std::shared_ptr<cdk::basic_type> type, std::function<void()> baseProducer, int offset) {
+/*
+loads a potentially complex (tuple) value to the top of the stack from an address
+this base addressed is emitted by the baseProducer, which is called for each primitive type loaded
+baseProducer must leave the stack unchanged apart from the pushed base address
+*/
+void og::postfix_writer::load_from_base(std::shared_ptr<cdk::basic_type> type, std::function<void()> baseProducer, int offset) {
   if (type->name() == cdk::TYPE_INT || type->name() == cdk::TYPE_STRING || type->name() == cdk::TYPE_POINTER) {
     baseProducer();
     if (offset) {
@@ -317,38 +322,60 @@ void og::postfix_writer::load(std::shared_ptr<cdk::basic_type> type, std::functi
     offset += structType->size();
     for (size_t i = 0; i < structType->length(); i++) {
       offset -= structType->component(i)->size();
-      load(structType->component(i), baseProducer, offset);
+      load_from_base(structType->component(i), baseProducer, offset);
     }
   } else {
     ERROR("ICE: Invalid type for rvalue node");
   }
 }
 
-void og::postfix_writer::load(cdk::expression_node *const node, int lvl, int tempOffset) {
-    node->accept(this, lvl);
+/*
+also loads a potentially complex (tuple) value to the top of the stack from a lval or expression node
+it is assumed the node, if is_typed(cdk::TYPE_STRUCT), follows _needTupleAddr/_evaledTupleAddr conventions.
 
-    if (node->is_typed(cdk::TYPE_STRUCT)) {
-      int tuple_base_addr_location = tempOffset;
-      if (tuple_base_addr_location == 0) {
-        std::cerr << "ICE(postfix_writer): Node was not assigned exclusive temporary storage for load\n";
-        exit(1);
-      }
+the node will be visited, and, if a struct base address is pushed to the stack instead of its value:
+- the base address will be stored in FP-tempOffset (because re-visiting the node may evaluate a tuple expression again), and removed from the stack
+- the tuple will be pushed to the stack (using the stored base address)
 
-      _pf.LOCAL(tuple_base_addr_location);
-      _pf.STINT();
+FP-tempOffset should be unshared temporary storage (assigned by og::frame_size_calculator)
+*/
+void og::postfix_writer::load(cdk::typed_node *const lval_or_expr, int lvl, int tempOffset) {
+  bool old = _needTupleAddr;
+  _needTupleAddr = false;
+  _evaledTupleAddr = true; // assume the worst
+  lval_or_expr->accept(this, lvl);
+  _needTupleAddr = old;
 
-      load(node->type(), [this, tuple_base_addr_location]() { _pf.LOCV(tuple_base_addr_location); });
+  if (lval_or_expr->is_typed(cdk::TYPE_STRUCT) && _evaledTupleAddr) {
+    int tuple_base_addr_location = tempOffset;
+    if (tuple_base_addr_location == 0) {
+      std::cerr << "ICE(postfix_writer): Node was not assigned exclusive temporary storage for load\n";
+      throw 1;
+      exit(1);
     }
+
+    _pf.LOCAL(tuple_base_addr_location);
+    _pf.STINT();
+
+    load_from_base(lval_or_expr->type(), [this, tuple_base_addr_location]() { _pf.LOCV(tuple_base_addr_location); });
+  }
+  _evaledTupleAddr = false;
 }
 
 void og::postfix_writer::do_rvalue_node(cdk::rvalue_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   os() << ";; rvalue_node start\n";
   if (node->lvalue()->is_typed(cdk::TYPE_STRUCT)) {
-    // delay getting value
-    node->lvalue()->accept(this, lvl);
+    if (_needTupleAddr) {
+      // delay getting value
+      node->lvalue()->accept(this, lvl);
+      _evaledTupleAddr = true;
+    } else {
+      load(node->lvalue(), lvl, tempOffsetForNode(node));
+      _evaledTupleAddr = false;
+    }
   } else {
-    load(node->type(), [node, this, lvl]() { node->lvalue()->accept(this, lvl); });
+    load_from_base(node->type(), [node, this, lvl]() { node->lvalue()->accept(this, lvl); });
   }
   os() << ";; rvalue_node end\n";
 }
@@ -498,6 +525,7 @@ void og::postfix_writer::do_function_call_node(og::function_call_node *const nod
     // EMPTY
   } else if (return_struct) {
     _pf.LOCAL(_callTempOffset);
+    _evaledTupleAddr = true;
   } else {
     // cannot happen!
     ERROR("ICE(postfix_writer): unsupported function return type");
@@ -560,7 +588,7 @@ void og::postfix_writer::do_write_node(og::write_node * const node, int lvl) {
   for (auto node : node->argument()->elements()) {
     auto expr = static_cast<cdk::expression_node*>(node);
 
-    load(expr, lvl);
+    expr->accept(this, lvl);
     if (expr->is_typed(cdk::TYPE_INT)) {
       _extern_functions.insert("printi");
       _pf.CALL("printi");
@@ -717,22 +745,31 @@ void og::postfix_writer::do_tuple_node(og::tuple_node *const node, int lvl) {
     if (node->size() > 1) { // implies TYPE_STRUCT, when there is only one element with TYPE_STRUCT we can just pass its value up
       // store tuple in temp storage to allow indexing operations
       int tuple_base_addr = tempOffsetForNode(node);
-      if (tuple_base_addr == 0) {
-        std::cerr << "ICE(postfix_writer): Node was not assigned exclusive temporary storage for tuple_node\n";
+      if (tuple_base_addr == 0 && _needTupleAddr) {
+        std::cerr << "ICE(postfix_writer): tuple_node was not assigned exclusive temporary storage\n";
         exit(1);
       }
 
       os() << ";; tuple_node load start\n";
-      for (auto it = elements.begin(); it != elements.end(); it++) {
-        int inner_tupple_base_addr_location = tuple_base_addr + node->type()->size();
+      int inner_tupple_base_addr_location = tuple_base_addr;
+      if (_needTupleAddr) inner_tupple_base_addr_location += node->type()->size();
 
-        load(static_cast<cdk::expression_node*>(*it), lvl, inner_tupple_base_addr_location);
+      for (auto el : elements) {
+        auto expr = static_cast<cdk::expression_node*>(el);
+
+        load(expr, lvl, inner_tupple_base_addr_location);
       }
       os() << ";; tuple_node load end; store start\n";
-      store(node->type(), node->type(), [this, tuple_base_addr]() { _pf.LOCAL(tuple_base_addr); });
 
-      // leave base address in stack
-      _pf.LOCAL(tuple_base_addr);
+      if (_needTupleAddr) {
+        store(node->type(), node->type(), [this, tuple_base_addr]() { _pf.LOCAL(tuple_base_addr); });
+
+        // leave base address in stack
+        _pf.LOCAL(tuple_base_addr);
+        _evaledTupleAddr = true;
+      } else {
+        _evaledTupleAddr = false;
+      }
     } else {
       // only 1 element
       node->element(0)->accept(this, lvl);
@@ -931,7 +968,12 @@ void og::postfix_writer::do_variable_declaration_node(og::variable_declaration_n
 
 void og::postfix_writer::do_tuple_index_node(og::tuple_index_node *const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
+
+  bool old = _needTupleAddr;
+  _needTupleAddr = true;
   node->base()->accept(this, lvl);
+  _needTupleAddr = old;
+
   auto components = (cdk::structured_type_cast(node->base()->type()))->components();
 
   int offset = 0;
@@ -943,6 +985,8 @@ void og::postfix_writer::do_tuple_index_node(og::tuple_index_node *const node, i
     _pf.INT(offset);
     _pf.ADD();
   }
+
+  _evaledTupleAddr = true; // may have evaled the address of a non-tuple but that's fine
 }
 
 void og::postfix_writer::do_sizeof_node(og::sizeof_node *const node, int lvl) {

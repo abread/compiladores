@@ -8,6 +8,18 @@ og::frame_size_calculator::~frame_size_calculator() {
   os().flush();
 }
 
+void og::frame_size_calculator::load_value(cdk::typed_node * const lval_or_expr, int lvl, cdk::basic_node const * const caller) {
+  bool old = _needTupleAddr;
+  _needTupleAddr = false;
+  _evaledTupleAddr = true; // assume the worst
+  lval_or_expr->accept(this, lvl);
+  _needTupleAddr = old;
+
+  if (lval_or_expr->is_typed(cdk::TYPE_STRUCT) && _evaledTupleAddr) {
+    _unsharedTempSizeTab[caller] = 4; // will need to store a pointer to the top of the tuple
+  }
+}
+
 void og::frame_size_calculator::do_add_node(cdk::add_node * const node, int lvl) {
   node->left()->accept(this, lvl);
   node->right()->accept(this, lvl);
@@ -82,7 +94,17 @@ void og::frame_size_calculator::do_or_node(cdk::or_node * const node, int lvl) {
   node->right()->accept(this, lvl);
 }
 void og::frame_size_calculator::do_rvalue_node(cdk::rvalue_node * const node, int lvl) {
-  node->lvalue()->accept(this, lvl);
+  ASSERT_SAFE_EXPRESSIONS;
+  if (_needTupleAddr) {
+    node->lvalue()->accept(this, lvl);
+  } else {
+    load_value(node->lvalue(), lvl, node);
+  }
+
+  if (node->lvalue()->is_typed(cdk::TYPE_STRUCT)) {
+    _evaledTupleAddr = _needTupleAddr;
+  }
+
 }
 void og::frame_size_calculator::do_string_node(cdk::string_node * const node, int lvl) {
   // EMPTY
@@ -92,6 +114,7 @@ void og::frame_size_calculator::do_sub_node(cdk::sub_node * const node, int lvl)
   node->right()->accept(this, lvl);
 }
 void og::frame_size_calculator::do_evaluation_node(og::evaluation_node * const node, int lvl) {
+  _needTupleAddr = false;
   node->argument()->accept(this, lvl);
 }
 void og::frame_size_calculator::do_write_node(og::write_node * const node, int lvl) {
@@ -124,7 +147,14 @@ void og::frame_size_calculator::do_function_declaration_node(og::function_declar
   // EMPTY
 }
 void og::frame_size_calculator::do_tuple_index_node(og::tuple_index_node * const node, int lvl) {
+  bool old = _needTupleAddr;
+  _needTupleAddr = true;
   node->base()->accept(this, lvl);
+  _needTupleAddr = old;
+
+  if (node->is_typed(cdk::TYPE_STRUCT)) {
+    _evaledTupleAddr = true;
+  }
 }
 void og::frame_size_calculator::do_continue_node(og::continue_node * const node, int lvl) {
   // EMPTY
@@ -133,7 +163,10 @@ void og::frame_size_calculator::do_nullptr_node(og::nullptr_node * const node, i
   // EMPTY
 }
 void og::frame_size_calculator::do_return_node(og::return_node * const node, int lvl) {
-  if (node->retval()) node->retval()->accept(this, lvl);
+  ASSERT_SAFE_EXPRESSIONS;
+  if (node->retval()) {
+    load_value(node->retval(), lvl, node);
+  }
 }
 void og::frame_size_calculator::do_stack_alloc_node(og::stack_alloc_node * const node, int lvl) {
   node->argument()->accept(this, lvl);
@@ -155,20 +188,37 @@ void og::frame_size_calculator::do_tuple_node(og::tuple_node * const node, int l
   ASSERT_SAFE_EXPRESSIONS;
 
   if (node->size() > 1) { // implies TYPE_STRUCT, when size == 1 we can just pass whatever's inside as is
-    size_t sz = node->type()->size();
+    bool old = _needTupleAddr;
+    _needTupleAddr = false;
 
     // if tuple contains tuples, it will need space to store a pointer to the start of the inner tuple
+    bool needsBaseAddrExtra = false;
     for (auto el : node->elements()) {
-      if (static_cast<cdk::expression_node*>(el)->is_typed(cdk::TYPE_STRUCT)) {
-        sz += 4;
-        break;
+      auto expr = static_cast<cdk::expression_node*>(el);
+
+      _evaledTupleAddr = true; // assume the worst
+      expr->accept(this, lvl);
+
+      if (expr->is_typed(cdk::TYPE_STRUCT) && _evaledTupleAddr) {
+        needsBaseAddrExtra = true;
       }
     }
 
-    _unsharedTempSizeTab[node] = sz;
-  }
+    _needTupleAddr = old;
 
-  node->seq()->accept(this, lvl);
+    size_t sz = 0;
+    if (_needTupleAddr)
+      sz += node->type()->size();
+    if (needsBaseAddrExtra)
+      sz += 4;
+
+    if (sz)
+      _unsharedTempSizeTab[node] = sz;
+
+    _evaledTupleAddr = _needTupleAddr;
+  } else {
+    node->element(0)->accept(this, lvl);
+  }
 }
 
 void og::frame_size_calculator::do_sequence_node(cdk::sequence_node * const node, int lvl) {
@@ -190,8 +240,7 @@ void og::frame_size_calculator::do_for_node(og::for_node * const node, int lvl) 
   }
 
   if (node->condition()->is_typed(cdk::TYPE_STRUCT)) {
-    node->condition()->accept(this, lvl);
-    _unsharedTempSizeTab[node] = 4; // will need to store a pointer to the top of the tuple
+    load_value(node->condition(), lvl, node);
   }
 
   if (node->block()) {
@@ -215,12 +264,8 @@ void og::frame_size_calculator::do_variable_declaration_node(og::variable_declar
 
   _localsize += node->type()->size();
 
-  if (node->is_typed(cdk::TYPE_STRUCT)) {
-    _unsharedTempSizeTab[node] = 4; // will need to store a pointer to the top of the tuple
-  }
-
   if (node->initializer()) {
-    node->initializer()->accept(this, lvl);
+    load_value(node->initializer(), lvl, node);
   }
 }
 
