@@ -23,6 +23,7 @@ void og::flow_graph_checker::do_for_node(og::for_node * const node, int lvl) {
     _returning = false;
     _jumping_in_cycle = false;
     node->block()->accept(this, lvl);
+    _returning = false; // for may never run
   }
   _cycle_depth--;
 }
