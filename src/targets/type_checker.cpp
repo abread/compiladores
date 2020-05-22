@@ -482,6 +482,10 @@ std::shared_ptr<og::symbol> og::type_checker::declare_function(T *const node, in
 
   auto old_sym = _symtab.find_local(id);
   if (old_sym) {
+    if (old_sym->qualifier() == tQUALIFIERUNSPEC) {
+      old_sym->qualifier() = sym->qualifier();
+    }
+
     if (!compatible_types(old_sym->type(), sym->type(), DECL_TYPE_COMPAT)
         || !compatible_types(old_sym->argsType(), sym->argsType(), DECL_TYPE_COMPAT)
         || old_sym->qualifier() != sym->qualifier()

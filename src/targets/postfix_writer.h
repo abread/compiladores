@@ -48,9 +48,9 @@ namespace og {
       auto tuple_empty_t = cdk::make_structured_type(std::vector<std::shared_ptr<cdk::basic_type>>());
       auto tuple_int_t = cdk::make_structured_type(std::vector<std::shared_ptr<cdk::basic_type>>(1, int_t));
 
-      auto argc = std::make_shared<og::symbol>(tPUBLIC, int_t, "argc", tuple_empty_t);
-      auto argv = std::make_shared<og::symbol>(tPUBLIC, str_t, "argv", tuple_int_t);
-      auto envp = std::make_shared<og::symbol>(tPUBLIC, str_t, "envp", tuple_int_t);
+      auto argc = std::make_shared<og::symbol>(tQUALIFIERUNSPEC, int_t, "argc", tuple_empty_t);
+      auto argv = std::make_shared<og::symbol>(tQUALIFIERUNSPEC, str_t, "argv", tuple_int_t);
+      auto envp = std::make_shared<og::symbol>(tQUALIFIERUNSPEC, str_t, "envp", tuple_int_t);
 
       for (auto sym : {argc, argv, envp}) {
         _symtab.insert(sym->name(), sym);

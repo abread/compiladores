@@ -31,6 +31,9 @@ namespace og {
     int qualifier() const {
       return _qualifier;
     }
+    int &qualifier() {
+      return _qualifier;
+    }
     void type(std::shared_ptr<cdk::basic_type> type) {
       _type = type;
     }
