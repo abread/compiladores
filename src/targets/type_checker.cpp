@@ -129,8 +129,10 @@ static std::shared_ptr<cdk::basic_type> compatible_types(std::shared_ptr<cdk::ba
     return compatible_types_struct(cdk::structured_type_cast(a), cdk::structured_type_cast(b), opts);
   } else if (a->name() == cdk::TYPE_POINTER) {
     return compatible_types_ptr(cdk::reference_type_cast(a), cdk::reference_type_cast(b), opts);
-  } else {
+  } else if (a->size() == b->size()) {
     return a;
+  } else {
+    return nullptr;
   }
 }
 
