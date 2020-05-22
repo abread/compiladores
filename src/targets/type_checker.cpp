@@ -26,7 +26,7 @@ static bool is_PID(cdk::typed_node *const node) {
 class TypeCompatOptions {
 public:
   TypeCompatOptions(bool id = true, bool di = true, bool unspec = false, bool ptrassign = true, bool generalizeptr = false, bool voidptrint = true, bool intvoidptr = true)
-    : acceptID(id), acceptDI(di), acceptUnspec(unspec), ptrAssignment(ptrassign),acceptVoidPtrInt(voidptrint) {}
+    : acceptID(id), acceptDI(di), acceptUnspec(unspec), ptrAssignment(ptrassign), generalizePtr(generalizeptr), acceptVoidPtrInt(voidptrint), acceptIntVoidPtr(intvoidptr) {}
   bool acceptID; // accept (TYPE_INT, TYPE_DOUBLE), return TYPE_DOUBLE
   bool acceptDI; // accept (TYPE_DOUBLE, TYPE_INT), return TYPE_DOUBLE
   bool acceptUnspec; // accept TYPE_UNSPEC in one or more arguments, return the one that isn't TYPE_UNSPEC if it exists
