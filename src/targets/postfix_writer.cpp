@@ -257,8 +257,11 @@ void og::postfix_writer::do_stack_alloc_node(og::stack_alloc_node * const node, 
   ASSERT_SAFE_EXPRESSIONS;
   node->argument()->accept(this, lvl);
 
-  _pf.INT(cdk::reference_type_cast(node->type())->referenced()->size());
-  _pf.MUL();
+  size_t elsize = cdk::reference_type_cast(node->type())->referenced()->size();
+  if (elsize) {
+    _pf.INT(elsize);
+    _pf.MUL();
+  }
   _pf.ALLOC(); // allocate
   _pf.SP();// put base pointer in stack
 }
@@ -277,7 +280,7 @@ void og::postfix_writer::do_nullptr_node(og::nullptr_node * const node, int lvl)
 void og::postfix_writer::do_variable_node(cdk::variable_node * const node, int lvl) {
   ASSERT_SAFE_EXPRESSIONS;
   const std::string &id = node->name();
-  auto symbol = _symtab.find(id); //TODO: new_symbol?
+  auto symbol = _symtab.find(id);
 
   if (symbol->global()) {
     _pf.ADDR(node->name());
@@ -291,8 +294,10 @@ void og::postfix_writer::do_pointer_index_node(og::pointer_index_node * const no
   node->base()->accept(this, lvl);
   node->index()->accept(this, lvl);
   auto reftype = cdk::reference_type_cast(node->base()->type());
-  _pf.INT(reftype->referenced()->size());
-  _pf.MUL();
+  if (reftype->referenced()->size() != 1) {
+    _pf.INT(reftype->referenced()->size());
+    _pf.MUL();
+  }
   _pf.ADD(); // add pointer and index
 }
 
