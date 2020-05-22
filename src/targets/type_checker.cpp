@@ -25,20 +25,22 @@ static bool is_PID(cdk::typed_node *const node) {
 // Different operations have different notions of allowed types
 class TypeCompatOptions {
 public:
-  TypeCompatOptions(bool id = true, bool di = true, bool unspec = false, bool ptrassign = true, bool generalizeptr = false)
-    : acceptID(id), acceptDI(di), acceptUnspec(unspec), ptrAssignment(ptrassign) {}
+  TypeCompatOptions(bool id = true, bool di = true, bool unspec = false, bool ptrassign = true, bool generalizeptr = false, bool voidptrint = true, bool intvoidptr = true)
+    : acceptID(id), acceptDI(di), acceptUnspec(unspec), ptrAssignment(ptrassign),acceptVoidPtrInt(voidptrint) {}
   bool acceptID; // accept (TYPE_INT, TYPE_DOUBLE), return TYPE_DOUBLE
   bool acceptDI; // accept (TYPE_DOUBLE, TYPE_INT), return TYPE_DOUBLE
   bool acceptUnspec; // accept TYPE_UNSPEC in one or more arguments, return the one that isn't TYPE_UNSPEC if it exists
   bool ptrAssignment; // (ptr<auto>, ptr<X>) returns ptr<auto> and (ptr<X>, ptr<auto>) returns ptr<X> (allow conversion to/from void ptr)
   bool generalizePtr; // (ptr<X>, ptr<Y>) returns ptr<auto>
+  bool acceptVoidPtrInt; // (ptr<auto>, int) returns int
+  bool acceptIntVoidPtr; // (int, ptr<auto>) returns int
 };
 
 const TypeCompatOptions DEFAULT_TYPE_COMPAT = TypeCompatOptions();
-const TypeCompatOptions GENERALIZE_TYPE_COMPAT = TypeCompatOptions(true, true, true, true, true);
-const TypeCompatOptions ASSIGNMENT_TYPE_COMPAT = TypeCompatOptions(false, true, false, true, false);
-const TypeCompatOptions INITIALIZER_TYPE_COMPAT = TypeCompatOptions(false, true, true, true, false);
-const TypeCompatOptions DECL_TYPE_COMPAT = TypeCompatOptions(false, false, true, false, false);
+const TypeCompatOptions GENERALIZE_TYPE_COMPAT = TypeCompatOptions(true, true, true, true, true, true, true);
+const TypeCompatOptions ASSIGNMENT_TYPE_COMPAT = TypeCompatOptions(false, true, false, true, false, false, true);
+const TypeCompatOptions INITIALIZER_TYPE_COMPAT = TypeCompatOptions(false, true, true, true, false, false, true);
+const TypeCompatOptions DECL_TYPE_COMPAT = TypeCompatOptions(false, false, true, false, false, false, false);
 
 static std::shared_ptr<cdk::basic_type> compatible_types(std::shared_ptr<cdk::basic_type> a, std::shared_ptr<cdk::basic_type> b, TypeCompatOptions opts);
 
@@ -76,6 +78,14 @@ static std::shared_ptr<cdk::basic_type> is_void_ptr(std::shared_ptr<cdk::referen
   }
 }
 
+static std::shared_ptr<cdk::basic_type> is_void_ptr(std::shared_ptr<cdk::basic_type> t) {
+  if (t->name() == cdk::TYPE_POINTER) {
+    return is_void_ptr(cdk::reference_type_cast(t));
+  } else {
+    return nullptr;
+  }
+}
+
 static std::shared_ptr<cdk::basic_type> compatible_types_ptr(std::shared_ptr<cdk::reference_type> a, std::shared_ptr<cdk::reference_type> b, TypeCompatOptions opts) {
   if (auto aa = is_void_ptr(a); aa && (opts.ptrAssignment || opts.generalizePtr)) {
     return aa;
@@ -92,6 +102,9 @@ static std::shared_ptr<cdk::basic_type> compatible_types_ptr(std::shared_ptr<cdk
     // ptr<int> != ptr<double> always
     opts.acceptID = false;
     opts.acceptDI = false;
+    // and ptr<ptr<auto>> ? ptr<int> is treated separately
+    opts.acceptVoidPtrInt = false;
+    opts.acceptIntVoidPtr = false;
 
     auto referenced = compatible_types(a->referenced(), b->referenced(), opts);
     if (referenced == nullptr) {
@@ -121,6 +134,10 @@ static std::shared_ptr<cdk::basic_type> compatible_types(std::shared_ptr<cdk::ba
   } else if (b->name() == cdk::TYPE_STRUCT && cdk::structured_type_cast(b)->length() == 1) {
     auto bb = cdk::structured_type_cast(b);
     return compatible_types(a, bb->component(0), opts);
+  } else if (opts.acceptIntVoidPtr && a->name() == cdk::TYPE_INT && is_void_ptr(b)) {
+    return a; // convert to int
+  } else if (opts.acceptVoidPtrInt && is_void_ptr(a) && b->name() == cdk::TYPE_INT) {
+    return b; // convert to int
   } else if (a->name() != b->name()) { // structs with different sizes may be alright, pointers are all 4 bytes
     return nullptr;
   }
