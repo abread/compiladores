@@ -114,8 +114,10 @@ void og::frame_size_calculator::do_sub_node(cdk::sub_node * const node, int lvl)
   node->right()->accept(this, lvl);
 }
 void og::frame_size_calculator::do_evaluation_node(og::evaluation_node * const node, int lvl) {
+  bool old = _needTupleAddr;
   _needTupleAddr = false;
   node->argument()->accept(this, lvl);
+  _needTupleAddr = old;
 }
 void og::frame_size_calculator::do_write_node(og::write_node * const node, int lvl) {
   // we don't need space for the whole tuple, just for each argument (possibly)
@@ -179,6 +181,7 @@ void og::frame_size_calculator::do_identity_node(og::identity_node * const node,
 }
 void og::frame_size_calculator::do_pointer_index_node(og::pointer_index_node * const node, int lvl) {
   node->base()->accept(this, lvl);
+  node->index()->accept(this, lvl);
 }
 void og::frame_size_calculator::do_sizeof_node(og::sizeof_node * const node, int lvl) {
   // EMPTY
@@ -253,10 +256,12 @@ void og::frame_size_calculator::do_for_node(og::for_node * const node, int lvl) 
 }
 
 void og::frame_size_calculator::do_if_node(og::if_node * const node, int lvl) {
+  node->condition()->accept(this, lvl);
   node->block()->accept(this, lvl + 2);
 }
 
 void og::frame_size_calculator::do_if_else_node(og::if_else_node * const node, int lvl) {
+  node->condition()->accept(this, lvl);
   node->thenblock()->accept(this, lvl + 2);
   if (node->elseblock()) node->elseblock()->accept(this, lvl + 2);
 }
